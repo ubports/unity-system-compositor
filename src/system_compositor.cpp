@@ -28,14 +28,36 @@
 
 namespace msh = mir::shell;
 
-SystemCompositor::SystemCompositor(int from_dm_fd, int to_dm_fd) :
-        dm_connection(io_service, from_dm_fd, to_dm_fd)
+class SystemCompositorServerConfiguration : public mir::DefaultServerConfiguration
 {
-}
+public:
+    SystemCompositorServerConfiguration(int argc, char const** argv)
+        : mir::DefaultServerConfiguration(argc, argv)
+    {
+        namespace po = boost::program_options;
 
-void SystemCompositor::run(int argc, char const* argv[])
+        add_options()
+            ("from-dm-fd", po::value<int>(),  "File descriptor of read end of pipe from display manager [int]")
+            ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]");
+    }
+
+    int from_dm_fd()
+    {
+        return the_options()->get("from-dm-fd", -1);
+    }
+
+    int to_dm_fd()
+    {
+        return the_options()->get("to-dm-fd", -1);
+    }
+};
+
+void SystemCompositor::run(int argc, char const** argv)
 {
-    config = std::make_shared<mir::DefaultServerConfiguration>(argc, argv);
+    auto c = std::make_shared<SystemCompositorServerConfiguration>(argc, argv);
+    config = c;
+
+    dm_connection = std::make_shared<DMConnection>(io_service, c->from_dm_fd(), c->to_dm_fd());
 
     struct ScopeGuard
     {
@@ -71,9 +93,9 @@ void SystemCompositor::set_active_session(std::string client_name)
 
 void SystemCompositor::main()
 {
-    dm_connection.set_handler(this);
-    dm_connection.start();
-    dm_connection.send_ready();
+    dm_connection->set_handler(this);
+    dm_connection->start();
+    dm_connection->send_ready();
 
     io_service.run();
 }

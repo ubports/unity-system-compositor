@@ -23,16 +23,7 @@
 int main(int argc, char const* argv[])
 try
 {
-    if (argc != 3)
-    {
-        std::cerr << "Usage: " << argv[0] << " from_dm_fd to_dm_fd" << std::endl;
-        return 1;
-    }
-
-    auto from_dm_fd = atoi(argv[1]);
-    auto to_dm_fd = atoi(argv[2]);
-
-    SystemCompositor system_compositor(from_dm_fd, to_dm_fd);
+    SystemCompositor system_compositor;
     system_compositor.run(argc, argv);
 
     return 0;

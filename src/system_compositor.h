@@ -28,13 +28,12 @@ class Configuration;
 class SystemCompositor : public DMMessageHandler
 {
 public:
-    SystemCompositor(int from_dm_fd, int to_dm_fd);
-    void run(int argc, char const* argv[]);
+    void run(int argc, char const** argv);
 
 private:
     std::shared_ptr<mir::DefaultServerConfiguration> config;
     boost::asio::io_service io_service;
-    DMConnection dm_connection;
+    std::shared_ptr<DMConnection> dm_connection;
 
     virtual void set_active_session(std::string client_name);
     void main();
