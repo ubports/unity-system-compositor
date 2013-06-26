@@ -33,5 +33,5 @@ target_link_libraries(unity-system-compositor
 
 # Install into bin directory
 install(TARGETS unity-system-compositor
-  RUNTIME DESTINATION bin
+  RUNTIME DESTINATION sbin
 )
