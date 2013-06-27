@@ -1,5 +1,9 @@
-unity-system-compositor (0.0.1-0ubuntu1) raring; urgency=low
+unity-system-compositor (0.0.1-0ubuntu1) UNRELEASED; urgency=low
 
+  [ Robert Ancell ]
   * Initial release
+
+  [ Didier Roche ]
+  * Automatic snapshot from revision 29 (bootstrap)
 
  -- Robert Ancell <robert.ancell@canonical.com>  Wed, 10 Apr 2013 17:45:59 +1200

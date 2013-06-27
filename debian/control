@@ -1,6 +1,6 @@
 Source: unity-system-compositor
 Section: x11
-Priority: extra
+Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 Build-Depends: cmake,
                cmake-data,
@@ -9,13 +9,17 @@ Build-Depends: cmake,
                libmirserver-dev,
                libprotobuf-dev,
                pkg-config,
-               protobuf-compiler
 Standards-Version: 3.9.4
 Homepage: https://launchpad.net/unity-system-compositor
+# If you aren't a member of ~unity-team but need to upload packaging changes,
+# just go ahead. ~unity-system-compositor-team will notice and sync up the code again.
+Vcs-Bzr: https://code.launchpad.net/~unity-system-compositor-team/unity-system-compositor/trunk
 
 Package: unity-system-compositor
 Architecture: any
 Depends: ${misc:Depends},
-         ${shlibs:Depends}
+         ${shlibs:Depends},
 Description: System compositor for Ubuntu
- System compositor for Ubuntu
+ System compositor used by the Mir display server in Ubuntu. If the Unity
+ System Compositor can't start, LightDM will fallback to plain Xorg display
+ server.
