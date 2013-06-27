@@ -9,7 +9,6 @@ Build-Depends: cmake,
                libmirserver-dev,
                libprotobuf-dev,
                pkg-config,
-               protobuf-compiler,
 Standards-Version: 3.9.4
 Homepage: https://launchpad.net/unity-system-compositor
 # If you aren't a member of ~unity-team but need to upload packaging changes,
