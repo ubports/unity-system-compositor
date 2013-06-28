@@ -15,12 +15,18 @@
 # Authored by: Robert Ancell <robert.ancell@canonical.com>
 
 project(UnitySystemCompisitor)
+set(USC_VERSION_MAJOR 0)
+set(USC_VERSION_MINOR 0)
+set(USC_VERSION_PATCH 1)
+set(USC_VERSION "${USC_VERSION_MAJOR}.${USC_VERSION_MINOR}.${USC_VERSION_PATCH}")
 
 cmake_minimum_required(VERSION 2.8)
 
 # Set location of outputs
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
+
+add_definitions(-DUSC_VERSION="${USC_VERSION}")
 
 # Use C++11 and warnings
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
