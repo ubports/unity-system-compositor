@@ -37,7 +37,8 @@ public:
         namespace po = boost::program_options;
 
         add_options()
-            ("from-dm-fd", po::value<int>(),  "File descriptor of read end of pipe from display manager [int]")
+            ("version", "Show version of Unity System Compositor");
+            ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]");
             ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]");
     }
 
@@ -50,12 +51,23 @@ public:
     {
         return the_options()->get("to-dm-fd", -1);
     }
+
+    bool show_version()
+    {
+        return the_options()->is_set ("version");
+    }
 };
 
 void SystemCompositor::run(int argc, char const** argv)
 {
     auto c = std::make_shared<SystemCompositorServerConfiguration>(argc, argv);
     config = c;
+  
+    if (c->show_version())
+    {
+        std::cerr << "unity-system-compositor " << USC_VERSION << std::endl;
+        return;
+    }
 
     dm_connection = std::make_shared<DMConnection>(io_service, c->from_dm_fd(), c->to_dm_fd());
 
