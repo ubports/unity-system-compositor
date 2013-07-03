@@ -37,9 +37,10 @@ public:
         namespace po = boost::program_options;
 
         add_options()
+            ("from-dm-fd", po::value<int>(),  "File descriptor of read end of pipe from display manager [int]")
+            ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]");
+       add_options()
             ("version", "Show version of Unity System Compositor");
-            ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]");
-            ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]");
     }
 
     int from_dm_fd()
