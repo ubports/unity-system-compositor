@@ -36,6 +36,7 @@ private:
     std::shared_ptr<DMConnection> dm_connection;
 
     virtual void set_active_session(std::string client_name);
+    virtual void set_next_session(std::string client_name);
     void main();
 };
 

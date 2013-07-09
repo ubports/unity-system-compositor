@@ -104,6 +104,23 @@ void SystemCompositor::set_active_session(std::string client_name)
         std::cerr << "Unable to set active session, unknown client name " << client_name << std::endl;
 }
 
+void SystemCompositor::set_next_session(std::string client_name)
+{
+    std::cerr << "set_next_session" << std::endl;
+
+    std::shared_ptr<msh::Session> session;
+    config->the_shell_session_container()->for_each([&client_name, &session](std::shared_ptr<msh::Session> const& s)
+    {
+        if (s->name() == client_name)
+            session = s;
+    });
+
+    if (session)
+        ; // FIXME: figure out what Mir API is appropriate here
+    else
+        std::cerr << "Unable to set next session, unknown client name " << client_name << std::endl;
+}
+
 void SystemCompositor::main()
 {
     dm_connection->set_handler(this);
