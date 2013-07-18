@@ -1,2 +1,2 @@
-debian/tmp/usr/sbin/unity-system-compositor
+usr/sbin/unity-system-compositor
 debian/10-unity-system-compositor.conf /etc/lightdm/lightdm.conf.d
