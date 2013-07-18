@@ -67,6 +67,10 @@ class RuntimeEnvironmentTests(AutopilotTestCase):
             should_be_running = False
 
 
+        logger.info(
+            "Unity system compositor %s be running!",
+            "should" if should_be_running else "should not"
+        )
         self.assertThat(
             _is_system_compositor_running(),
             Equals(should_be_running)
