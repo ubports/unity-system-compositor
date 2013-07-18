@@ -41,31 +41,36 @@ class RuntimeEnvironmentTests(AutopilotTestCase):
 
     """Tests for the unity system compositor runtime environment."""
 
-    def test_running_for_supported_video_cards(self):
-        """Ensure u-s-c is running on systems that have supported hardware."""
+    def test_running_hardware_check(self):
+        """Checks whether u-s-c is running if we're on supported hardware, and
+        checks the inverse if we're not on supported hardware.
+
+        """
+        should_be_running = True
+
         devices = _get_video_devices()
         self.assertThat(len(devices), Equals(1))
         device = devices[0]
 
         try:
             manufacturer = _get_supported_device_manufacturer(device)
+            logger.info("Video card manufacturer is supported.")
         except RuntimeError:
-            logger.info(
-                "Unsupported hardware, not checking unity-system-compositor."
-            )
-            return
+            logger.info("Video card manufacturer is not supported.")
+            should_be_running = False
 
-        logger.info("Hardware manufacturer '%s' is supported...", manufacturer)
         driver = _get_kernel_driver_in_use(device)
-        if not _is_running_oss_driver(manufacturer, driver):
-            logger.info(
-                "Proprietary driver running (%s), not checking " \
-                "unity-system-compositor.",
-                driver
-            )
-            return
+        if _is_running_oss_driver(manufacturer, driver):
+            logger.info("Running OSS driver (%s).", driver)
+        else:
+            logger.info("Running proprietary driver (%s).", driver)
+            should_be_running = False
 
-        self.assertThat(_is_system_compositor_running(), Equals(True))
+
+        self.assertThat(
+            _is_system_compositor_running(),
+            Equals(should_be_running)
+        )
 
 
 def _get_video_devices():
