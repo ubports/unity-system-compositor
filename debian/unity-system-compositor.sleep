@@ -1,0 +1,4 @@
+#!/bin/sh
+
+sleep .1
+/usr/sbin/unity-system-compositor $@
