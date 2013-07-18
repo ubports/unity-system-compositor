@@ -9,6 +9,8 @@ Build-Depends: cmake,
                libmirserver-dev,
                libprotobuf-dev,
                pkg-config,
+               python (>= 2.7),
+               python-setuptools,
 Standards-Version: 3.9.4
 Homepage: https://launchpad.net/unity-system-compositor
 # If you aren't a member of ~unity-team but need to upload packaging changes,
@@ -23,3 +25,12 @@ Description: System compositor for Ubuntu
  System compositor used by the Mir display server in Ubuntu. If the Unity
  System Compositor can't start, LightDM will fallback to plain Xorg display
  server.
+
+Package: unity-system-compositor-autopilot
+Architecture: all
+Depends: ${misc:Depends},
+         ${python:Depends},
+         python-autopilot,
+         unity-system-compositor (>= ${source:Version}),
+Description: Test package for Unity System Compositor
+ Autopilots tests for Unity System Compositor
