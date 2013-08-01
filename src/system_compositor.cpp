@@ -22,11 +22,13 @@
 #include <mir/shell/session.h>
 #include <mir/shell/session_container.h>
 #include <mir/shell/focus_setter.h>
+#include <mir/input/cursor_listener.h>
 
 #include <iostream>
 #include <thread>
 
 namespace msh = mir::shell;
+namespace mi = mir::input;
 
 class SystemCompositorServerConfiguration : public mir::DefaultServerConfiguration
 {
@@ -56,6 +58,17 @@ public:
     bool show_version()
     {
         return the_options()->is_set ("version");
+    }
+    
+    std::shared_ptr<mi::CursorListener> the_cursor_listener() override
+    {
+        struct NullCursorListener : public mi::CursorListener
+        {
+            void cursor_moved_to(float, float) override
+            {
+            }
+        };
+        return std::make_shared<NullCursorListener>();
     }
 };
 
