@@ -1,4 +1,4 @@
-unity-system-compositor (0.0.1-0ubuntu1) UNRELEASED; urgency=low
+unity-system-compositor (0.0.1+13.10.20130809.1-0ubuntu1) saucy; urgency=low
 
   [ Robert Ancell ]
   * Initial release
@@ -6,4 +6,39 @@ unity-system-compositor (0.0.1-0ubuntu1) UNRELEASED; urgency=low
   [ Didier Roche ]
   * Automatic snapshot from revision 29 (bootstrap)
 
- -- Robert Ancell <robert.ancell@canonical.com>  Wed, 10 Apr 2013 17:45:59 +1200
+  [ Robert Ancell ]
+  * Add a --version option.
+  * Fix --from-dm-fd and --to-dm-fd command line options being broken.
+    (LP: #1197232)
+  * Add autopilot test to ensure u-s-c is running in supported
+    configurations.
+  * Re-enable input since Mir now handles alt+ctrl+Fn keys.
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+  [ Didier Roche ]
+  * use correct DEP5 url.
+  * Add autopilot test to ensure u-s-c is running in supported
+    configurations.
+  * add a dirty sleep to workaround a race when starting unity-system-
+    compositor from lightdm (unity-system-compositor fails on a module
+    load error, strace workarounds it as well).
+  * disable input for u-s-c on tvoss' advice to start on some ATI card.
+    (LP: #1203070)
+
+  [ Thomi Richards ]
+  * Add COPYING file.
+  * Add autopilot test to ensure u-s-c is running in supported
+    configurations.
+
+  [ Robert Carr ]
+  * Disable hardware cursor. (LP: #1192916)
+
+  [ Christopher James Halse Rogers ]
+  * Add Depends: on xserver-xorg-xmir to ensure a supported XServer.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 40
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 09 Aug 2013 11:54:29 +0000
