@@ -1,0 +1,3 @@
+usr/sbin/unity-system-compositor
+debian/10-unity-system-compositor.conf /etc/lightdm/lightdm.conf.d
+debian/unity-system-compositor.sleep usr/sbin/
