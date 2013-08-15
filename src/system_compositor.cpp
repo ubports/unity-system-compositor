@@ -21,27 +21,67 @@
 #include <mir/run_mir.h>
 #include <mir/shell/session.h>
 #include <mir/shell/session_container.h>
+#include <mir/shell/surface_builder.h>
+#include <mir/shell/surface_creation_parameters.h>
 #include <mir/shell/focus_setter.h>
+#include <mir/surfaces/depth_id.h>
+#include <mir/surfaces/surface_stack_model.h>
 #include <mir/input/cursor_listener.h>
 
 #include <iostream>
 #include <thread>
 
 namespace msh = mir::shell;
+namespace ms = mir::surfaces;
 namespace mi = mir::input;
+
+class SystemCompositorSurfaceBuilder : public msh::SurfaceBuilder
+{
+public:
+    SystemCompositorSurfaceBuilder(std::shared_ptr<ms::SurfaceStackModel> const& surface_stack)
+        : surface_stack(surface_stack)
+    {
+    }
+
+    std::weak_ptr<ms::Surface> create_surface(msh::Session *session, msh::SurfaceCreationParameters const& params)
+    {
+        static ms::DepthId const default_surface_depth{0};
+        static ms::DepthId const greeter_surface_depth{1};
+
+        auto depth_params = params;
+        if (session->name().find("greeter-") == 0)
+        {
+            depth_params.depth = greeter_surface_depth;
+        }
+        else
+        {
+            depth_params.depth = default_surface_depth;
+        }
+        return surface_stack->create_surface(depth_params);
+    }
+
+    void destroy_surface(std::weak_ptr<ms::Surface> const& surface)
+    {
+        surface_stack->destroy_surface(surface);
+    }
+
+private:
+    std::shared_ptr<ms::SurfaceStackModel> const surface_stack;
+};
 
 class SystemCompositorServerConfiguration : public mir::DefaultServerConfiguration
 {
 public:
     SystemCompositorServerConfiguration(int argc, char const** argv)
-        : mir::DefaultServerConfiguration(argc, argv)
+        : mir::DefaultServerConfiguration(argc, argv),
+          surface_builder(new SystemCompositorSurfaceBuilder(the_surface_stack_model()))
     {
         namespace po = boost::program_options;
 
         add_options()
             ("from-dm-fd", po::value<int>(),  "File descriptor of read end of pipe from display manager [int]")
             ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]");
-       add_options()
+        add_options()
             ("version", "Show version of Unity System Compositor");
     }
 
@@ -70,6 +110,14 @@ public:
         };
         return std::make_shared<NullCursorListener>();
     }
+
+    std::shared_ptr<msh::SurfaceBuilder> the_surface_builder() override
+    {
+        return surface_builder;
+    }
+
+private:
+    std::shared_ptr<msh::SurfaceBuilder> surface_builder;
 };
 
 void SystemCompositor::run(int argc, char const** argv)
@@ -129,7 +177,7 @@ void SystemCompositor::set_next_session(std::string client_name)
     });
 
     if (session)
-        ; // FIXME: figure out what Mir API is appropriate here
+        config->the_shell_focus_setter()->set_focus_to(session); // depth id will keep it separate from greeter
     else
         std::cerr << "Unable to set next session, unknown client name " << client_name << std::endl;
 }
