@@ -73,8 +73,7 @@ class SystemCompositorServerConfiguration : public mir::DefaultServerConfigurati
 {
 public:
     SystemCompositorServerConfiguration(int argc, char const** argv)
-        : mir::DefaultServerConfiguration(argc, argv),
-          surface_builder(new SystemCompositorSurfaceBuilder(the_surface_stack_model()))
+        : mir::DefaultServerConfiguration(argc, argv)
     {
         namespace po = boost::program_options;
 
@@ -113,11 +112,15 @@ public:
 
     std::shared_ptr<msh::SurfaceBuilder> the_surface_builder() override
     {
-        return surface_builder;
+        return surface_builder(
+            [this]()
+            {
+                return std::make_shared<SystemCompositorSurfaceBuilder>(the_surface_stack_model());
+            });
     }
 
 private:
-    std::shared_ptr<msh::SurfaceBuilder> surface_builder;
+    mir::CachedPtr<msh::SurfaceBuilder> surface_builder;
 };
 
 void SystemCompositor::run(int argc, char const** argv)
