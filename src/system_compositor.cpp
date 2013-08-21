@@ -41,7 +41,7 @@ public:
         add_options()
             ("from-dm-fd", po::value<int>(),  "File descriptor of read end of pipe from display manager [int]")
             ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]");
-       add_options()
+        add_options()
             ("version", "Show version of Unity System Compositor");
     }
 
@@ -115,6 +115,23 @@ void SystemCompositor::set_active_session(std::string client_name)
         config->the_shell_focus_setter()->set_focus_to(session);
     else
         std::cerr << "Unable to set active session, unknown client name " << client_name << std::endl;
+}
+
+void SystemCompositor::set_next_session(std::string client_name)
+{
+    std::cerr << "set_next_session" << std::endl;
+
+    std::shared_ptr<msh::Session> session;
+    config->the_shell_session_container()->for_each([&client_name, &session](std::shared_ptr<msh::Session> const& s)
+    {
+        if (s->name() == client_name)
+            session = s;
+    });
+
+    if (session)
+        ; // TODO: implement this
+    else
+        std::cerr << "Unable to set next session, unknown client name " << client_name << std::endl;
 }
 
 void SystemCompositor::main()

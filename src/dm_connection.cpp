@@ -90,6 +90,16 @@ void DMConnection::on_read_payload(const bs::error_code& ec)
                 handler->set_active_session(client_name);
             break;
         }
+        case USCMessageID::set_next_session:
+        {
+            std::ostringstream ss;
+            ss << &message_payload_buffer;
+            auto client_name = ss.str();
+            std::cerr << "set_next_session '" << client_name << "'" << std::endl;
+            if (handler)
+                handler->set_next_session(client_name);
+            break;
+        }
         default:
             std::cerr << "Ignoring unknown message " << (uint16_t) message_id << " with " << payload_length << " octets" << std::endl;
             break;
