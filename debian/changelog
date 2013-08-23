@@ -1,3 +1,10 @@
+unity-system-compositor (0.0.1+13.10.20130823.3-0ubuntu1) saucy; urgency=low
+
+  * New rebuild forced
+  * Automatic snapshot from revision 57
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 23 Aug 2013 22:43:09 +0000
+
 unity-system-compositor (0.0.1+13.10.20130823.1-0ubuntu1) saucy; urgency=low
 
   * New rebuild forced
