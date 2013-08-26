@@ -1,3 +1,15 @@
+unity-system-compositor (0.0.1+13.10.20130826.1-0ubuntu1) saucy; urgency=low
+
+  [ Robert Ancell ]
+  * Fix sleep wrapper around unity-system-compositor - currently LightDM
+    only quits the script, not the compositor due to the way it is run.
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+  * Automatic snapshot from revision 61
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 26 Aug 2013 10:06:12 +0000
+
 unity-system-compositor (0.0.1+13.10.20130825.1-0ubuntu1) saucy; urgency=low
 
   * New rebuild forced
