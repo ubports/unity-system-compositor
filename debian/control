@@ -18,7 +18,7 @@ Homepage: https://launchpad.net/unity-system-compositor
 Vcs-Bzr: https://code.launchpad.net/~unity-system-compositor-team/unity-system-compositor/trunk
 
 Package: unity-system-compositor
-Architecture: any
+Architecture: i386 amd64 armhf arm64
 Depends: ${misc:Depends},
          ${shlibs:Depends},
          xserver-xorg-xmir,
