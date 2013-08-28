@@ -1,3 +1,9 @@
+unity-system-compositor (0.0.1+13.10.20130826.1-0ubuntu1+build1) saucy; urgency=low
+
+  * No change rebuild to get mir out of -proposed
+
+ -- Robert Ancell <robert.ancell@canonical.com>  Wed, 28 Aug 2013 12:07:27 +1200
+
 unity-system-compositor (0.0.1+13.10.20130826.1-0ubuntu1) saucy; urgency=low
 
   [ Robert Ancell ]
