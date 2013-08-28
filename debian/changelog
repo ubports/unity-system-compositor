@@ -1,3 +1,15 @@
+unity-system-compositor (0.0.1+13.10.20130828-0ubuntu1) saucy; urgency=low
+
+  [ Robert Ancell ]
+  * Build on the same architectures as Mir so we don't wait for
+    dependencies that will never exist (i.e. PowerPC).
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+  * Automatic snapshot from revision 64
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 28 Aug 2013 10:42:08 +0000
+
 unity-system-compositor (0.0.1+13.10.20130826.1-0ubuntu1+build1) saucy; urgency=low
 
   * No change rebuild to get mir out of -proposed
