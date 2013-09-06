@@ -1,0 +1,3 @@
+# Prompt the user to reboot so they get the new u-s-c that has been installed
+[ -x /usr/share/update-notifier/notify-reboot-required ] && \
+  /usr/share/update-notifier/notify-reboot-required || true
