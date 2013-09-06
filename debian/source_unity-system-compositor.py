@@ -26,8 +26,10 @@ def attach_graphic_card_pci_info(report, ui=None):
 
 def add_info(report, ui=None):
     attach_file_if_exists(report, '/var/log/boot.log', 'BootLog')
-    attach_file_if_exists(report, '/var/log/lightdm/lightdm.log', 'LightDMLog')
-    attach_file_if_exists(report, '/var/log/lightdm/unity-system-compositor.log', 'UnitySystemCompositorLog')
+    attach_root_command_outputs(report, { 'LightDMLog': 'cat /var/log/lightdm/lightdm.log',
+                                          'LightDMLogOld': 'cat /var/log/lightdm/lightdm.log.old',
+                                          'UnitySystemCompositorLog': 'cat /var/log/lightdm/unity-system-compositor.log',
+                                          'UnitySystemCompositorLogOld': 'cat /var/log/lightdm/unity-system-compositor.log.old' })
 
     report['version.libdrm'] = package_versions('libdrm2')
     report['version.lightdm'] = package_versions('lightdm')
