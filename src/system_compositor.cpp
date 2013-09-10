@@ -19,6 +19,7 @@
 #include "system_compositor.h"
 
 #include <mir/run_mir.h>
+#include <mir/shell/application_session.h>
 #include <mir/shell/session.h>
 #include <mir/shell/session_container.h>
 #include <mir/shell/focus_setter.h>
@@ -107,8 +108,15 @@ void SystemCompositor::set_active_session(std::string client_name)
     std::shared_ptr<msh::Session> session;
     config->the_shell_session_container()->for_each([&client_name, &session](std::shared_ptr<msh::Session> const& s)
     {
+        auto app_session(std::static_pointer_cast<msh::ApplicationSession>(session));
+
         if (s->name() == client_name)
+        {
+            app_session->set_lifecycle_state(mir_lifecycle_state_resumed);
             session = s;
+        }
+        else
+            app_session->set_lifecycle_state(mir_lifecycle_state_will_suspend);
     });
 
     if (session)
