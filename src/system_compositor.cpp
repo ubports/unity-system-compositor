@@ -25,6 +25,7 @@
 #include <mir/input/cursor_listener.h>
 
 #include <iostream>
+#include <sys/stat.h>
 #include <thread>
 
 namespace msh = mir::shell;
@@ -70,6 +71,12 @@ public:
         };
         return std::make_shared<NullCursorListener>();
     }
+
+    std::string get_socket_file()
+    {
+        // the_socket_file is private, so we have to re-implement it here
+        the_options()->get("file", "/tmp/mir_socket");
+    }
 };
 
 void SystemCompositor::run(int argc, char const** argv)
@@ -93,6 +100,12 @@ void SystemCompositor::run(int argc, char const** argv)
         boost::asio::io_service& io_service;
         std::thread thread;
     } guard(io_service);
+
+    // Make socket world-writable, since users need to talk to us.  No worries
+    // about race condition, since we are adding permissions, not restricting
+    // them.
+    c->the_communicator(); // ensure Mir creates the socket
+    chmod(c->get_socket_file().c_str(), 0777);
 
     mir::run_mir(*config, [&](mir::DisplayServer&)
         {
