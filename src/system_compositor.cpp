@@ -76,7 +76,7 @@ public:
     std::string get_socket_file()
     {
         // the_socket_file is private, so we have to re-implement it here
-        the_options()->get("file", "/tmp/mir_socket");
+        return the_options()->get("file", "/tmp/mir_socket");
     }
 };
 
