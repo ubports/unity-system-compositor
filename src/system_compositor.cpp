@@ -26,6 +26,7 @@
 
 #include <iostream>
 #include <thread>
+#include <GLES2/gl2.h>
 
 namespace msh = mir::shell;
 namespace mi = mir::input;
@@ -96,6 +97,10 @@ void SystemCompositor::run(int argc, char const** argv)
 
     mir::run_mir(*config, [&](mir::DisplayServer&)
         {
+            auto vendor = glGetString(GL_VENDOR);
+            auto renderer = glGetString (GL_RENDERER);
+            auto version = glGetString (GL_VERSION);
+
             guard.thread = std::thread(&SystemCompositor::main, this);
         });
 }
