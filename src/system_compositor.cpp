@@ -36,7 +36,7 @@ class SystemCompositorServerConfiguration : public mir::DefaultServerConfigurati
 {
 public:
     SystemCompositorServerConfiguration(SystemCompositor *compositor, int argc, char const** argv)
-        : mir::DefaultServerConfiguration(argc, argv)
+        : mir::DefaultServerConfiguration(argc, argv), compositor{compositor}
     {
         namespace po = boost::program_options;
 
