@@ -24,6 +24,7 @@
 #include <mir/shell/focus_setter.h>
 #include <mir/input/cursor_listener.h>
 
+#include <cerrno>
 #include <iostream>
 #include <sys/stat.h>
 #include <thread>
@@ -105,7 +106,8 @@ void SystemCompositor::run(int argc, char const** argv)
     // about race condition, since we are adding permissions, not restricting
     // them.
     c->the_communicator(); // ensure Mir creates the socket
-    chmod(c->get_socket_file().c_str(), 0777);
+    if (chmod(c->get_socket_file().c_str(), 0777) == -1)
+        std::cerr << "Unable to chmod socket file " << c->get_socket_file() << ": " << strerror(errno) << std::endl;
 
     mir::run_mir(*config, [&](mir::DisplayServer&)
         {
