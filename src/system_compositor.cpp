@@ -19,6 +19,7 @@
 #include "system_compositor.h"
 
 #include <mir/run_mir.h>
+#include <mir/abnormal_exit.h>
 #include <mir/shell/session.h>
 #include <mir/shell/session_container.h>
 #include <mir/shell/focus_setter.h>
@@ -26,6 +27,7 @@
 
 #include <iostream>
 #include <thread>
+#include <regex.h>
 #include <GLES2/gl2.h>
 
 namespace msh = mir::shell;
@@ -97,9 +99,34 @@ void SystemCompositor::run(int argc, char const** argv)
 
     mir::run_mir(*config, [&](mir::DisplayServer&)
         {
-            auto vendor = glGetString(GL_VENDOR);
-            auto renderer = glGetString (GL_RENDERER);
-            auto version = glGetString (GL_VERSION);
+            auto vendor = (char *) glGetString(GL_VENDOR);
+            auto renderer = (char *) glGetString (GL_RENDERER);
+            auto version = (char *) glGetString (GL_VERSION);
+            std::cerr << "GL_VENDOR = " << vendor << std::endl;
+            std::cerr << "GL_RENDERER = " << renderer << std::endl;
+            std::cerr << "GL_VERSION = " << version << std::endl;
+
+            regex_t re;
+            auto result = regcomp (&re, ".*", REG_EXTENDED);
+            if (result == 0)
+            {
+                char driver_string[1024];
+                snprintf (driver_string, 1024, "%s\n%s\n%s",
+                          vendor ? vendor : "",
+                          renderer ? renderer : "",
+                          version ? version : "");
+
+                if (regexec (&re, driver_string, 0, NULL, 0) == 0)
+                    throw mir::AbnormalExit ("Video driver is blacklisted, exiting");
+
+                regfree (&re);
+            }
+            else
+            {
+                char error_string[1024];
+                regerror (result, &re, error_string, 1024);
+                std::cerr << "Failed to compile blacklist regex: " << error_string << std::endl;
+            }
 
             guard.thread = std::thread(&SystemCompositor::main, this);
         });
