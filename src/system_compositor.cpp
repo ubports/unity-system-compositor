@@ -102,13 +102,6 @@ void SystemCompositor::run(int argc, char const** argv)
         std::thread thread;
     } guard(io_service);
 
-    // Make socket world-writable, since users need to talk to us.  No worries
-    // about race condition, since we are adding permissions, not restricting
-    // them.
-    c->the_communicator(); // ensure Mir creates the socket
-    if (chmod(c->get_socket_file().c_str(), 0777) == -1)
-        std::cerr << "Unable to chmod socket file " << c->get_socket_file() << ": " << strerror(errno) << std::endl;
-
     mir::run_mir(*config, [&](mir::DisplayServer&)
         {
             guard.thread = std::thread(&SystemCompositor::main, this);
@@ -151,6 +144,13 @@ void SystemCompositor::set_next_session(std::string client_name)
 
 void SystemCompositor::main()
 {
+    // Make socket world-writable, since users need to talk to us.  No worries
+    // about race condition, since we are adding permissions, not restricting
+    // them.
+    auto usc_config = std::static_pointer_cast<SystemCompositorServerConfiguration>(config);
+    if (chmod(usc_config->get_socket_file().c_str(), 0777) == -1)
+        std::cerr << "Unable to chmod socket file " << usc_config->get_socket_file() << ": " << strerror(errno) << std::endl;
+
     dm_connection->set_handler(this);
     dm_connection->start();
     dm_connection->send_ready();
