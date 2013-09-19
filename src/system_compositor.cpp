@@ -19,7 +19,7 @@
 #include "system_compositor.h"
 
 #include <mir/run_mir.h>
-#include <mir/server_status.h>
+#include <mir/pause_resume_listener.h>
 #include <mir/shell/application_session.h>
 #include <mir/shell/session.h>
 #include <mir/shell/session_container.h>
@@ -73,11 +73,11 @@ public:
         return std::make_shared<NullCursorListener>();
     }
 
-    std::shared_ptr<mir::ServerStatus> the_server_status() override
+    std::shared_ptr<mir::PauseResumeListener> the_pause_resume_listener() override
     {
-        struct ServerStatus : public mir::ServerStatus
+        struct PauseResumeListener : public mir::PauseResumeListener
         {
-            ServerStatus (SystemCompositor *compositor) : compositor{compositor} {}
+            PauseResumeListener (SystemCompositor *compositor) : compositor{compositor} {}
 
             void paused() override
             {
@@ -91,7 +91,7 @@ public:
 
             SystemCompositor *compositor;
         };
-        return std::make_shared<ServerStatus>(compositor);
+        return std::make_shared<PauseResumeListener>(compositor);
     }
 
 private:
