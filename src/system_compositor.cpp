@@ -70,7 +70,7 @@ public:
         return x;
     }
 
-    void parse_options(boost::program_options::options_description& options_description, mir::options::ProgramOption& options) override
+    void parse_options(boost::program_options::options_description& options_description, mir::options::ProgramOption& options) const override
     {
         options.parse_file(options_description, "unity-system-compositor.conf");
     }
