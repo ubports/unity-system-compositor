@@ -29,6 +29,7 @@ target_link_libraries(unity-system-compositor
   mirserver
   pthread
   ${Boost_LIBRARIES}
+  ${GLESv2_LIBRARIES}
 )
 
 # Install into bin directory
