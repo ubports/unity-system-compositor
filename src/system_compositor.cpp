@@ -43,10 +43,8 @@ public:
     {
         add_options()
             ("from-dm-fd", po::value<int>(),  "File descriptor of read end of pipe from display manager [int]")
-            ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]");
-        add_options()
-            ("blacklist", po::value<std::string>(), "Video blacklist regex to use");
-        add_options()
+            ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]")
+            ("blacklist", po::value<std::string>(), "Video blacklist regex to use")
             ("version", "Show version of Unity System Compositor");
     }
 
