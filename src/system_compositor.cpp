@@ -19,6 +19,8 @@
 #include "system_compositor.h"
 
 #include <mir/run_mir.h>
+#include <mir/pause_resume_listener.h>
+#include <mir/shell/application_session.h>
 #include <mir/shell/session.h>
 #include <mir/shell/session_container.h>
 #include <mir/shell/focus_setter.h>
@@ -33,8 +35,8 @@ namespace mi = mir::input;
 class SystemCompositorServerConfiguration : public mir::DefaultServerConfiguration
 {
 public:
-    SystemCompositorServerConfiguration(int argc, char const** argv)
-        : mir::DefaultServerConfiguration(argc, argv)
+    SystemCompositorServerConfiguration(SystemCompositor *compositor, int argc, char const** argv)
+        : mir::DefaultServerConfiguration(argc, argv), compositor{compositor}
     {
         namespace po = boost::program_options;
 
@@ -70,11 +72,35 @@ public:
         };
         return std::make_shared<NullCursorListener>();
     }
+
+    std::shared_ptr<mir::PauseResumeListener> the_pause_resume_listener() override
+    {
+        struct PauseResumeListener : public mir::PauseResumeListener
+        {
+            PauseResumeListener (SystemCompositor *compositor) : compositor{compositor} {}
+
+            void paused() override
+            {
+                compositor->pause();
+            }
+
+            void resumed() override
+            {
+                compositor->resume();
+            }
+
+            SystemCompositor *compositor;
+        };
+        return std::make_shared<PauseResumeListener>(compositor);
+    }
+
+private:
+    SystemCompositor *compositor;
 };
 
 void SystemCompositor::run(int argc, char const** argv)
 {
-    auto c = std::make_shared<SystemCompositorServerConfiguration>(argc, argv);
+    auto c = std::make_shared<SystemCompositorServerConfiguration>(this, argc, argv);
     config = c;
   
     if (c->show_version())
@@ -100,19 +126,42 @@ void SystemCompositor::run(int argc, char const** argv)
         });
 }
 
+void SystemCompositor::pause()
+{
+    std::cerr << "pause" << std::endl;
+
+    if (active_session)
+        active_session->set_lifecycle_state(mir_lifecycle_state_will_suspend);
+}
+
+void SystemCompositor::resume()
+{
+    std::cerr << "resume" << std::endl;
+
+    if (active_session)
+        active_session->set_lifecycle_state(mir_lifecycle_state_resumed);
+}
+
 void SystemCompositor::set_active_session(std::string client_name)
 {
     std::cerr << "set_active_session" << std::endl;
 
-    std::shared_ptr<msh::Session> session;
-    config->the_shell_session_container()->for_each([&client_name, &session](std::shared_ptr<msh::Session> const& s)
+    active_session.reset();
+    config->the_shell_session_container()->for_each([&](std::shared_ptr<msh::Session> const& s)
     {
+        auto app_session(std::static_pointer_cast<msh::ApplicationSession>(s));
+
         if (s->name() == client_name)
-            session = s;
+        {
+            app_session->set_lifecycle_state(mir_lifecycle_state_resumed);
+            active_session = app_session;
+        }
+        else
+            app_session->set_lifecycle_state(mir_lifecycle_state_will_suspend);
     });
 
-    if (session)
-        config->the_shell_focus_setter()->set_focus_to(session);
+    if (active_session)
+        config->the_shell_focus_setter()->set_focus_to(active_session);
     else
         std::cerr << "Unable to set active session, unknown client name " << client_name << std::endl;
 }
