@@ -119,6 +119,8 @@ bool check_blacklist(std::string blacklist, const char *vendor, const char *rend
     if (blacklist.empty())
         return true;
 
+    std::cerr << "Using blacklist \"" << blacklist << "\"" << std::endl;
+
     regex_t re;
     auto result = regcomp (&re, blacklist.c_str(), REG_EXTENDED);
     if (result == 0)
