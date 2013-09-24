@@ -1,3 +1,20 @@
+unity-system-compositor (0.0.1+13.10.20130924.1-0ubuntu1) saucy; urgency=low
+
+  [ Robert Ancell ]
+  * Get root permissions to attach lightdm and u-s-c logs. Also attach
+    the .old logs. (LP: #1221506)
+  * Prompt to restart after installing unity-system-compositor. (LP:
+    #1221209)
+  * Set lifecycle state for clients when setting the active session.
+    (LP: #1192843)
+  * Implement regex blacklist for supported OpenGL drivers (copied from
+    Compiz blacklist). (LP: #1226713)
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 77
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 24 Sep 2013 06:03:44 +0000
+
 unity-system-compositor (0.0.1+13.10.20130903-0ubuntu2) saucy; urgency=low
 
   * Rebuild with distro Mir version
