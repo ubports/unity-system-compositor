@@ -21,6 +21,7 @@ set(USC_VERSION_PATCH 1)
 set(USC_VERSION "${USC_VERSION_MAJOR}.${USC_VERSION_MINOR}.${USC_VERSION_PATCH}")
 
 cmake_minimum_required(VERSION 2.8)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # Set location of outputs
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
@@ -39,5 +40,9 @@ include_directories(${MIRSERVER_INCLUDE_DIRS})
 # Check for boost
 find_package(Boost 1.48.0 COMPONENTS chrono date_time filesystem system thread program_options regex REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
+
+# Check for GL
+find_package(GLESv2 REQUIRED)
+include_directories (${GLESv2_INCLUDE_DIRS})
 
 add_subdirectory(src/)
