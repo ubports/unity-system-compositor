@@ -1,3 +1,13 @@
+unity-system-compositor (0.0.1+13.10.20130925-0ubuntu1) saucy; urgency=low
+
+  [ Michael Terry ]
+  * Bump build dependency on Mir, to rebuild against latest SONAME.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 79
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 25 Sep 2013 10:03:22 +0000
+
 unity-system-compositor (0.0.1+13.10.20130924.1-0ubuntu1) saucy; urgency=low
 
   [ Robert Ancell ]
