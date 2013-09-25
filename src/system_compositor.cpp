@@ -49,7 +49,8 @@ public:
             ("from-dm-fd", po::value<int>(),  "File descriptor of read end of pipe from display manager [int]")
             ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]")
             ("blacklist", po::value<std::string>(), "Video blacklist regex to use")
-            ("version", "Show version of Unity System Compositor");
+            ("version", "Show version of Unity System Compositor")
+            ("public-socket", po::value<bool>(), "Make the socket file publicly writable");
     }
 
     int from_dm_fd()
@@ -72,6 +73,11 @@ public:
         auto x = the_options()->get ("blacklist", "");
         boost::trim(x);
         return x;
+    }
+
+    bool public_socket()
+    {
+        return the_options()->get("public-socket", false);
     }
 
     void parse_options(boost::program_options::options_description& options_description, mir::options::ProgramOption& options) const override
@@ -256,7 +262,7 @@ void SystemCompositor::main()
     // about race condition, since we are adding permissions, not restricting
     // them.
     auto usc_config = std::static_pointer_cast<SystemCompositorServerConfiguration>(config);
-    if (chmod(usc_config->get_socket_file().c_str(), 0777) == -1)
+    if (usc_config->public_socket() && chmod(usc_config->get_socket_file().c_str(), 0777) == -1)
         std::cerr << "Unable to chmod socket file " << usc_config->get_socket_file() << ": " << strerror(errno) << std::endl;
 
     dm_connection->set_handler(this);
