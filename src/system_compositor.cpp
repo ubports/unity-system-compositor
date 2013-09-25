@@ -27,7 +27,9 @@
 #include <mir/shell/focus_setter.h>
 #include <mir/input/cursor_listener.h>
 
+#include <cerrno>
 #include <iostream>
+#include <sys/stat.h>
 #include <thread>
 #include <regex.h>
 #include <GLES2/gl2.h>
@@ -47,7 +49,8 @@ public:
             ("from-dm-fd", po::value<int>(),  "File descriptor of read end of pipe from display manager [int]")
             ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]")
             ("blacklist", po::value<std::string>(), "Video blacklist regex to use")
-            ("version", "Show version of Unity System Compositor");
+            ("version", "Show version of Unity System Compositor")
+            ("public-socket", po::value<bool>(), "Make the socket file publicly writable");
     }
 
     int from_dm_fd()
@@ -70,6 +73,11 @@ public:
         auto x = the_options()->get ("blacklist", "");
         boost::trim(x);
         return x;
+    }
+
+    bool public_socket()
+    {
+        return the_options()->get("public-socket", false);
     }
 
     void parse_options(boost::program_options::options_description& options_description, mir::options::ProgramOption& options) const override
@@ -108,6 +116,12 @@ public:
             SystemCompositor *compositor;
         };
         return std::make_shared<PauseResumeListener>(compositor);
+    }
+
+    std::string get_socket_file()
+    {
+        // the_socket_file is private, so we have to re-implement it here
+        return the_options()->get("file", "/tmp/mir_socket");
     }
 
 private:
@@ -244,6 +258,13 @@ void SystemCompositor::set_next_session(std::string client_name)
 
 void SystemCompositor::main()
 {
+    // Make socket world-writable, since users need to talk to us.  No worries
+    // about race condition, since we are adding permissions, not restricting
+    // them.
+    auto usc_config = std::static_pointer_cast<SystemCompositorServerConfiguration>(config);
+    if (usc_config->public_socket() && chmod(usc_config->get_socket_file().c_str(), 0777) == -1)
+        std::cerr << "Unable to chmod socket file " << usc_config->get_socket_file() << ": " << strerror(errno) << std::endl;
+
     dm_connection->set_handler(this);
     dm_connection->start();
     dm_connection->send_ready();
