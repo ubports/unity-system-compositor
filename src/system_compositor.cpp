@@ -82,6 +82,7 @@ public:
 
     void parse_options(boost::program_options::options_description& options_description, mir::options::ProgramOption& options) const override
     {
+        setenv("MIR_SERVER_STANDALONE", "true", 0); // Default to standalone
         mir::DefaultServerConfiguration::parse_options(options_description, options);
         options.parse_file(options_description, "unity-system-compositor.conf");
     }
