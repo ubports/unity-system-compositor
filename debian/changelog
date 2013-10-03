@@ -1,3 +1,16 @@
+unity-system-compositor (0.0.1+13.10.20131003.1-0ubuntu1) saucy; urgency=low
+
+  [ Michael Terry ]
+  * Default to standalone=true.
+
+  [ Kevin Gunn ]
+  * bump the dependency on mir deb 0.0.13, libmirserver5
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 85
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 03 Oct 2013 06:34:04 +0000
+
 unity-system-compositor (0.0.1+13.10.20130926.1-0ubuntu1) saucy; urgency=low
 
   [ Michael Terry ]
