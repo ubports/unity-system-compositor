@@ -1,3 +1,16 @@
+unity-system-compositor (0.0.1+13.10.20131009.3-0ubuntu1) saucy; urgency=low
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+  [ Kevin Gunn ]
+  * bump mir build dep 0.0.14.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 87
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 09 Oct 2013 23:20:16 +0000
+
 unity-system-compositor (0.0.1+13.10.20131003.1-0ubuntu1) saucy; urgency=low
 
   [ Michael Terry ]
