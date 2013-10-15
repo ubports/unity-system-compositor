@@ -1,3 +1,13 @@
+unity-system-compositor (0.0.1+13.10.20131015-0ubuntu1) saucy; urgency=low
+
+  [ Kevin Gunn ]
+  * bump mir build dep 0.0.15 & libmirserver7.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 89
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 15 Oct 2013 01:06:48 +0000
+
 unity-system-compositor (0.0.1+13.10.20131009.3-0ubuntu1) saucy; urgency=low
 
   [ Ubuntu daily release ]
