@@ -25,6 +25,10 @@
 #include <mir/shell/session.h>
 #include <mir/shell/session_container.h>
 #include <mir/shell/focus_setter.h>
+#include <mir/shell/surface_creation_parameters.h>
+#include <mir/surfaces/depth_id.h>
+#include <mir/surfaces/surface_controller.h>
+#include <mir/surfaces/surface_stack_model.h>
 #include <mir/input/cursor_listener.h>
 
 #include <cerrno>
@@ -36,8 +40,30 @@
 #include <boost/algorithm/string.hpp>
 
 namespace msh = mir::shell;
+namespace ms = mir::surfaces;
 namespace mi = mir::input;
 namespace po = boost::program_options;
+
+class SystemCompositorSurfaceController : public ms::SurfaceController
+{
+public:
+    SystemCompositorSurfaceController(std::shared_ptr<ms::SurfaceStackModel> const& surface_stack)
+        : ms::SurfaceController(surface_stack)
+    {
+    }
+
+    virtual std::weak_ptr<ms::Surface> create_surface(msh::Session *session, msh::SurfaceCreationParameters const& params) override
+    {
+        static ms::DepthId const greeter_surface_depth{1};
+
+        auto depth_params = params;
+        if (session->name().find("greeter-") == 0)
+        {
+            depth_params.depth = greeter_surface_depth;
+        }
+        return surface_stack->create_surface(depth_params);
+    }
+};
 
 class SystemCompositorServerConfiguration : public mir::DefaultServerConfiguration
 {
@@ -119,6 +145,15 @@ public:
         return std::make_shared<PauseResumeListener>(compositor);
     }
 
+    std::shared_ptr<ms::SurfaceController> the_surface_controller() override
+    {
+        return surface_controller(
+            [this]()
+            {
+                return std::make_shared<SystemCompositorSurfaceController>(the_surface_stack_model());
+            });
+    }
+
     std::string get_socket_file()
     {
         // the_socket_file is private, so we have to re-implement it here
@@ -127,6 +162,7 @@ public:
 
 private:
     SystemCompositor *compositor;
+    mir::CachedPtr<ms::SurfaceController> surface_controller;
 };
 
 bool check_blacklist(std::string blacklist, const char *vendor, const char *renderer, const char *version)
@@ -252,7 +288,7 @@ void SystemCompositor::set_next_session(std::string client_name)
     });
 
     if (session)
-        ; // TODO: implement this
+        config->the_shell_focus_setter()->set_focus_to(session); // depth id will keep it separate from greeter
     else
         std::cerr << "Unable to set next session, unknown client name " << client_name << std::endl;
 }
