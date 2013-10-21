@@ -20,7 +20,7 @@
 
 #include <mir/run_mir.h>
 #include <mir/abnormal_exit.h>
-#include <mir/pause_resume_listener.h>
+#include <mir/server_status_listener.h>
 #include <mir/shell/application_session.h>
 #include <mir/shell/session.h>
 #include <mir/shell/session_container.h>
@@ -98,11 +98,11 @@ public:
         return std::make_shared<NullCursorListener>();
     }
 
-    std::shared_ptr<mir::PauseResumeListener> the_pause_resume_listener() override
+    std::shared_ptr<mir::ServerStatusListener> the_server_status_listener() override
     {
-        struct PauseResumeListener : public mir::PauseResumeListener
+        struct ServerStatusListener : public mir::ServerStatusListener
         {
-            PauseResumeListener (SystemCompositor *compositor) : compositor{compositor} {}
+            ServerStatusListener (SystemCompositor *compositor) : compositor{compositor} {}
 
             void paused() override
             {
@@ -114,9 +114,13 @@ public:
                 compositor->resume();
             }
 
+            void started() override
+            {
+            }
+
             SystemCompositor *compositor;
         };
-        return std::make_shared<PauseResumeListener>(compositor);
+        return std::make_shared<ServerStatusListener>(compositor);
     }
 
     std::string get_socket_file()
