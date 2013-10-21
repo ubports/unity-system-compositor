@@ -54,12 +54,17 @@ public:
 
     virtual std::weak_ptr<ms::Surface> create_surface(msh::Session *session, msh::SurfaceCreationParameters const& params) override
     {
+        static ms::DepthId const session_surface_depth{0};
         static ms::DepthId const greeter_surface_depth{1};
 
         auto depth_params = params;
         if (session->name().find("greeter-") == 0)
         {
             depth_params.depth = greeter_surface_depth;
+        }
+        else
+        {
+            depth_params.depth = session_surface_depth;
         }
         return surface_stack->create_surface(depth_params);
     }
