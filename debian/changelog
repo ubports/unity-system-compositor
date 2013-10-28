@@ -1,3 +1,14 @@
+unity-system-compositor (0.0.1+14.04.20131028.1-0ubuntu1) trusty; urgency=low
+
+  [ Michael Terry ]
+  * Mir trunk changed some symbols on us, so we shall follow suit.
+  * Bump required version of Mir to 0.1.0. (LP: #1244192)
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 92
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 28 Oct 2013 18:26:37 +0000
+
 unity-system-compositor (0.0.1+13.10.20131015-0ubuntu1) saucy; urgency=low
 
   [ Kevin Gunn ]
