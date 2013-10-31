@@ -177,7 +177,6 @@ void SystemCompositor::run(int argc, char const** argv)
         return;
     }
 
-    dbus_screen = std::make_shared<DBusScreen>(c);
     dm_connection = std::make_shared<DMConnection>(io_service, c->from_dm_fd(), c->to_dm_fd());
 
     struct ScopeGuard
@@ -271,6 +270,8 @@ void SystemCompositor::main()
     if (usc_config->public_socket() && chmod(usc_config->get_socket_file().c_str(), 0777) == -1)
         std::cerr << "Unable to chmod socket file " << usc_config->get_socket_file() << ": " << strerror(errno) << std::endl;
 
+    dbus_screen = std::make_shared<DBusScreen>(c);
+    
     dm_connection->set_handler(this);
     dm_connection->start();
     dm_connection->send_ready();
