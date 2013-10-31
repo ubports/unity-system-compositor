@@ -177,6 +177,7 @@ void SystemCompositor::run(int argc, char const** argv)
         return;
     }
 
+    dbus_screen = std::make_shared<DBusScreen>(c);
     dm_connection = std::make_shared<DMConnection>(io_service, c->from_dm_fd(), c->to_dm_fd());
 
     struct ScopeGuard

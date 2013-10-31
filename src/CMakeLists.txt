@@ -18,6 +18,8 @@
 add_executable(
   unity-system-compositor
   main.cpp
+  dbus_screen.cpp
+  dbus_screen.h
   dm_connection.cpp
   dm_connection.h
   system_compositor.cpp
@@ -31,8 +33,14 @@ target_link_libraries(unity-system-compositor
   ${Boost_LIBRARIES}
   ${GLESv2_LIBRARIES}
 )
+qt5_use_modules(unity-system-compositor Core DBus)
 
 # Install into bin directory
 install(TARGETS unity-system-compositor
   RUNTIME DESTINATION sbin
+)
+
+# Install data files
+install(FILES com.canonical.Unity.Screen.conf
+  DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/dbus-1/system.d
 )

@@ -19,6 +19,7 @@
 #ifndef SYSTEM_COMPOSITOR_H_
 #define SYSTEM_COMPOSITOR_H_
 
+#include "dbus_screen.h"
 #include "dm_connection.h"
 
 #include <mir/default_server_configuration.h>
@@ -36,6 +37,7 @@ public:
 private:
     std::shared_ptr<mir::DefaultServerConfiguration> config;
     boost::asio::io_service io_service;
+    std::shared_ptr<DBusScreen> dbus_screen;
     std::shared_ptr<DMConnection> dm_connection;
     std::shared_ptr<mir::shell::ApplicationSession> active_session;
 
