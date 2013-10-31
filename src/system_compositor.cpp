@@ -34,6 +34,7 @@
 #include <regex.h>
 #include <GLES2/gl2.h>
 #include <boost/algorithm/string.hpp>
+#include <QCoreApplication>
 
 namespace msh = mir::shell;
 namespace mi = mir::input;
@@ -42,8 +43,8 @@ namespace po = boost::program_options;
 class SystemCompositorServerConfiguration : public mir::DefaultServerConfiguration
 {
 public:
-    SystemCompositorServerConfiguration(SystemCompositor *compositor, int argc, char const** argv)
-        : mir::DefaultServerConfiguration(argc, argv), compositor{compositor}
+    SystemCompositorServerConfiguration(SystemCompositor *compositor, int argc, char **argv)
+        : mir::DefaultServerConfiguration(argc, (char const **)argv), compositor{compositor}
     {
         add_options()
             ("from-dm-fd", po::value<int>(),  "File descriptor of read end of pipe from display manager [int]")
@@ -166,7 +167,7 @@ bool check_blacklist(std::string blacklist, const char *vendor, const char *rend
     return true;
 }
 
-void SystemCompositor::run(int argc, char const** argv)
+void SystemCompositor::run(int argc, char **argv)
 {
     auto c = std::make_shared<SystemCompositorServerConfiguration>(this, argc, argv);
     config = c;
@@ -201,6 +202,7 @@ void SystemCompositor::run(int argc, char const** argv)
                 throw mir::AbnormalExit ("Video driver is blacklisted, exiting");
 
             guard.thread = std::thread(&SystemCompositor::main, this);
+            auto qt_thread = std::thread(&SystemCompositor::qt_main, this, argc, argv);
         });
 }
 
@@ -270,11 +272,16 @@ void SystemCompositor::main()
     if (usc_config->public_socket() && chmod(usc_config->get_socket_file().c_str(), 0777) == -1)
         std::cerr << "Unable to chmod socket file " << usc_config->get_socket_file() << ": " << strerror(errno) << std::endl;
 
-    dbus_screen = std::make_shared<DBusScreen>(c);
-    
     dm_connection->set_handler(this);
     dm_connection->start();
     dm_connection->send_ready();
 
     io_service.run();
+}
+
+void SystemCompositor::qt_main(int argc, char **argv)
+{
+    QCoreApplication app(argc, argv);
+    DBusScreen dbus_screen(config);
+    app.exec();
 }

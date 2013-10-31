@@ -20,7 +20,7 @@
 #include <mir/report_exception.h>
 #include <iostream>
 
-int main(int argc, char const* argv[])
+int main(int argc, char *argv[])
 try
 {
     SystemCompositor system_compositor;
