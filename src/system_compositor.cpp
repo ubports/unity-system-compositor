@@ -189,6 +189,8 @@ void SystemCompositor::run(int argc, char **argv)
         std::thread thread;
     } guard(io_service);
 
+    std::thread qt_thread;
+
     mir::run_mir(*config, [&](mir::DisplayServer&)
         {
             auto vendor = (char *) glGetString(GL_VENDOR);
@@ -202,8 +204,11 @@ void SystemCompositor::run(int argc, char **argv)
                 throw mir::AbnormalExit ("Video driver is blacklisted, exiting");
 
             guard.thread = std::thread(&SystemCompositor::main, this);
-            auto qt_thread = std::thread(&SystemCompositor::qt_main, this, argc, argv);
+            qt_thread = std::thread(&SystemCompositor::qt_main, this, argc, argv);
         });
+
+    if (qt_thread.joinable())
+        qt_thread.join();
 }
 
 void SystemCompositor::pause()
