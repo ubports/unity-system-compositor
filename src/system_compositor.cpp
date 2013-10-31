@@ -16,6 +16,7 @@
  * Authored by: Robert Ancell <robert.ancell@canonical.com>
  */
 
+#include "dbus_screen.h"
 #include "system_compositor.h"
 
 #include <mir/run_mir.h>

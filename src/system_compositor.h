@@ -19,7 +19,6 @@
 #ifndef SYSTEM_COMPOSITOR_H_
 #define SYSTEM_COMPOSITOR_H_
 
-#include "dbus_screen.h"
 #include "dm_connection.h"
 
 #include <mir/default_server_configuration.h>
