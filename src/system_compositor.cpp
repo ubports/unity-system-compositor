@@ -184,13 +184,19 @@ void SystemCompositor::run(int argc, char **argv)
     struct ScopeGuard
     {
         explicit ScopeGuard(boost::asio::io_service& io_service) : io_service(io_service) {}
-        ~ScopeGuard() { io_service.stop(); if (thread.joinable()) thread.join(); }
+        ~ScopeGuard()
+        {
+            io_service.stop();
+            if (io_thread.joinable())
+                io_thread.join();
+            if (qt_thread.joinable())
+                qt_thread.join();
+        }
 
         boost::asio::io_service& io_service;
-        std::thread thread;
+        std::thread io_thread;
+        std::thread qt_thread;
     } guard(io_service);
-
-    std::thread qt_thread;
 
     mir::run_mir(*config, [&](mir::DisplayServer&)
         {
@@ -204,12 +210,9 @@ void SystemCompositor::run(int argc, char **argv)
             if (!check_blacklist(c->blacklist(), vendor, renderer, version))
                 throw mir::AbnormalExit ("Video driver is blacklisted, exiting");
 
-            guard.thread = std::thread(&SystemCompositor::main, this);
-            qt_thread = std::thread(&SystemCompositor::qt_main, this, argc, argv);
+            guard.io_thread = std::thread(&SystemCompositor::main, this);
+            guard.qt_thread = std::thread(&SystemCompositor::qt_main, this, argc, argv);
         });
-
-    if (qt_thread.joinable())
-        qt_thread.join();
 }
 
 void SystemCompositor::pause()
