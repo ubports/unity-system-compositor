@@ -33,7 +33,8 @@ class DBusScreen : public QObject
 public:
     explicit DBusScreen(std::shared_ptr<mir::DefaultServerConfiguration> config, QObject *parent = 0);
 
-    Q_INVOKABLE Q_SCRIPTABLE bool setScreenPowerMode(const QString &mode);
+public Q_SLOTS:
+    bool setScreenPowerMode(const QString &mode);
 
 private:
     std::shared_ptr<mir::DefaultServerConfiguration> config;

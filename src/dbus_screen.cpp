@@ -15,6 +15,7 @@
  */
 
 #include "dbus_screen.h"
+#include "dbus_screen_adaptor.h"
 
 #include <mir/default_server_configuration.h>
 #include <mir/graphics/display.h>
@@ -30,11 +31,10 @@ DBusScreen::DBusScreen(std::shared_ptr<mir::DefaultServerConfiguration> config, 
     : QObject(parent)
     , config(config)
 {
-    QDBusConnection::systemBus().registerService("com.canonical.Unity.Screen");
-    // TODO ExportScriptableSlots shouldn't be needed but without it I don't get the methods :-/
-    QDBusConnection::systemBus().registerObject("/com/canonical/Unity/Screen", this,
-                                                QDBusConnection::ExportScriptableSlots |
-                                                QDBusConnection::ExportScriptableInvokables );
+    new DBusScreenAdaptor(this);
+    QDBusConnection bus = QDBusConnection::systemBus();
+    bus.registerObject("/com/canonical/Unity/Screen", this);
+    bus.registerService("com.canonical.Unity.Screen");
 }
 
 bool DBusScreen::setScreenPowerMode(const QString &mode)

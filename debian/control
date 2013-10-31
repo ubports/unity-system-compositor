@@ -14,6 +14,7 @@ Build-Depends: cmake,
                python-setuptools,
                qt5-default,
                qtbase5-dev,
+               qtbase5-dev-tools,
 Standards-Version: 3.9.4
 Homepage: https://launchpad.net/unity-system-compositor
 # If you aren't a member of ~unity-team but need to upload packaging changes,
