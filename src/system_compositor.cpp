@@ -79,7 +79,7 @@ public:
 
     bool public_socket()
     {
-        return the_options()->get("public-socket", false);
+        return !the_options()->is_set("no-file") && the_options()->get("public-socket", true);
     }
 
     void parse_options(boost::program_options::options_description& options_description, mir::options::ProgramOption& options) const override
