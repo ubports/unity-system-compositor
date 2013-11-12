@@ -1,3 +1,9 @@
+unity-system-compositor (0.0.2-0ubuntu1) UNRELEASED; urgency=low
+
+  * Bump version to 0.0.2, so we can reference it in debian/control
+
+ -- Michael Terry <mterry@ubuntu.com>  Tue, 12 Nov 2013 10:31:06 -0500
+
 unity-system-compositor (0.0.1+14.04.20131028.1-0ubuntu1) trusty; urgency=low
 
   [ Michael Terry ]
