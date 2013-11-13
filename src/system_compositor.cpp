@@ -23,7 +23,7 @@
 #include <mir/server_status_listener.h>
 #include <mir/shell/session.h>
 #include <mir/shell/session_container.h>
-#include <mir/shell/focus_setter.h>
+#include <mir/shell/focus_controller.h>
 #include <mir/input/cursor_listener.h>
 
 #include <cerrno>
@@ -236,7 +236,7 @@ void SystemCompositor::set_active_session(std::string client_name)
     });
 
     if (active_session)
-        config->the_shell_focus_setter()->set_focus_to(active_session);
+        config->the_focus_controller()->set_focus_to(active_session);
     else
         std::cerr << "Unable to set active session, unknown client name " << client_name << std::endl;
 }

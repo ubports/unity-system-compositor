@@ -36,6 +36,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 find_package(PkgConfig)
 pkg_check_modules(MIRSERVER REQUIRED mirserver)
 include_directories(${MIRSERVER_INCLUDE_DIRS})
+link_directories(${MIRSERVER_LIBRARY_DIRS})
 
 # Check for boost
 find_package(Boost 1.48.0 COMPONENTS chrono date_time filesystem system thread program_options regex REQUIRED)
