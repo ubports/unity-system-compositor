@@ -21,10 +21,10 @@
 
 #include "dm_connection.h"
 
-#include <mir/default_server_configuration.h>
-#include <mir/shell/session.h>
+namespace mir { namespace shell { class Session; } }
 
-class Configuration;
+class SystemCompositorShell;
+class SystemCompositorServerConfiguration;
 
 class SystemCompositor : public DMMessageHandler
 {
@@ -34,7 +34,8 @@ public:
     void resume();
 
 private:
-    std::shared_ptr<mir::DefaultServerConfiguration> config;
+    std::shared_ptr<SystemCompositorServerConfiguration> config;
+    std::shared_ptr<SystemCompositorShell> shell;
     boost::asio::io_service io_service;
     std::shared_ptr<DMConnection> dm_connection;
     std::shared_ptr<mir::shell::Session> active_session;
