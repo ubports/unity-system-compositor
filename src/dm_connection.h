@@ -28,13 +28,6 @@ public:
     virtual void set_next_session(std::string client_name) = 0;
 };
 
-class NullDMMessageHandler : public DMMessageHandler
-{
-public:
-    void set_active_session(std::string client_name) {};
-    void set_next_session(std::string client_name) {};
-};
-
 enum class USCMessageID
 {
     ping = 0,
