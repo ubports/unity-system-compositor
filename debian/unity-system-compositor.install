@@ -1,3 +1,5 @@
 debian/source_unity-system-compositor.py usr/share/apport/package-hooks
 debian/unity-system-compositor.sleep usr/sbin/
+etc/dbus-1/system.d/com.canonical.Unity.Screen.conf
 usr/sbin/unity-system-compositor
+usr/share/dbus-1/interfaces/com.canonical.Unity.Screen.xml

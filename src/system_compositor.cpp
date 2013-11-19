@@ -16,6 +16,7 @@
  * Authored by: Robert Ancell <robert.ancell@canonical.com>
  */
 
+#include "dbus_screen.h"
 #include "system_compositor.h"
 
 #include <mir/run_mir.h>
@@ -34,6 +35,7 @@
 #include <regex.h>
 #include <GLES2/gl2.h>
 #include <boost/algorithm/string.hpp>
+#include <QCoreApplication>
 
 namespace msh = mir::shell;
 namespace mi = mir::input;
@@ -42,8 +44,8 @@ namespace po = boost::program_options;
 class SystemCompositorServerConfiguration : public mir::DefaultServerConfiguration
 {
 public:
-    SystemCompositorServerConfiguration(SystemCompositor *compositor, int argc, char const** argv)
-        : mir::DefaultServerConfiguration(argc, argv), compositor{compositor}
+    SystemCompositorServerConfiguration(SystemCompositor *compositor, int argc, char **argv)
+        : mir::DefaultServerConfiguration(argc, (char const **)argv), compositor{compositor}
     {
         add_options()
             ("from-dm-fd", po::value<int>(),  "File descriptor of read end of pipe from display manager [int]")
@@ -166,7 +168,7 @@ bool check_blacklist(std::string blacklist, const char *vendor, const char *rend
     return true;
 }
 
-void SystemCompositor::run(int argc, char const** argv)
+void SystemCompositor::run(int argc, char **argv)
 {
     auto c = std::make_shared<SystemCompositorServerConfiguration>(this, argc, argv);
     config = c;
@@ -182,10 +184,18 @@ void SystemCompositor::run(int argc, char const** argv)
     struct ScopeGuard
     {
         explicit ScopeGuard(boost::asio::io_service& io_service) : io_service(io_service) {}
-        ~ScopeGuard() { io_service.stop(); if (thread.joinable()) thread.join(); }
+        ~ScopeGuard()
+        {
+            io_service.stop();
+            if (io_thread.joinable())
+                io_thread.join();
+            if (qt_thread.joinable())
+                qt_thread.join();
+        }
 
         boost::asio::io_service& io_service;
-        std::thread thread;
+        std::thread io_thread;
+        std::thread qt_thread;
     } guard(io_service);
 
     mir::run_mir(*config, [&](mir::DisplayServer&)
@@ -200,7 +210,8 @@ void SystemCompositor::run(int argc, char const** argv)
             if (!check_blacklist(c->blacklist(), vendor, renderer, version))
                 throw mir::AbnormalExit ("Video driver is blacklisted, exiting");
 
-            guard.thread = std::thread(&SystemCompositor::main, this);
+            guard.io_thread = std::thread(&SystemCompositor::main, this);
+            guard.qt_thread = std::thread(&SystemCompositor::qt_main, this, argc, argv);
         });
 }
 
@@ -275,4 +286,11 @@ void SystemCompositor::main()
     dm_connection->send_ready();
 
     io_service.run();
+}
+
+void SystemCompositor::qt_main(int argc, char **argv)
+{
+    QCoreApplication app(argc, argv);
+    DBusScreen dbus_screen(config);
+    app.exec();
 }
