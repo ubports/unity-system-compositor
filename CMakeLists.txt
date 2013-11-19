@@ -17,7 +17,7 @@
 project(UnitySystemCompisitor)
 set(USC_VERSION_MAJOR 0)
 set(USC_VERSION_MINOR 0)
-set(USC_VERSION_PATCH 1)
+set(USC_VERSION_PATCH 2)
 set(USC_VERSION "${USC_VERSION_MAJOR}.${USC_VERSION_MINOR}.${USC_VERSION_PATCH}")
 
 cmake_minimum_required(VERSION 2.8)
@@ -40,6 +40,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 find_package(PkgConfig)
 pkg_check_modules(MIRSERVER REQUIRED mirserver)
 include_directories(${MIRSERVER_INCLUDE_DIRS})
+link_directories(${MIRSERVER_LIBRARY_DIRS})
 
 find_package(Qt5Core)
 find_package(Qt5DBus)
