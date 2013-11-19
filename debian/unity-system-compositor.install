@@ -1,4 +1,4 @@
-usr/sbin/unity-system-compositor
 debian/10-unity-system-compositor.conf /etc/lightdm/lightdm.conf.d
-debian/unity-system-compositor.sleep usr/sbin/
 debian/source_unity-system-compositor.py usr/share/apport/package-hooks
+debian/unity-system-compositor.sleep usr/sbin/
+usr/sbin/unity-system-compositor
