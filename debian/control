@@ -27,8 +27,7 @@ Vcs-Bzr: lp:unity-system-compositor
 
 Package: unity-system-compositor
 Architecture: any
-Depends: xserver-xorg-xmir,
-         ${misc:Depends},
+Depends: ${misc:Depends},
          ${shlibs:Depends},
 Description: System compositor for Ubuntu
  System compositor used by the Mir display server in Ubuntu. If the Unity
