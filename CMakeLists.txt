@@ -17,7 +17,7 @@
 project(UnitySystemCompisitor)
 set(USC_VERSION_MAJOR 0)
 set(USC_VERSION_MINOR 0)
-set(USC_VERSION_PATCH 1)
+set(USC_VERSION_PATCH 2)
 set(USC_VERSION "${USC_VERSION_MAJOR}.${USC_VERSION_MINOR}.${USC_VERSION_PATCH}")
 
 cmake_minimum_required(VERSION 2.8)
