@@ -1,8 +1,28 @@
-unity-system-compositor (0.0.2-0ubuntu1) UNRELEASED; urgency=low
+unity-system-compositor (0.0.2+14.04.20131120.1-0ubuntu1) trusty; urgency=low
 
+  [ Michael Terry ]
   * Bump version to 0.0.2, so we can reference it in debian/control
+  * Default to a public file socket, if one is used.
+  * Clean some lintian warnings.
+  * Add DBus interface for com.canonical.Unity.Screen to USC.
 
- -- Michael Terry <mterry@ubuntu.com>  Tue, 12 Nov 2013 10:31:06 -0500
+  [ Alan Griffiths ]
+  * Use the Mir libraries detected by pkg_check_modules
+
+  [ Timo Jyrinki ]
+  * Clean the moved conffile when upgrading from previous version. (LP:
+    #1253008). (LP: #1253008)
+
+  [ Kevin Gunn ]
+  * mir server abi and api broke, updating dependency to deb 0.1.1
+
+  [ Robert Bruce Park ]
+  * Stop depending on libboost-all-dev, it is verboten.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 101
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 20 Nov 2013 11:17:20 +0000
 
 unity-system-compositor (0.0.1+14.04.20131028.1-0ubuntu1) trusty; urgency=low
 
