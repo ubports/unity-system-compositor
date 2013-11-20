@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+if [ "$1" = upgrade ] ; then
+    if dpkg --compare-versions "$2" eq "0.0.1+14.04.20131028.1-0ubuntu1" ; then
+        conffile=/etc/lightdm/lightdm.conf.d/10-unity-system-compositor.conf
+        [ -f $conffile ] && rm -f $conffile
+    fi
+fi
+exit 0
+
+#DEBHELPER#
