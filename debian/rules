@@ -3,6 +3,11 @@
 %:
 	dh $@ --parallel --fail-missing --with python2
 
+override_dh_auto_configure:
+	# Debian defines CMAKE_INSTALL_SYSCONFDIR as /usr/etc, which is wrong.
+	# So until Debian bug 719148 is fixed, do it ourselves.
+	dh_auto_configure -- -DCMAKE_INSTALL_SYSCONFDIR=/etc
+
 override_dh_install:
 	# install autopilot tests
 	cd tests/autopilot; \
