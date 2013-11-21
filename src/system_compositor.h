@@ -22,7 +22,7 @@
 #include "dm_connection.h"
 
 #include <mir/default_server_configuration.h>
-#include <mir/shell/application_session.h>
+#include <mir/shell/session.h>
 
 class Configuration;
 
@@ -37,7 +37,7 @@ private:
     std::shared_ptr<mir::DefaultServerConfiguration> config;
     boost::asio::io_service io_service;
     std::shared_ptr<DMConnection> dm_connection;
-    std::shared_ptr<mir::shell::ApplicationSession> active_session;
+    std::shared_ptr<mir::shell::Session> active_session;
 
     void set_active_session(std::string client_name);
     void set_next_session(std::string client_name);

@@ -22,10 +22,9 @@
 #include <mir/run_mir.h>
 #include <mir/abnormal_exit.h>
 #include <mir/server_status_listener.h>
-#include <mir/shell/application_session.h>
 #include <mir/shell/session.h>
 #include <mir/shell/session_container.h>
-#include <mir/shell/focus_setter.h>
+#include <mir/shell/focus_controller.h>
 #include <mir/input/cursor_listener.h>
 
 #include <cerrno>
@@ -238,19 +237,17 @@ void SystemCompositor::set_active_session(std::string client_name)
     active_session.reset();
     config->the_shell_session_container()->for_each([&](std::shared_ptr<msh::Session> const& s)
     {
-        auto app_session(std::static_pointer_cast<msh::ApplicationSession>(s));
-
         if (s->name() == client_name)
         {
-            app_session->set_lifecycle_state(mir_lifecycle_state_resumed);
-            active_session = app_session;
+            s->set_lifecycle_state(mir_lifecycle_state_resumed);
+            active_session = s;
         }
         else
-            app_session->set_lifecycle_state(mir_lifecycle_state_will_suspend);
+            s->set_lifecycle_state(mir_lifecycle_state_will_suspend);
     });
 
     if (active_session)
-        config->the_shell_focus_setter()->set_focus_to(active_session);
+        config->the_focus_controller()->set_focus_to(active_session);
     else
         std::cerr << "Unable to set active session, unknown client name " << client_name << std::endl;
 }
