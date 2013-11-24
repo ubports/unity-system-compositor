@@ -14,14 +14,31 @@
 #
 # Authored by: Robert Ancell <robert.ancell@canonical.com>
 
-# Compile system compositor
-add_executable(
-  unity-system-compositor
+set(USC_SRCS
   main.cpp
+  dbus_screen.cpp
+  dbus_screen.h
   dm_connection.cpp
   dm_connection.h
   system_compositor.cpp
   system_compositor.h
+)
+
+qt5_generate_dbus_interface(dbus_screen.h com.canonical.Unity.Screen.xml)
+qt5_add_dbus_adaptor(USC_SRCS
+                     ${CMAKE_CURRENT_BINARY_DIR}/com.canonical.Unity.Screen.xml
+                     dbus_screen.h DBusScreen
+                     dbus_screen_adaptor DBusScreenAdaptor)
+
+# Compile system compositor
+add_executable(
+  unity-system-compositor
+  ${USC_SRCS}
+)
+
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 # Link against libmirserver
@@ -31,8 +48,17 @@ target_link_libraries(unity-system-compositor
   ${Boost_LIBRARIES}
   ${GLESv2_LIBRARIES}
 )
+qt5_use_modules(unity-system-compositor Core DBus)
 
 # Install into bin directory
 install(TARGETS unity-system-compositor
   RUNTIME DESTINATION sbin
+)
+
+# Install data files
+install(FILES com.canonical.Unity.Screen.conf
+  DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/dbus-1/system.d
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/com.canonical.Unity.Screen.xml
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/dbus-1/interfaces
 )

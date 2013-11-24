@@ -12,24 +12,32 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * Authored by: Robert Ancell <robert.ancell@canonical.com>
  */
 
-#include "system_compositor.h"
-#include <mir/report_exception.h>
-#include <iostream>
+#ifndef DBUS_SCREEN_H_
+#define DBUS_SCREEN_H_
 
-int main(int argc, char *argv[])
-try
-{
-    SystemCompositor system_compositor;
-    system_compositor.run(argc, argv);
+#include <memory>
+#include <QObject>
 
-    return 0;
-}
-catch (...)
+namespace mir
 {
-    mir::report_exception(std::cerr);
-    return 1;
+    class DefaultServerConfiguration;
 }
+
+class DBusScreen : public QObject
+{
+    Q_OBJECT
+    Q_CLASSINFO("D-Bus Interface", "com.canonical.Unity.Screen")
+
+public:
+    explicit DBusScreen(std::shared_ptr<mir::DefaultServerConfiguration> config, QObject *parent = 0);
+
+public Q_SLOTS:
+    bool setScreenPowerMode(const QString &mode);
+
+private:
+    std::shared_ptr<mir::DefaultServerConfiguration> config;
+};
+
+#endif /* DBUS_SCREEN_H_ */

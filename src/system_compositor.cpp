@@ -16,19 +16,18 @@
  * Authored by: Robert Ancell <robert.ancell@canonical.com>
  */
 
+#include "dbus_screen.h"
 #include "system_compositor.h"
 
 #include <mir/run_mir.h>
 #include <mir/abnormal_exit.h>
-#include <mir/pause_resume_listener.h>
-#include <mir/shell/application_session.h>
+#include <mir/server_status_listener.h>
 #include <mir/shell/session.h>
 #include <mir/shell/session_container.h>
-#include <mir/shell/focus_setter.h>
+#include <mir/shell/focus_controller.h>
 #include <mir/shell/surface_creation_parameters.h>
 #include <mir/surfaces/depth_id.h>
 #include <mir/surfaces/surface_controller.h>
-#include <mir/surfaces/surface_stack_model.h>
 #include <mir/input/cursor_listener.h>
 
 #include <cerrno>
@@ -38,6 +37,7 @@
 #include <regex.h>
 #include <GLES2/gl2.h>
 #include <boost/algorithm/string.hpp>
+#include <QCoreApplication>
 
 namespace msh = mir::shell;
 namespace ms = mir::surfaces;
@@ -66,15 +66,15 @@ public:
         {
             depth_params.depth = session_surface_depth;
         }
-        return surface_stack->create_surface(depth_params);
+        return ms::SurfaceController::create_surface(session, depth_params);
     }
 };
 
 class SystemCompositorServerConfiguration : public mir::DefaultServerConfiguration
 {
 public:
-    SystemCompositorServerConfiguration(SystemCompositor *compositor, int argc, char const** argv)
-        : mir::DefaultServerConfiguration(argc, argv), compositor{compositor}
+    SystemCompositorServerConfiguration(SystemCompositor *compositor, int argc, char **argv)
+        : mir::DefaultServerConfiguration(argc, (char const **)argv), compositor{compositor}
     {
         add_options()
             ("from-dm-fd", po::value<int>(),  "File descriptor of read end of pipe from display manager [int]")
@@ -108,7 +108,7 @@ public:
 
     bool public_socket()
     {
-        return the_options()->get("public-socket", false);
+        return !the_options()->is_set("no-file") && the_options()->get("public-socket", true);
     }
 
     void parse_options(boost::program_options::options_description& options_description, mir::options::ProgramOption& options) const override
@@ -129,11 +129,11 @@ public:
         return std::make_shared<NullCursorListener>();
     }
 
-    std::shared_ptr<mir::PauseResumeListener> the_pause_resume_listener() override
+    std::shared_ptr<mir::ServerStatusListener> the_server_status_listener() override
     {
-        struct PauseResumeListener : public mir::PauseResumeListener
+        struct ServerStatusListener : public mir::ServerStatusListener
         {
-            PauseResumeListener (SystemCompositor *compositor) : compositor{compositor} {}
+            ServerStatusListener (SystemCompositor *compositor) : compositor{compositor} {}
 
             void paused() override
             {
@@ -145,9 +145,13 @@ public:
                 compositor->resume();
             }
 
+            void started() override
+            {
+            }
+
             SystemCompositor *compositor;
         };
-        return std::make_shared<PauseResumeListener>(compositor);
+        return std::make_shared<ServerStatusListener>(compositor);
     }
 
     std::shared_ptr<ms::SurfaceController> the_surface_controller() override
@@ -203,7 +207,7 @@ bool check_blacklist(std::string blacklist, const char *vendor, const char *rend
     return true;
 }
 
-void SystemCompositor::run(int argc, char const** argv)
+void SystemCompositor::run(int argc, char **argv)
 {
     auto c = std::make_shared<SystemCompositorServerConfiguration>(this, argc, argv);
     config = c;
@@ -219,10 +223,18 @@ void SystemCompositor::run(int argc, char const** argv)
     struct ScopeGuard
     {
         explicit ScopeGuard(boost::asio::io_service& io_service) : io_service(io_service) {}
-        ~ScopeGuard() { io_service.stop(); if (thread.joinable()) thread.join(); }
+        ~ScopeGuard()
+        {
+            io_service.stop();
+            if (io_thread.joinable())
+                io_thread.join();
+            if (qt_thread.joinable())
+                qt_thread.join();
+        }
 
         boost::asio::io_service& io_service;
-        std::thread thread;
+        std::thread io_thread;
+        std::thread qt_thread;
     } guard(io_service);
 
     mir::run_mir(*config, [&](mir::DisplayServer&)
@@ -237,7 +249,8 @@ void SystemCompositor::run(int argc, char const** argv)
             if (!check_blacklist(c->blacklist(), vendor, renderer, version))
                 throw mir::AbnormalExit ("Video driver is blacklisted, exiting");
 
-            guard.thread = std::thread(&SystemCompositor::main, this);
+            guard.io_thread = std::thread(&SystemCompositor::main, this);
+            guard.qt_thread = std::thread(&SystemCompositor::qt_main, this, argc, argv);
         });
 }
 
@@ -264,19 +277,17 @@ void SystemCompositor::set_active_session(std::string client_name)
     active_session.reset();
     config->the_shell_session_container()->for_each([&](std::shared_ptr<msh::Session> const& s)
     {
-        auto app_session(std::static_pointer_cast<msh::ApplicationSession>(s));
-
         if (s->name() == client_name)
         {
-            app_session->set_lifecycle_state(mir_lifecycle_state_resumed);
-            active_session = app_session;
+            s->set_lifecycle_state(mir_lifecycle_state_resumed);
+            active_session = s;
         }
         else
-            app_session->set_lifecycle_state(mir_lifecycle_state_will_suspend);
+            s->set_lifecycle_state(mir_lifecycle_state_will_suspend);
     });
 
     if (active_session)
-        config->the_shell_focus_setter()->set_focus_to(active_session);
+        config->the_focus_controller()->set_focus_to(active_session);
     else
         std::cerr << "Unable to set active session, unknown client name " << client_name << std::endl;
 }
@@ -293,7 +304,7 @@ void SystemCompositor::set_next_session(std::string client_name)
     });
 
     if (session)
-        config->the_shell_focus_setter()->set_focus_to(session); // depth id will keep it separate from greeter
+        config->the_focus_controller()->set_focus_to(session); // depth id will keep it separate from greeter
     else
         std::cerr << "Unable to set next session, unknown client name " << client_name << std::endl;
 }
@@ -312,4 +323,11 @@ void SystemCompositor::main()
     dm_connection->send_ready();
 
     io_service.run();
+}
+
+void SystemCompositor::qt_main(int argc, char **argv)
+{
+    QCoreApplication app(argc, argv);
+    DBusScreen dbus_screen(config);
+    app.exec();
 }

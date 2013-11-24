@@ -17,17 +17,21 @@
 project(UnitySystemCompisitor)
 set(USC_VERSION_MAJOR 0)
 set(USC_VERSION_MINOR 0)
-set(USC_VERSION_PATCH 1)
+set(USC_VERSION_PATCH 2)
 set(USC_VERSION "${USC_VERSION_MAJOR}.${USC_VERSION_MINOR}.${USC_VERSION_PATCH}")
 
 cmake_minimum_required(VERSION 2.8)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+include(GNUInstallDirs)
 
 # Set location of outputs
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
 
 add_definitions(-DUSC_VERSION="${USC_VERSION}")
+
+set(CMAKE_AUTOMOC ON)
 
 # Use C++11 and warnings
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
@@ -36,6 +40,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 find_package(PkgConfig)
 pkg_check_modules(MIRSERVER REQUIRED mirserver)
 include_directories(${MIRSERVER_INCLUDE_DIRS})
+link_directories(${MIRSERVER_LIBRARY_DIRS})
+
+find_package(Qt5Core)
+find_package(Qt5DBus)
 
 # Check for boost
 find_package(Boost 1.48.0 COMPONENTS chrono date_time filesystem system thread program_options regex REQUIRED)
