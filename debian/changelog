@@ -1,3 +1,19 @@
+unity-system-compositor (0.0.2+14.04.20131128.2-0ubuntu1) trusty; urgency=low
+
+  [ Kevin Gunn ]
+  * update mir build dep debian 0.1.2
+
+  [ Alan Griffiths ]
+  * ApplicationSession is a Mir implementation class that shouldn't be
+    used by USC. Use shell::Session instead.
+  * Implement a SystemCompositorShell to keep track of sessions instead
+    of abusing the (soon to be private) mir::shellSessionContainer.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 105
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 28 Nov 2013 17:20:31 +0000
+
 unity-system-compositor (0.0.2+14.04.20131120.1-0ubuntu1) trusty; urgency=low
 
   [ Michael Terry ]
