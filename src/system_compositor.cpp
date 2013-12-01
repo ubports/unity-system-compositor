@@ -21,13 +21,13 @@
 
 #include <mir/run_mir.h>
 #include <mir/abnormal_exit.h>
+#include <mir/default_server_configuration.h>
+#include <mir/frontend/shell.h>
+#include <mir/scene/depth_id.h>
 #include <mir/server_status_listener.h>
 #include <mir/shell/session.h>
-#include <mir/shell/session_container.h>
 #include <mir/shell/focus_controller.h>
 #include <mir/shell/surface_creation_parameters.h>
-#include <mir/surfaces/depth_id.h>
-#include <mir/surfaces/surface_controller.h>
 #include <mir/input/cursor_listener.h>
 
 #include <cerrno>
@@ -40,19 +40,40 @@
 #include <QCoreApplication>
 
 namespace msh = mir::shell;
-namespace ms = mir::surfaces;
+namespace mf = mir::frontend;
 namespace mi = mir::input;
+namespace ms = mir::scene;
 namespace po = boost::program_options;
 
-class SystemCompositorSurfaceController : public ms::SurfaceController
+class SystemCompositorShell : public mf::Shell
 {
 public:
-    SystemCompositorSurfaceController(std::shared_ptr<ms::SurfaceStackModel> const& surface_stack)
-        : ms::SurfaceController(surface_stack)
+    SystemCompositorShell(std::shared_ptr<mf::Shell> const& self) : self(self) {}
+
+    std::shared_ptr<mf::Session> session_named(std::string const& name)
     {
+        return sessions[name];
     }
 
-    virtual std::weak_ptr<ms::Surface> create_surface(msh::Session *session, msh::SurfaceCreationParameters const& params) override
+private:
+    std::shared_ptr<mf::Session> open_session(
+        std::string const& name,
+        std::shared_ptr<mf::EventSink> const& sink)
+    {
+        auto result = self->open_session(name, sink);
+        sessions[name] = result;
+        return result;
+    }
+
+    void close_session(std::shared_ptr<mf::Session> const& session)
+    {
+        sessions.erase(session->name());
+        self->close_session(session);
+    }
+
+    mf::SurfaceId create_surface_for(
+        std::shared_ptr<mf::Session> const& session,
+        msh::SurfaceCreationParameters const& params)
     {
         static ms::DepthId const session_surface_depth{0};
         static ms::DepthId const greeter_surface_depth{1};
@@ -66,8 +87,17 @@ public:
         {
             depth_params.depth = session_surface_depth;
         }
-        return ms::SurfaceController::create_surface(session, depth_params);
+
+        return self->create_surface_for(session, depth_params);
     }
+
+    void handle_surface_created(std::shared_ptr<mf::Session> const& session)
+    {
+        self->handle_surface_created(session);
+    }
+
+    std::shared_ptr<mf::Shell> const self;
+    std::map<std::string, std::shared_ptr<mf::Session>> sessions;
 };
 
 class SystemCompositorServerConfiguration : public mir::DefaultServerConfiguration
@@ -154,24 +184,30 @@ public:
         return std::make_shared<ServerStatusListener>(compositor);
     }
 
-    std::shared_ptr<ms::SurfaceController> the_surface_controller() override
-    {
-        return surface_controller(
-            [this]()
-            {
-                return std::make_shared<SystemCompositorSurfaceController>(the_surface_stack_model());
-            });
-    }
-
     std::string get_socket_file()
     {
         // the_socket_file is private, so we have to re-implement it here
         return the_options()->get("file", "/tmp/mir_socket");
     }
 
+    std::shared_ptr<SystemCompositorShell> the_system_compositor_shell()
+    {
+        return sc_shell([this]
+        {
+            return std::make_shared<SystemCompositorShell>(
+                mir::DefaultServerConfiguration::the_frontend_shell());
+        });
+    }
+
 private:
+    mir::CachedPtr<SystemCompositorShell> sc_shell;
+
+    std::shared_ptr<mf::Shell> the_frontend_shell() override
+    {
+        return the_system_compositor_shell();
+    }
+
     SystemCompositor *compositor;
-    mir::CachedPtr<ms::SurfaceController> surface_controller;
 };
 
 bool check_blacklist(std::string blacklist, const char *vendor, const char *renderer, const char *version)
@@ -209,16 +245,15 @@ bool check_blacklist(std::string blacklist, const char *vendor, const char *rend
 
 void SystemCompositor::run(int argc, char **argv)
 {
-    auto c = std::make_shared<SystemCompositorServerConfiguration>(this, argc, argv);
-    config = c;
+    config = std::make_shared<SystemCompositorServerConfiguration>(this, argc, argv);
   
-    if (c->show_version())
+    if (config->show_version())
     {
         std::cerr << "unity-system-compositor " << USC_VERSION << std::endl;
         return;
     }
 
-    dm_connection = std::make_shared<DMConnection>(io_service, c->from_dm_fd(), c->to_dm_fd());
+    dm_connection = std::make_shared<DMConnection>(io_service, config->from_dm_fd(), config->to_dm_fd());
 
     struct ScopeGuard
     {
@@ -246,9 +281,10 @@ void SystemCompositor::run(int argc, char **argv)
             std::cerr << "GL_RENDERER = " << renderer << std::endl;
             std::cerr << "GL_VERSION = " << version << std::endl;
 
-            if (!check_blacklist(c->blacklist(), vendor, renderer, version))
+            if (!check_blacklist(config->blacklist(), vendor, renderer, version))
                 throw mir::AbnormalExit ("Video driver is blacklisted, exiting");
 
+            shell = config->the_system_compositor_shell();
             guard.io_thread = std::thread(&SystemCompositor::main, this);
             guard.qt_thread = std::thread(&SystemCompositor::qt_main, this, argc, argv);
         });
@@ -274,17 +310,7 @@ void SystemCompositor::set_active_session(std::string client_name)
 {
     std::cerr << "set_active_session" << std::endl;
 
-    active_session.reset();
-    config->the_shell_session_container()->for_each([&](std::shared_ptr<msh::Session> const& s)
-    {
-        if (s->name() == client_name)
-        {
-            s->set_lifecycle_state(mir_lifecycle_state_resumed);
-            active_session = s;
-        }
-        else
-            s->set_lifecycle_state(mir_lifecycle_state_will_suspend);
-    });
+    active_session = std::static_pointer_cast<mir::shell::Session>(shell->session_named(client_name));
 
     if (active_session)
         config->the_focus_controller()->set_focus_to(active_session);
@@ -296,14 +322,7 @@ void SystemCompositor::set_next_session(std::string client_name)
 {
     std::cerr << "set_next_session" << std::endl;
 
-    std::shared_ptr<msh::Session> session;
-    config->the_shell_session_container()->for_each([&client_name, &session](std::shared_ptr<msh::Session> const& s)
-    {
-        if (s->name() == client_name)
-            session = s;
-    });
-
-    if (session)
+    if (auto const session = std::static_pointer_cast<mir::shell::Session>(shell->session_named(client_name)))
         config->the_focus_controller()->set_focus_to(session); // depth id will keep it separate from greeter
     else
         std::cerr << "Unable to set next session, unknown client name " << client_name << std::endl;
@@ -314,9 +333,8 @@ void SystemCompositor::main()
     // Make socket world-writable, since users need to talk to us.  No worries
     // about race condition, since we are adding permissions, not restricting
     // them.
-    auto usc_config = std::static_pointer_cast<SystemCompositorServerConfiguration>(config);
-    if (usc_config->public_socket() && chmod(usc_config->get_socket_file().c_str(), 0777) == -1)
-        std::cerr << "Unable to chmod socket file " << usc_config->get_socket_file() << ": " << strerror(errno) << std::endl;
+    if (config->public_socket() && chmod(config->get_socket_file().c_str(), 0777) == -1)
+        std::cerr << "Unable to chmod socket file " << config->get_socket_file() << ": " << strerror(errno) << std::endl;
 
     dm_connection->set_handler(this);
     dm_connection->start();
