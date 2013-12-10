@@ -28,6 +28,7 @@
 #include <mir/shell/session.h>
 #include <mir/shell/focus_controller.h>
 #include <mir/shell/surface_creation_parameters.h>
+#include <mir/shell/surface_factory.h>
 #include <mir/input/cursor_listener.h>
 
 #include <cerrno>
@@ -75,6 +76,29 @@ private:
         std::shared_ptr<mf::Session> const& session,
         msh::SurfaceCreationParameters const& params)
     {
+        return self->create_surface_for(session, params);
+    }
+
+    void handle_surface_created(std::shared_ptr<mf::Session> const& session)
+    {
+        self->handle_surface_created(session);
+    }
+
+    std::shared_ptr<mf::Shell> const self;
+    std::map<std::string, std::shared_ptr<mf::Session>> sessions;
+};
+
+class SystemCompositorSurfaceFactory : public msh::SurfaceFactory
+{
+public:
+    SystemCompositorSurfaceFactory(std::shared_ptr<msh::SurfaceFactory> const& self) : self(self) {}
+
+    std::shared_ptr<msh::Surface> create_surface(
+        msh::Session* session,
+        msh::SurfaceCreationParameters const& params,
+        mf::SurfaceId id,
+        std::shared_ptr<mf::EventSink> const& sink)
+    {
         static ms::DepthId const session_surface_depth{0};
         static ms::DepthId const greeter_surface_depth{1};
 
@@ -88,16 +112,11 @@ private:
             depth_params.depth = session_surface_depth;
         }
 
-        return self->create_surface_for(session, depth_params);
+        return self->create_surface(session, depth_params, id, sink);
     }
 
-    void handle_surface_created(std::shared_ptr<mf::Session> const& session)
-    {
-        self->handle_surface_created(session);
-    }
-
-    std::shared_ptr<mf::Shell> const self;
-    std::map<std::string, std::shared_ptr<mf::Session>> sessions;
+private:
+    std::shared_ptr<msh::SurfaceFactory> const self;
 };
 
 class SystemCompositorServerConfiguration : public mir::DefaultServerConfiguration
@@ -199,8 +218,18 @@ public:
         });
     }
 
+    std::shared_ptr<msh::SurfaceFactory> the_shell_surface_factory() override
+    {
+        return sc_surface_factory([this]
+        {
+            return std::make_shared<SystemCompositorSurfaceFactory>(
+                mir::DefaultServerConfiguration::the_shell_surface_factory());
+        });
+    }
+
 private:
     mir::CachedPtr<SystemCompositorShell> sc_shell;
+    mir::CachedPtr<SystemCompositorSurfaceFactory> sc_surface_factory;
 
     std::shared_ptr<mf::Shell> the_frontend_shell() override
     {
