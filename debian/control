@@ -48,7 +48,8 @@ Description: Test package for Unity System Compositor
 
 Package: ubuntu-desktop-mir
 Architecture: all
-Depends: unity-system-compositor,
+Depends: lightdm (>= 1.9.4),
+         unity-system-compositor,
          xserver-xorg-xmir,
          ${misc:Depends},
 Replaces: unity-system-compositor (<< 0.0.2),
