@@ -1,3 +1,16 @@
+unity-system-compositor (0.0.2+14.04.20140116-0ubuntu1) trusty; urgency=low
+
+  [ Michael Terry ]
+  * Force the screen to redraw after turning the display back on (LP:
+    #1255045). Also stop the compositor when the screen is off.
+    Otherwise it will spin in the background, eating battery. (LP:
+    #1255045)
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 110
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 16 Jan 2014 09:20:03 +0000
+
 unity-system-compositor (0.0.2+14.04.20140108.1-0ubuntu1) trusty; urgency=low
 
   [ Michael Terry ]
