@@ -68,7 +68,9 @@ bool DBusScreen::setScreenPowerMode(const QString &mode)
                         displayConfigOutput.used,       //unchanged
                         displayConfigOutput.top_left,   //unchanged
                         displayConfigOutput.current_mode_index, //unchanged
-                        newPowerMode
+                        displayConfigOutput.current_format,
+                        newPowerMode,
+                        displayConfigOutput.orientation //unchanged
                         );
         }
     });
