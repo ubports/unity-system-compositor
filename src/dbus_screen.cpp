@@ -17,6 +17,7 @@
 #include "dbus_screen.h"
 #include "dbus_screen_adaptor.h"
 
+#include <mir/compositor/compositor.h>
 #include <mir/default_server_configuration.h>
 #include <mir/graphics/display.h>
 #include <mir/graphics/display_configuration.h>
@@ -24,6 +25,7 @@
 #include <QDBusConnection>
 #include <QDebug>
 
+namespace mc = mir::compositor;
 namespace mg = mir::graphics;
 
 // Note: this class should be created only after when the Mir DisplayServer has started
@@ -57,6 +59,7 @@ bool DBusScreen::setScreenPowerMode(const QString &mode)
 
     std::shared_ptr<mg::Display> display = config->the_display();
     std::shared_ptr<mg::DisplayConfiguration> displayConfig = display->configuration();
+    std::shared_ptr<mc::Compositor> compositor = config->the_compositor();
 
     displayConfig->for_each_output([&](const mg::DisplayConfigurationOutput displayConfigOutput) {
         if (displayConfigOutput.power_mode != newPowerMode) {
@@ -65,12 +68,20 @@ bool DBusScreen::setScreenPowerMode(const QString &mode)
                         displayConfigOutput.used,       //unchanged
                         displayConfigOutput.top_left,   //unchanged
                         displayConfigOutput.current_mode_index, //unchanged
-                        displayConfigOutput.current_format, //unchanged
-                        newPowerMode
+                        displayConfigOutput.current_format,
+                        newPowerMode,
+                        displayConfigOutput.orientation //unchanged
                         );
         }
     });
 
+    if (newPowerMode != MirPowerMode::mir_power_mode_on)
+        compositor->stop();
+
     display->configure(*displayConfig.get());
+
+    if (newPowerMode == MirPowerMode::mir_power_mode_on)
+        compositor->start();
+
     return true;
 }
