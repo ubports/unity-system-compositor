@@ -30,7 +30,6 @@
 
 #include <cerrno>
 #include <iostream>
-#include <unistd.h>
 #include <sys/stat.h>
 #include <thread>
 #include <regex.h>
@@ -59,7 +58,7 @@ private:
         std::string const& name,
         std::shared_ptr<mf::EventSink> const& sink)
     {
-        auto result = self->open_session(getpid(), name, sink);
+        auto result = self->open_session(client_pid, name, sink);
         sessions[name] = result;
         return result;
     }
