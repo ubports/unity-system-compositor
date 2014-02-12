@@ -1,3 +1,13 @@
+unity-system-compositor (0.0.2+14.04.20140212.1-0ubuntu1) trusty; urgency=low
+
+  [ Kevin Gunn ]
+  * bump dep to mir0.1.5 and update shell interfaces
+
+  [ Alan Griffiths ]
+  * bump dep to mir0.1.5 and update shell interfaces
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 12 Feb 2014 18:23:17 +0000
+
 unity-system-compositor (0.0.2+14.04.20140204-0ubuntu1) trusty; urgency=low
 
   [ Ubuntu daily release ]
