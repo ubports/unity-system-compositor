@@ -58,11 +58,11 @@ public:
 
 private:
     std::shared_ptr<mf::Session> open_session(
-        pid_t process,
+        pid_t client_pid,
         std::string const& name,
         std::shared_ptr<mf::EventSink> const& sink)
     {
-        auto result = self->open_session(process, name, sink);
+        auto result = self->open_session(client_pid, name, sink);
         sessions[name] = result;
         return result;
     }
