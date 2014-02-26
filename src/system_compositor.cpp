@@ -49,11 +49,27 @@ namespace po = boost::program_options;
 class SystemCompositorShell : public mf::Shell
 {
 public:
-    SystemCompositorShell(std::shared_ptr<mf::Shell> const& self) : self(self) {}
+    SystemCompositorShell(std::shared_ptr<mf::Shell> const& self,
+                          std::shared_ptr<msh::FocusController> const& focus_controller)
+        : self(self), focus_controller{focus_controller} {}
 
     std::shared_ptr<mf::Session> session_named(std::string const& name)
     {
         return sessions[name];
+    }
+
+    void set_active_session(std::string const& name)
+    {
+        auto session = std::static_pointer_cast<msh::Session>(session_named(name));
+        queued_session = "";
+
+        if (session)
+            focus_controller->set_focus_to(session);
+        else
+        {
+            std::cerr << "Queuing session named " << name << std::endl;
+            queued_session = name;
+        }
     }
 
 private:
@@ -64,6 +80,10 @@ private:
     {
         auto result = self->open_session(client_pid, name, sink);
         sessions[name] = result;
+        if (name == queued_session) {
+            focus_controller->set_focus_to(std::static_pointer_cast<msh::Session>(sessions[queued_session]));
+            queued_session = "";
+        }
         return result;
     }
 
@@ -86,7 +106,9 @@ private:
     }
 
     std::shared_ptr<mf::Shell> const self;
+    std::shared_ptr<msh::FocusController> const focus_controller;
     std::map<std::string, std::shared_ptr<mf::Session>> sessions;
+    std::string queued_session;
 };
 
 class SystemCompositorSurfaceFactory : public msh::SurfaceFactory
@@ -215,7 +237,8 @@ public:
         return sc_shell([this]
         {
             return std::make_shared<SystemCompositorShell>(
-                mir::DefaultServerConfiguration::the_frontend_shell());
+                mir::DefaultServerConfiguration::the_frontend_shell(),
+                the_focus_controller());
         });
     }
 
@@ -324,6 +347,7 @@ void SystemCompositor::pause()
 {
     std::cerr << "pause" << std::endl;
 
+    auto active_session = std::shared_ptr<msh::Session>(config->the_focus_controller()->focussed_application());
     if (active_session)
         active_session->set_lifecycle_state(mir_lifecycle_state_will_suspend);
 }
@@ -332,6 +356,7 @@ void SystemCompositor::resume()
 {
     std::cerr << "resume" << std::endl;
 
+    auto active_session = std::shared_ptr<msh::Session>(config->the_focus_controller()->focussed_application());
     if (active_session)
         active_session->set_lifecycle_state(mir_lifecycle_state_resumed);
 }
@@ -339,21 +364,20 @@ void SystemCompositor::resume()
 void SystemCompositor::set_active_session(std::string client_name)
 {
     std::cerr << "set_active_session" << std::endl;
-
-    active_session = std::static_pointer_cast<mir::shell::Session>(shell->session_named(client_name));
-
-    if (active_session)
-        config->the_focus_controller()->set_focus_to(active_session);
-    else
-        std::cerr << "Unable to set active session, unknown client name " << client_name << std::endl;
+    shell->set_active_session(client_name);
 }
 
 void SystemCompositor::set_next_session(std::string client_name)
 {
     std::cerr << "set_next_session" << std::endl;
 
-    if (auto const session = std::static_pointer_cast<mir::shell::Session>(shell->session_named(client_name)))
-        config->the_focus_controller()->set_focus_to(session); // depth id will keep it separate from greeter
+    if (auto const session = std::static_pointer_cast<msh::Session>(shell->session_named(client_name)))
+    {
+        auto active_session = std::shared_ptr<msh::Session>(config->the_focus_controller()->focussed_application());
+        config->the_focus_controller()->set_focus_to(session); // raise session inside its depth id set
+        if (active_session)
+            config->the_focus_controller()->set_focus_to(active_session); // give keyboard focus back to active greeter
+    }
     else
         std::cerr << "Unable to set next session, unknown client name " << client_name << std::endl;
 }
