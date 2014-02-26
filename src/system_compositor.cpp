@@ -60,16 +60,23 @@ public:
 
     void set_active_session(std::string const& name)
     {
-        auto session = std::static_pointer_cast<msh::Session>(session_named(name));
-        queued_session = "";
+        active_session = name;
 
-        if (session)
+        if (auto session = std::static_pointer_cast<msh::Session>(session_named(name)))
             focus_controller->set_focus_to(session);
         else
+            std::cerr << "Unable to set active session, unknown client name " << name << std::endl;
+    }
+
+    void set_next_session(std::string const& name)
+    {
+        if (auto const session = std::static_pointer_cast<msh::Session>(session_named(name)))
         {
-            std::cerr << "Queuing session named " << name << std::endl;
-            queued_session = name;
+            focus_controller->set_focus_to(session); // raise session inside its depth id set
+            set_active_session(active_session); // to restore input focus to where it should be
         }
+        else
+            std::cerr << "Unable to set next session, unknown client name " << name << std::endl;
     }
 
 private:
@@ -80,11 +87,11 @@ private:
     {
         auto result = self->open_session(client_pid, name, sink);
         sessions[name] = result;
-        if (name == queued_session) {
-            std::cerr << "Marking queued session " << name << " as active" << std::endl;
-            focus_controller->set_focus_to(std::static_pointer_cast<msh::Session>(result));
-            queued_session = "";
-        }
+
+        // Opening a new session will steal focus from our active session, so
+        // restore the focus if needed.
+        set_active_session(active_session);
+
         return result;
     }
 
@@ -109,7 +116,7 @@ private:
     std::shared_ptr<mf::Shell> const self;
     std::shared_ptr<msh::FocusController> const focus_controller;
     std::map<std::string, std::shared_ptr<mf::Session>> sessions;
-    std::string queued_session;
+    std::string active_session;
 };
 
 class SystemCompositorSurfaceFactory : public msh::SurfaceFactory
@@ -371,16 +378,7 @@ void SystemCompositor::set_active_session(std::string client_name)
 void SystemCompositor::set_next_session(std::string client_name)
 {
     std::cerr << "set_next_session" << std::endl;
-
-    if (auto const session = std::static_pointer_cast<msh::Session>(shell->session_named(client_name)))
-    {
-        auto active_session = std::shared_ptr<msh::Session>(config->the_focus_controller()->focussed_application());
-        config->the_focus_controller()->set_focus_to(session); // raise session inside its depth id set
-        if (active_session)
-            config->the_focus_controller()->set_focus_to(active_session); // give keyboard focus back to active greeter
-    }
-    else
-        std::cerr << "Unable to set next session, unknown client name " << client_name << std::endl;
+    shell->set_next_session(client_name);
 }
 
 void SystemCompositor::main()
