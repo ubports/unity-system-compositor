@@ -81,7 +81,8 @@ private:
         auto result = self->open_session(client_pid, name, sink);
         sessions[name] = result;
         if (name == queued_session) {
-            focus_controller->set_focus_to(std::static_pointer_cast<msh::Session>(sessions[queued_session]));
+            std::cerr << "Marking queued session " << name << " as active" << std::endl;
+            focus_controller->set_focus_to(std::static_pointer_cast<msh::Session>(result));
             queued_session = "";
         }
         return result;
