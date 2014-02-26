@@ -96,7 +96,8 @@ public:
             ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]")
             ("blacklist", po::value<std::string>(), "Video blacklist regex to use")
             ("version", "Show version of Unity System Compositor")
-            ("public-socket", po::value<bool>(), "Make the socket file publicly writable");
+            ("public-socket", po::value<bool>(), "Make the socket file publicly writable")
+            ("power-off-delay", po::value<int>(), "Delay in milliseconds before powering off screen [int]");
     }
 
     int from_dm_fd()
@@ -112,6 +113,11 @@ public:
     bool show_version()
     {
         return the_options()->is_set ("version");
+    }
+
+    int power_off_delay()
+    {
+        return the_options()->get("power-off-delay", 0);
     }
 
     std::string blacklist()
@@ -331,6 +337,6 @@ void SystemCompositor::main()
 void SystemCompositor::qt_main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
-    DBusScreen dbus_screen(config);
+    DBusScreen dbus_screen(config, config->power_off_delay());
     app.exec();
 }
