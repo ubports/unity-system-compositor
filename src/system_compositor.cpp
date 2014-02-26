@@ -355,8 +355,7 @@ void SystemCompositor::pause()
 {
     std::cerr << "pause" << std::endl;
 
-    auto active_session = std::shared_ptr<msh::Session>(config->the_focus_controller()->focussed_application());
-    if (active_session)
+    if (auto active_session = config->the_focus_controller()->focussed_application().lock())
         active_session->set_lifecycle_state(mir_lifecycle_state_will_suspend);
 }
 
@@ -364,8 +363,7 @@ void SystemCompositor::resume()
 {
     std::cerr << "resume" << std::endl;
 
-    auto active_session = std::shared_ptr<msh::Session>(config->the_focus_controller()->focussed_application());
-    if (active_session)
+    if (auto active_session = config->the_focus_controller()->focussed_application().lock())
         active_session->set_lifecycle_state(mir_lifecycle_state_resumed);
 }
 
