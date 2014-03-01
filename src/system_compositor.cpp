@@ -22,6 +22,7 @@
 #include <mir/run_mir.h>
 #include <mir/abnormal_exit.h>
 #include <mir/default_server_configuration.h>
+#include <mir/options/default_configuration.h>
 #include <mir/frontend/shell.h>
 #include <mir/server_status_listener.h>
 #include <mir/shell/session.h>
@@ -40,6 +41,7 @@
 namespace msh = mir::shell;
 namespace mf = mir::frontend;
 namespace mi = mir::input;
+namespace mo = mir::options;
 namespace po = boost::program_options;
 
 class SystemCompositorShell : public mf::Shell
@@ -85,11 +87,11 @@ private:
     std::map<std::string, std::shared_ptr<mf::Session>> sessions;
 };
 
-class SystemCompositorServerConfiguration : public mir::DefaultServerConfiguration
+class SystemCompositorConfiguration : public mo::DefaultConfiguration
 {
 public:
-    SystemCompositorServerConfiguration(SystemCompositor *compositor, int argc, char **argv)
-        : mir::DefaultServerConfiguration(argc, (char const **)argv), compositor{compositor}
+    SystemCompositorConfiguration(int argc, char **argv)
+        : mo::DefaultConfiguration(argc, const_cast<const char **>(argv))
     {
         add_options()
             ("from-dm-fd", po::value<int>(),  "File descriptor of read end of pipe from display manager [int]")
@@ -98,6 +100,23 @@ public:
             ("version", "Show version of Unity System Compositor")
             ("public-socket", po::value<bool>(), "Make the socket file publicly writable")
             ("power-off-delay", po::value<int>(), "Delay in milliseconds before powering off screen [int]");
+    }
+
+private:
+    void parse_config_file(po::options_description& desc, mo::ProgramOption& options) const
+    {
+        setenv("MIR_SERVER_STANDALONE", "true", 0); // Default to standalone
+        options.parse_file(desc, "unity-system-compositor.conf");
+    }
+};
+
+class SystemCompositorServerConfiguration : public mir::DefaultServerConfiguration
+{
+public:
+    SystemCompositorServerConfiguration(SystemCompositor *compositor, int argc, char **argv)
+        : mir::DefaultServerConfiguration(std::make_shared<SystemCompositorConfiguration>(argc, argv)),
+          compositor{compositor}
+    {
     }
 
     int from_dm_fd()
@@ -112,7 +131,7 @@ public:
 
     bool show_version()
     {
-        return the_options()->is_set ("version");
+        return the_options()->is_set("version");
     }
 
     int power_off_delay()
@@ -122,7 +141,7 @@ public:
 
     std::string blacklist()
     {
-        auto x = the_options()->get ("blacklist", "");
+        auto x = the_options()->get("blacklist", "");
         boost::trim(x);
         return x;
     }
@@ -130,13 +149,6 @@ public:
     bool public_socket()
     {
         return !the_options()->is_set("no-file") && the_options()->get("public-socket", true);
-    }
-
-    void parse_options(boost::program_options::options_description& options_description, mir::options::ProgramOption& options) const override
-    {
-        setenv("MIR_SERVER_STANDALONE", "true", 0); // Default to standalone
-        mir::DefaultServerConfiguration::parse_options(options_description, options);
-        options.parse_file(options_description, "unity-system-compositor.conf");
     }
 
     std::shared_ptr<mi::CursorListener> the_cursor_listener() override
@@ -237,7 +249,7 @@ bool check_blacklist(std::string blacklist, const char *vendor, const char *rend
 void SystemCompositor::run(int argc, char **argv)
 {
     config = std::make_shared<SystemCompositorServerConfiguration>(this, argc, argv);
-  
+
     if (config->show_version())
     {
         std::cerr << "unity-system-compositor " << USC_VERSION << std::endl;
