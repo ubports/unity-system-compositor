@@ -24,6 +24,7 @@
 #include <mir/default_server_configuration.h>
 #include <mir/frontend/shell.h>
 #include <mir/server_status_listener.h>
+#include <mir/options/default_configuration.h>
 #include <mir/shell/session.h>
 #include <mir/shell/focus_controller.h>
 #include <mir/input/cursor_listener.h>
@@ -40,6 +41,7 @@
 namespace msh = mir::shell;
 namespace mf = mir::frontend;
 namespace mi = mir::input;
+namespace mo = mir::options;
 namespace po = boost::program_options;
 
 class SystemCompositorShell : public mf::Shell
@@ -88,15 +90,9 @@ private:
 class SystemCompositorServerConfiguration : public mir::DefaultServerConfiguration
 {
 public:
-    SystemCompositorServerConfiguration(SystemCompositor *compositor, int argc, char **argv)
-        : mir::DefaultServerConfiguration(argc, (char const **)argv), compositor{compositor}
+    SystemCompositorServerConfiguration(SystemCompositor *compositor, std::shared_ptr<mo::DefaultConfiguration> options)
+        : mir::DefaultServerConfiguration(options), compositor{compositor}
     {
-        add_options()
-            ("from-dm-fd", po::value<int>(),  "File descriptor of read end of pipe from display manager [int]")
-            ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]")
-            ("blacklist", po::value<std::string>(), "Video blacklist regex to use")
-            ("version", "Show version of Unity System Compositor")
-            ("public-socket", po::value<bool>(), "Make the socket file publicly writable");
     }
 
     int from_dm_fd()
@@ -124,13 +120,6 @@ public:
     bool public_socket()
     {
         return !the_options()->is_set("no-file") && the_options()->get("public-socket", true);
-    }
-
-    void parse_options(boost::program_options::options_description& options_description, mir::options::ProgramOption& options) const override
-    {
-        setenv("MIR_SERVER_STANDALONE", "true", 0); // Default to standalone
-        mir::DefaultServerConfiguration::parse_options(options_description, options);
-        options.parse_file(options_description, "unity-system-compositor.conf");
     }
 
     std::shared_ptr<mi::CursorListener> the_cursor_listener() override
@@ -195,6 +184,30 @@ private:
     SystemCompositor *compositor;
 };
 
+class SystemCompositorConfigurationOptions : public mo::DefaultConfiguration
+{
+public:
+    SystemCompositorConfigurationOptions(int argc, char const* argv[]) :
+        DefaultConfiguration(argc, argv)
+    {
+        add_options()
+            ("from-dm-fd", po::value<int>(),  "File descriptor of read end of pipe from display manager [int]")
+            ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]")
+            ("blacklist", po::value<std::string>(), "Video blacklist regex to use")
+            ("version", "Show version of Unity System Compositor")
+            ("public-socket", po::value<bool>(), "Make the socket file publicly writable");
+
+        setenv("MIR_SERVER_STANDALONE", "true", 0); // Default to standalone
+    }
+
+    void parse_config_file(
+        boost::program_options::options_description& options_description,
+        mo::ProgramOption& options) const override
+    {
+        options.parse_file(options_description, "unity-system-compositor.conf");
+    }
+};
+
 bool check_blacklist(std::string blacklist, const char *vendor, const char *renderer, const char *version)
 {
     if (blacklist.empty())
@@ -230,8 +243,9 @@ bool check_blacklist(std::string blacklist, const char *vendor, const char *rend
 
 void SystemCompositor::run(int argc, char **argv)
 {
-    config = std::make_shared<SystemCompositorServerConfiguration>(this, argc, argv);
-  
+    auto const options = std::make_shared<SystemCompositorConfigurationOptions>(argc, const_cast<char const **>(argv));
+    config = std::make_shared<SystemCompositorServerConfiguration>(this, options);
+
     if (config->show_version())
     {
         std::cerr << "unity-system-compositor " << USC_VERSION << std::endl;
