@@ -17,8 +17,11 @@
 #ifndef DBUS_SCREEN_H_
 #define DBUS_SCREEN_H_
 
+#include <mir_toolkit/common.h>
+
 #include <memory>
 #include <QObject>
+#include <QtCore>
 
 namespace mir
 {
@@ -31,13 +34,21 @@ class DBusScreen : public QObject
     Q_CLASSINFO("D-Bus Interface", "com.canonical.Unity.Screen")
 
 public:
-    explicit DBusScreen(std::shared_ptr<mir::DefaultServerConfiguration> config, QObject *parent = 0);
+    explicit DBusScreen(std::shared_ptr<mir::DefaultServerConfiguration> config,
+                        int off_delay, QObject *parent = 0);
+    virtual ~DBusScreen();
 
 public Q_SLOTS:
     bool setScreenPowerMode(const QString &mode);
 
+private Q_SLOTS:
+    void power_off();
+
 private:
     std::shared_ptr<mir::DefaultServerConfiguration> config;
+    QTimer *power_off_timer;
+    MirPowerMode power_off_mode;
+    int power_off_delay;
 };
 
 #endif /* DBUS_SCREEN_H_ */
