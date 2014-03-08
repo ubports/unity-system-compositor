@@ -45,11 +45,34 @@ namespace po = boost::program_options;
 class SystemCompositorShell : public mf::Shell
 {
 public:
-    SystemCompositorShell(std::shared_ptr<mf::Shell> const& self) : self(self) {}
+    SystemCompositorShell(std::shared_ptr<mf::Shell> const& self,
+                          std::shared_ptr<msh::FocusController> const& focus_controller)
+        : self(self), focus_controller{focus_controller} {}
 
     std::shared_ptr<mf::Session> session_named(std::string const& name)
     {
         return sessions[name];
+    }
+
+    void set_active_session(std::string const& name)
+    {
+        active_session = name;
+
+        if (auto session = std::static_pointer_cast<msh::Session>(session_named(name)))
+            focus_controller->set_focus_to(session);
+        else
+            std::cerr << "Unable to set active session, unknown client name " << name << std::endl;
+    }
+
+    void set_next_session(std::string const& name)
+    {
+        if (auto const session = std::static_pointer_cast<msh::Session>(session_named(name)))
+        {
+            focus_controller->set_focus_to(session); // raise session inside its depth id set
+            set_active_session(active_session); // to restore input focus to where it should be
+        }
+        else
+            std::cerr << "Unable to set next session, unknown client name " << name << std::endl;
     }
 
 private:
@@ -60,6 +83,11 @@ private:
     {
         auto result = self->open_session(client_pid, name, sink);
         sessions[name] = result;
+
+        // Opening a new session will steal focus from our active session, so
+        // restore the focus if needed.
+        set_active_session(active_session);
+
         return result;
     }
 
@@ -82,7 +110,9 @@ private:
     }
 
     std::shared_ptr<mf::Shell> const self;
+    std::shared_ptr<msh::FocusController> const focus_controller;
     std::map<std::string, std::shared_ptr<mf::Session>> sessions;
+    std::string active_session;
 };
 
 class SystemCompositorServerConfiguration : public mir::DefaultServerConfiguration
@@ -188,7 +218,8 @@ public:
         return sc_shell([this]
         {
             return std::make_shared<SystemCompositorShell>(
-                mir::DefaultServerConfiguration::the_frontend_shell());
+                mir::DefaultServerConfiguration::the_frontend_shell(),
+                the_focus_controller());
         });
     }
 
@@ -287,7 +318,7 @@ void SystemCompositor::pause()
 {
     std::cerr << "pause" << std::endl;
 
-    if (active_session)
+    if (auto active_session = config->the_focus_controller()->focussed_application().lock())
         active_session->set_lifecycle_state(mir_lifecycle_state_will_suspend);
 }
 
@@ -295,30 +326,20 @@ void SystemCompositor::resume()
 {
     std::cerr << "resume" << std::endl;
 
-    if (active_session)
+    if (auto active_session = config->the_focus_controller()->focussed_application().lock())
         active_session->set_lifecycle_state(mir_lifecycle_state_resumed);
 }
 
 void SystemCompositor::set_active_session(std::string client_name)
 {
     std::cerr << "set_active_session" << std::endl;
-
-    active_session = std::static_pointer_cast<mir::shell::Session>(shell->session_named(client_name));
-
-    if (active_session)
-        config->the_focus_controller()->set_focus_to(active_session);
-    else
-        std::cerr << "Unable to set active session, unknown client name " << client_name << std::endl;
+    shell->set_active_session(client_name);
 }
 
 void SystemCompositor::set_next_session(std::string client_name)
 {
     std::cerr << "set_next_session" << std::endl;
-
-    if (auto const session = shell->session_named(client_name))
-        ; // TODO: implement this
-    else
-        std::cerr << "Unable to set next session, unknown client name " << client_name << std::endl;
+    shell->set_next_session(client_name);
 }
 
 void SystemCompositor::launch_spinner()

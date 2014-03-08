@@ -39,7 +39,6 @@ private:
     std::shared_ptr<SystemCompositorShell> shell;
     boost::asio::io_service io_service;
     std::shared_ptr<DMConnection> dm_connection;
-    std::shared_ptr<mir::shell::Session> active_session;
     QProcess spinner_process;
 
     void set_active_session(std::string client_name);
