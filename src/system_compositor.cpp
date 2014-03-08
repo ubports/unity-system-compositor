@@ -96,6 +96,7 @@ public:
             ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]")
             ("blacklist", po::value<std::string>(), "Video blacklist regex to use")
             ("version", "Show version of Unity System Compositor")
+            ("spinner", po::value<std::string>(), "Path to spinner executable")
             ("public-socket", po::value<bool>(), "Make the socket file publicly writable");
     }
 
@@ -117,6 +118,13 @@ public:
     std::string blacklist()
     {
         auto x = the_options()->get ("blacklist", "");
+        boost::trim(x);
+        return x;
+    }
+
+    std::string spinner()
+    {
+        auto x = the_options()->get("spinner", DEFAULT_SPINNER);
         boost::trim(x);
         return x;
     }
@@ -313,6 +321,16 @@ void SystemCompositor::set_next_session(std::string client_name)
         std::cerr << "Unable to set next session, unknown client name " << client_name << std::endl;
 }
 
+void SystemCompositor::launch_spinner()
+{
+    // Launch spinner process to provide default background when a session isn't ready
+    QStringList env = QProcess::systemEnvironment();
+    env << "MIR_SERVER_NAME=unity-system-compositor-spinner";
+    env << "MIR_SOCKET=" + QString(config->get_socket_file().c_str());
+    spinner_process.setEnvironment(env);
+    spinner_process.start(config->spinner().c_str());
+}
+
 void SystemCompositor::main()
 {
     // Make socket world-writable, since users need to talk to us.  No worries
@@ -320,6 +338,8 @@ void SystemCompositor::main()
     // them.
     if (config->public_socket() && chmod(config->get_socket_file().c_str(), 0777) == -1)
         std::cerr << "Unable to chmod socket file " << config->get_socket_file() << ": " << strerror(errno) << std::endl;
+
+    launch_spinner();
 
     dm_connection->set_handler(this);
     dm_connection->start();
