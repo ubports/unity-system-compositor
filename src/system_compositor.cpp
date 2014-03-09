@@ -60,12 +60,19 @@ public:
         active_session = name;
 
         if (auto session = std::static_pointer_cast<msh::Session>(session_named(name)))
+        {
             focus_controller->set_focus_to(session);
+            if (auto spinner = std::static_pointer_cast<msh::Session>(session_named(spinner_session)))
+                spinner->hide();
+        }
         else
         {
             std::cerr << "Queuing active session name " << name << std::endl;
-            if (auto session = std::static_pointer_cast<msh::Session>(session_named(spinner_session)))
-                focus_controller->set_focus_to(session);
+            if (auto spinner = std::static_pointer_cast<msh::Session>(session_named(spinner_session)))
+            {
+                spinner->show();
+                focus_controller->set_focus_to(spinner);
+            }
         }
     }
 
@@ -74,14 +81,17 @@ public:
         if (auto const session = std::static_pointer_cast<msh::Session>(session_named(name)))
         {
             focus_controller->set_focus_to(session); // raise session inside its depth id set
+            if (auto spinner = std::static_pointer_cast<msh::Session>(session_named(spinner_session)))
+                spinner->hide();
             set_active_session(active_session); // to restore input focus to where it should be
         }
         else
         {
             std::cerr << "Queuing next session name " << name << std::endl;
-            if (auto session = std::static_pointer_cast<msh::Session>(session_named(spinner_session)))
+            if (auto spinner = std::static_pointer_cast<msh::Session>(session_named(spinner_session)))
             {
-                focus_controller->set_focus_to(session);
+                spinner->show();
+                focus_controller->set_focus_to(spinner);
                 set_active_session(active_session);
             }
         }
