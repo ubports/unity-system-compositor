@@ -33,6 +33,7 @@ public:
     void run(int argc, char **argv);
     void pause();
     void resume();
+    pid_t get_spinner_pid() const;
 
 private:
     std::shared_ptr<SystemCompositorServerConfiguration> config;

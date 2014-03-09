@@ -45,9 +45,10 @@ namespace po = boost::program_options;
 class SystemCompositorShell : public mf::Shell
 {
 public:
-    SystemCompositorShell(std::shared_ptr<mf::Shell> const& self,
+    SystemCompositorShell(SystemCompositor *compositor,
+                          std::shared_ptr<mf::Shell> const& self,
                           std::shared_ptr<msh::FocusController> const& focus_controller)
-        : self(self), focus_controller{focus_controller} {}
+        : compositor{compositor}, self(self), focus_controller{focus_controller} {}
 
     std::shared_ptr<mf::Session> session_named(std::string const& name)
     {
@@ -61,7 +62,11 @@ public:
         if (auto session = std::static_pointer_cast<msh::Session>(session_named(name)))
             focus_controller->set_focus_to(session);
         else
-            std::cerr << "Unable to set active session, unknown client name " << name << std::endl;
+        {
+            std::cerr << "Queuing active session name " << name << std::endl;
+            if (auto session = std::static_pointer_cast<msh::Session>(session_named(spinner_session)))
+                focus_controller->set_focus_to(session);
+        }
     }
 
     void set_next_session(std::string const& name)
@@ -72,7 +77,14 @@ public:
             set_active_session(active_session); // to restore input focus to where it should be
         }
         else
-            std::cerr << "Unable to set next session, unknown client name " << name << std::endl;
+        {
+            std::cerr << "Queuing next session name " << name << std::endl;
+            if (auto session = std::static_pointer_cast<msh::Session>(session_named(spinner_session)))
+            {
+                focus_controller->set_focus_to(session);
+                set_active_session(active_session);
+            }
+        }
     }
 
 private:
@@ -84,6 +96,9 @@ private:
         auto result = self->open_session(client_pid, name, sink);
         sessions[name] = result;
 
+        if (client_pid == compositor->get_spinner_pid())
+            spinner_session = name;
+
         // Opening a new session will steal focus from our active session, so
         // restore the focus if needed.
         set_active_session(active_session);
@@ -93,6 +108,9 @@ private:
 
     void close_session(std::shared_ptr<mf::Session> const& session)
     {
+        if (session->name() == spinner_session)
+            spinner_session = "";
+
         sessions.erase(session->name());
         self->close_session(session);
     }
@@ -109,10 +127,12 @@ private:
         self->handle_surface_created(session);
     }
 
+    SystemCompositor *compositor;
     std::shared_ptr<mf::Shell> const self;
     std::shared_ptr<msh::FocusController> const focus_controller;
     std::map<std::string, std::shared_ptr<mf::Session>> sessions;
     std::string active_session;
+    std::string spinner_session;
 };
 
 class SystemCompositorServerConfiguration : public mir::DefaultServerConfiguration
@@ -218,6 +238,7 @@ public:
         return sc_shell([this]
         {
             return std::make_shared<SystemCompositorShell>(
+                compositor,
                 mir::DefaultServerConfiguration::the_frontend_shell(),
                 the_focus_controller());
         });
@@ -330,6 +351,11 @@ void SystemCompositor::resume()
         active_session->set_lifecycle_state(mir_lifecycle_state_resumed);
 }
 
+pid_t SystemCompositor::get_spinner_pid() const
+{
+    return spinner_process.pid();
+}
+
 void SystemCompositor::set_active_session(std::string client_name)
 {
     std::cerr << "set_active_session" << std::endl;
@@ -342,16 +368,6 @@ void SystemCompositor::set_next_session(std::string client_name)
     shell->set_next_session(client_name);
 }
 
-void SystemCompositor::launch_spinner()
-{
-    // Launch spinner process to provide default background when a session isn't ready
-    QStringList env = QProcess::systemEnvironment();
-    env << "MIR_SERVER_NAME=unity-system-compositor-spinner";
-    env << "MIR_SOCKET=" + QString(config->get_socket_file().c_str());
-    spinner_process.setEnvironment(env);
-    spinner_process.start(config->spinner().c_str());
-}
-
 void SystemCompositor::main()
 {
     // Make socket world-writable, since users need to talk to us.  No worries
@@ -360,8 +376,6 @@ void SystemCompositor::main()
     if (config->public_socket() && chmod(config->get_socket_file().c_str(), 0777) == -1)
         std::cerr << "Unable to chmod socket file " << config->get_socket_file() << ": " << strerror(errno) << std::endl;
 
-    launch_spinner();
-
     dm_connection->set_handler(this);
     dm_connection->start();
     dm_connection->send_ready();
@@ -369,9 +383,19 @@ void SystemCompositor::main()
     io_service.run();
 }
 
+void SystemCompositor::launch_spinner()
+{
+    // Launch spinner process to provide default background when a session isn't ready
+    QStringList env = QProcess::systemEnvironment();
+    env << "MIR_SOCKET=" + QString(config->get_socket_file().c_str());
+    spinner_process.setEnvironment(env);
+    spinner_process.start(config->spinner().c_str());
+}
+
 void SystemCompositor::qt_main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
     DBusScreen dbus_screen(config);
+    launch_spinner();
     app.exec();
 }
