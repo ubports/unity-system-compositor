@@ -58,17 +58,17 @@ public:
     void set_active_session(std::string const& name)
     {
         active_session = name;
-        update_sessions();
+        update_session_focus();
     }
 
     void set_next_session(std::string const& name)
     {
         next_session = name;
-        update_sessions();
+        update_session_focus();
     }
 
 private:
-    void update_sessions()
+    void update_session_focus()
     {
         auto spinner = std::static_pointer_cast<msh::Session>(session_named(spinner_session));
         auto next = std::static_pointer_cast<msh::Session>(session_named(next_session));
@@ -79,24 +79,24 @@ private:
 
         if (next)
         {
-            std::cerr << "Setting next focus to session " << next_session << std::endl;
+            std::cerr << "Setting next focus to session " << next_session;
             focus_controller->set_focus_to(next);
         }
         else if (spinner)
         {
-            std::cerr << "Setting next focus to spinner instead of session " << next_session << std::endl;
+            std::cerr << "Setting next focus to spinner";
             spinner->show();
             focus_controller->set_focus_to(spinner);
         }
 
         if (active)
         {
-            std::cerr << "Setting active focus to session " << active_session << std::endl;
+            std::cerr << "; active focus to session " << active_session << std::endl;
             focus_controller->set_focus_to(active);
         }
         else if (spinner)
         {
-            std::cerr << "Setting active focus to spinner instead of session " << active_session << std::endl;
+            std::cerr << "; active focus to spinner" << std::endl;
             spinner->show();
             focus_controller->set_focus_to(spinner);
         }
@@ -116,7 +116,7 @@ private:
 
         // Opening a new session will steal focus from our active session, so
         // restore the focus if needed.
-        update_sessions();
+        update_session_focus();
 
         return result;
     }
@@ -136,11 +136,13 @@ private:
         std::shared_ptr<mf::Session> const& session,
         msh::SurfaceCreationParameters const& params)
     {
+        std::cerr << "Making surface for " << session->name() << std::endl;
         return self->create_surface_for(session, params);
     }
 
     void handle_surface_created(std::shared_ptr<mf::Session> const& session)
     {
+        std::cerr << "Surface created for " << session->name() << std::endl;
         self->handle_surface_created(session);
     }
 
@@ -403,6 +405,9 @@ void SystemCompositor::main()
 
 void SystemCompositor::launch_spinner()
 {
+    if (config->spinner().empty())
+        return;
+
     // Launch spinner process to provide default background when a session isn't ready
     QStringList env = QProcess::systemEnvironment();
     env << "MIR_SOCKET=" + QString(config->get_socket_file().c_str());
