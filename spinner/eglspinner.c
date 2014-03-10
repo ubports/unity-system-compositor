@@ -416,7 +416,7 @@ int main(int argc, char *argv[])
 
     // create and upload spinner-artwork
     glGenTextures(2, texture);
-    float aspect;
+    float aspect = 1.0f;
     cairo_surface_t* spinner = pngToSurface (PKGDATADIR "/spinner.png");
     uploadTexture(texture[0], spinner);
 
