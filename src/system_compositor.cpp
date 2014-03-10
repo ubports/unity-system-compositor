@@ -114,10 +114,6 @@ private:
         if (client_pid == compositor->get_spinner_pid())
             spinner_session = name;
 
-        // Opening a new session will steal focus from our active session, so
-        // restore the focus if needed.
-        update_session_focus();
-
         return result;
     }
 
@@ -136,14 +132,16 @@ private:
         std::shared_ptr<mf::Session> const& session,
         msh::SurfaceCreationParameters const& params)
     {
-        std::cerr << "Making surface for " << session->name() << std::endl;
         return self->create_surface_for(session, params);
     }
 
     void handle_surface_created(std::shared_ptr<mf::Session> const& session)
     {
-        std::cerr << "Surface created for " << session->name() << std::endl;
         self->handle_surface_created(session);
+
+        // Opening a new surface will steal focus from our active surface, so
+        // restore the focus if needed.
+        update_session_focus();
     }
 
     SystemCompositor *compositor;
