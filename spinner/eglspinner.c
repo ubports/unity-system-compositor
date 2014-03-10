@@ -20,6 +20,7 @@
 #include "eglapp.h"
 #include <assert.h>
 #include <libintl.h>
+#include <locale.h>
 #include <stdio.h>
 #include <GLES2/gl2.h>
 #include <math.h>
