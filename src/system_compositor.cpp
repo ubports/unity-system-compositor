@@ -58,46 +58,42 @@ public:
     void set_active_session(std::string const& name)
     {
         active_session = name;
-
-        if (auto session = std::static_pointer_cast<msh::Session>(session_named(name)))
-        {
-            focus_controller->set_focus_to(session);
-            if (auto spinner = std::static_pointer_cast<msh::Session>(session_named(spinner_session)))
-                spinner->hide();
-        }
-        else
-        {
-            std::cerr << "Queuing active session name " << name << std::endl;
-            if (auto spinner = std::static_pointer_cast<msh::Session>(session_named(spinner_session)))
-            {
-                spinner->show();
-                focus_controller->set_focus_to(spinner);
-            }
-        }
+        update_sessions();
     }
 
     void set_next_session(std::string const& name)
     {
-        if (auto const session = std::static_pointer_cast<msh::Session>(session_named(name)))
-        {
-            focus_controller->set_focus_to(session); // raise session inside its depth id set
-            if (auto spinner = std::static_pointer_cast<msh::Session>(session_named(spinner_session)))
-                spinner->hide();
-            set_active_session(active_session); // to restore input focus to where it should be
-        }
-        else
-        {
-            std::cerr << "Queuing next session name " << name << std::endl;
-            if (auto spinner = std::static_pointer_cast<msh::Session>(session_named(spinner_session)))
-            {
-                spinner->show();
-                focus_controller->set_focus_to(spinner);
-                set_active_session(active_session);
-            }
-        }
+        next_session = name;
+        update_sessions();
     }
 
 private:
+    void update_sessions()
+    {
+        auto spinner = std::static_pointer_cast<msh::Session>(session_named(spinner_session));
+        auto next = std::static_pointer_cast<msh::Session>(session_named(next_session));
+        auto active = std::static_pointer_cast<msh::Session>(session_named(active_session));
+
+        if (spinner)
+            spinner->hide();
+
+        if (next)
+            focus_controller->set_focus_to(next);
+        else if (spinner)
+        {
+            spinner->show();
+            focus_controller->set_focus_to(spinner);
+        }
+
+        if (active)
+            focus_controller->set_focus_to(active);
+        else if (spinner)
+        {
+            spinner->show();
+            focus_controller->set_focus_to(spinner);
+        }
+    }
+
     std::shared_ptr<mf::Session> open_session(
         pid_t client_pid,
         std::string const& name,
@@ -111,7 +107,7 @@ private:
 
         // Opening a new session will steal focus from our active session, so
         // restore the focus if needed.
-        set_active_session(active_session);
+        update_sessions();
 
         return result;
     }
@@ -142,6 +138,7 @@ private:
     std::shared_ptr<msh::FocusController> const focus_controller;
     std::map<std::string, std::shared_ptr<mf::Session>> sessions;
     std::string active_session;
+    std::string next_session;
     std::string spinner_session;
 };
 
