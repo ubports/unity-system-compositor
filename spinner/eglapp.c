@@ -25,8 +25,6 @@
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 
-#include <xkbcommon/xkbcommon-keysyms.h>
-
 float mir_eglapp_background_opacity = 1.0f;
 
 static const char appname[] = "egldemo";
@@ -110,13 +108,7 @@ static void mir_eglapp_handle_event(MirSurface* surface, MirEvent const* ev, voi
 {
     (void) surface;
     (void) context;
-    if (ev->type == mir_event_type_key &&
-        ev->key.key_code == XKB_KEY_q &&
-        ev->key.action == mir_key_action_up)
-    {
-        running = 0;
-    }
-    else if (ev->type == mir_event_type_resize)
+    if (ev->type == mir_event_type_resize)
     {
         /*
          * FIXME: https://bugs.launchpad.net/mir/+bug/1194384
@@ -319,9 +311,9 @@ mir_eglapp_bool mir_eglapp_init(int argc, char *argv[],
     unsigned int nformats;
 
     mir_connection_get_available_surface_formats(connection,
-        format, mir_pixel_formats, &nformats);
+        (MirPixelFormat*) format, mir_pixel_formats, &nformats);
 
-    surfaceparm.pixel_format = format[0];
+    surfaceparm.pixel_format = (MirPixelFormat) format[0];
     for (unsigned int f = 0; f < nformats; f++)
     {
         const int opaque = (format[f] == mir_pixel_format_xbgr_8888 ||
@@ -331,7 +323,7 @@ mir_eglapp_bool mir_eglapp_init(int argc, char *argv[],
         if ((mir_eglapp_background_opacity == 1.0f && opaque) ||
             (mir_eglapp_background_opacity < 1.0f && !opaque))
         {
-            surfaceparm.pixel_format = format[f];
+            surfaceparm.pixel_format = (MirPixelFormat) format[f];
             break;
         }
     }
@@ -353,7 +345,7 @@ mir_eglapp_bool mir_eglapp_init(int argc, char *argv[],
         EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
         EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
         EGL_COLOR_BUFFER_TYPE, EGL_RGB_BUFFER,
-        EGL_BUFFER_SIZE, bpp,
+        EGL_BUFFER_SIZE, (EGLint) bpp,
         EGL_NONE
     };
 
@@ -363,7 +355,7 @@ mir_eglapp_bool mir_eglapp_init(int argc, char *argv[],
     mir_surface_set_event_handler(surface, &delegate);
 
     egldisplay = eglGetDisplay(
-                    mir_connection_get_egl_native_display(connection));
+                    (EGLNativeDisplayType) mir_connection_get_egl_native_display(connection));
     CHECK(egldisplay != EGL_NO_DISPLAY, "Can't eglGetDisplay");
 
     ok = eglInitialize(egldisplay, NULL, NULL);

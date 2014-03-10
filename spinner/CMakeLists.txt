@@ -16,17 +16,20 @@
 
 include_directories(
   ${GLESv2_INCLUDE_DIRS}
-  ${LIBRSVG_INCLUDE_DIRS}
   ${MIRCLIENT_INCLUDE_DIRS}
+  ${PANGOCAIRO_INCLUDE_DIRS}
 )
+add_definitions(-DPKGDATADIR="${CMAKE_INSTALL_DATAROOTDIR}/${PACKAGE}")
 
 link_directories(${MIRCLIENT_LIBRARY_DIRS})
 
-add_executable(spinner eglapp.c eglapp.h egltriangle.c)
+add_executable(spinner eglapp.c eglapp.h eglspinner.c)
 target_link_libraries(spinner
   EGL
-  mirclient
-  rsvg-2
   ${GLESv2_LIBRARIES}
+  ${MIRCLIENT_LDFLAGS}
+  ${PANGOCAIRO_LDFLAGS}
 )
 install(TARGETS spinner RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/${PACKAGE})
+
+install(FILES spinner.png DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PACKAGE})

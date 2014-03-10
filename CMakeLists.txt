@@ -39,9 +39,9 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -Wall")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 
 find_package(PkgConfig)
-pkg_check_modules(LIBRSVG REQUIRED librsvg-2.0)
 pkg_check_modules(MIRCLIENT REQUIRED mirclient)
 pkg_check_modules(MIRSERVER REQUIRED mirserver)
+pkg_check_modules(PANGOCAIRO REQUIRED pangocairo)
 
 find_package(Boost 1.48.0 COMPONENTS chrono date_time filesystem system thread program_options regex REQUIRED)
 find_package(GLESv2 REQUIRED)
