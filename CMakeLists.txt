@@ -48,5 +48,6 @@ find_package(GLESv2 REQUIRED)
 find_package(Qt5Core)
 find_package(Qt5DBus)
 
+add_subdirectory(po/)
 add_subdirectory(spinner/)
 add_subdirectory(src/)

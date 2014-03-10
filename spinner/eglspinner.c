@@ -19,6 +19,7 @@
 
 #include "eglapp.h"
 #include <assert.h>
+#include <libintl.h>
 #include <stdio.h>
 #include <GLES2/gl2.h>
 #include <math.h>
@@ -382,6 +383,10 @@ int main(int argc, char *argv[])
     unsigned int width = 0, height = 0;
     GLfloat angle = 0.0f;
 
+    setlocale (LC_ALL, "");
+    bindtextdomain (PACKAGE, LOCALEDIR);
+    textdomain (PACKAGE);
+
     if (!mir_eglapp_init(argc, argv, &width, &height))
         return 1;
 
@@ -421,7 +426,7 @@ int main(int argc, char *argv[])
     uploadTexture(texture[0], spinner);
 
     // create and upload text-texture
-    cairo_surface_t* text = textToSurface ("Loading...",
+    cairo_surface_t* text = textToSurface (gettext ("Loading…"),
                                            "Ubuntu",
                                            200.0,
                                            32,
