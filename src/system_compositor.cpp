@@ -78,17 +78,25 @@ private:
             spinner->hide();
 
         if (next)
+        {
+            std::cerr << "Setting next focus to session " << next_session << std::endl;
             focus_controller->set_focus_to(next);
+        }
         else if (spinner)
         {
+            std::cerr << "Setting next focus to spinner instead of session " << next_session << std::endl;
             spinner->show();
             focus_controller->set_focus_to(spinner);
         }
 
         if (active)
+        {
+            std::cerr << "Setting active focus to session " << active_session << std::endl;
             focus_controller->set_focus_to(active);
+        }
         else if (spinner)
         {
+            std::cerr << "Setting active focus to spinner instead of session " << active_session << std::endl;
             spinner->show();
             focus_controller->set_focus_to(spinner);
         }
@@ -99,6 +107,7 @@ private:
         std::string const& name,
         std::shared_ptr<mf::EventSink> const& sink)
     {
+        std::cerr << "Opening session " << name << std::endl;
         auto result = self->open_session(client_pid, name, sink);
         sessions[name] = result;
 
@@ -114,6 +123,8 @@ private:
 
     void close_session(std::shared_ptr<mf::Session> const& session)
     {
+        std::cerr << "Closing session " << session->name() << std::endl;
+
         if (session->name() == spinner_session)
             spinner_session = "";
 
