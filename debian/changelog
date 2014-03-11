@@ -1,3 +1,13 @@
+unity-system-compositor (0.0.2+14.04.20140311-0ubuntu1) trusty; urgency=low
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+  [ Kevin Gunn ]
+  * bump debian dep to mir0.1.6
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 11 Mar 2014 01:21:51 +0000
+
 unity-system-compositor (0.0.2+14.04.20140212.1-0ubuntu1) trusty; urgency=low
 
   [ Kevin Gunn ]
