@@ -120,7 +120,7 @@ private:
 class SystemCompositorServerConfiguration : public mir::DefaultServerConfiguration
 {
 public:
-    SystemCompositorServerConfiguration(SystemCompositor *compositor, std::shared_ptr<mo::DefaultConfiguration> options)
+    SystemCompositorServerConfiguration(SystemCompositor *compositor, std::shared_ptr<mo::Configuration> options)
         : mir::DefaultServerConfiguration(options), compositor{compositor}
     {
     }
