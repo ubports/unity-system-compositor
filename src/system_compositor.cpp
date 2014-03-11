@@ -217,7 +217,9 @@ public:
 
     std::string spinner()
     {
-        auto x = the_options()->get("spinner", DEFAULT_SPINNER);
+        // TODO: once our default spinner is ready for use everywhere, replace
+        // default value with DEFAULT_SPINNER instead of the empty string.
+        auto x = the_options()->get("spinner", "");
         boost::trim(x);
         return x;
     }

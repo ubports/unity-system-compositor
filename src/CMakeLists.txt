@@ -44,7 +44,7 @@ include_directories(
   ${MIRSERVER_INCLUDE_DIRS}
 )
 add_definitions(
-  -DDEFAULT_SPINNER="${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBEXECDIR}/${PACKAGE}/spinner"
+  -DDEFAULT_SPINNER="${CMAKE_INSTALL_FULL_BINDIR}/unity-system-compositor-spinner"
 )
 
 # Link against libmirserver

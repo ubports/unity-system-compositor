@@ -27,13 +27,13 @@ add_definitions(
 
 link_directories(${MIRCLIENT_LIBRARY_DIRS})
 
-add_executable(spinner eglapp.c eglapp.h eglspinner.c)
-target_link_libraries(spinner
+add_executable(unity-system-compositor-spinner eglapp.c eglapp.h eglspinner.c)
+target_link_libraries(unity-system-compositor-spinner
   EGL
   ${GLESv2_LIBRARIES}
   ${MIRCLIENT_LDFLAGS}
   ${PANGOCAIRO_LDFLAGS}
 )
-install(TARGETS spinner RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/${PACKAGE})
+install(TARGETS unity-system-compositor-spinner RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 install(FILES spinner.png DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PACKAGE})
