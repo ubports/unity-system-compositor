@@ -1,0 +1,1 @@
+rm_conffile /etc/lightdm/lightdm.conf.d/10-unity-system-compositor.conf 0.0.2+14.04.20131128.2-0ubuntu1
