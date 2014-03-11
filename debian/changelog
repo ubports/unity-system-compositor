@@ -1,3 +1,27 @@
+unity-system-compositor (0.0.2+14.04.20140311.1-0ubuntu1) trusty; urgency=low
+
+  [ Robert Ancell ]
+  * Install LightDM configuration into /usr/share so it's not kept
+    around by dpkg
+
+  [ CI bot ]
+  * Add an optional delay when powering off screen. Add an option
+    (power-off-delay, defaulted to 0) to delay stopping the compositor
+    and powering off the screen to allow the shell to present a shutdown
+    animation; without delay, the shell and-or greeter will get blocked
+    while trying to render such animation; this is due to the compositor
+    stopping as USC receives the power state change before the shell.
+    This is mostly a workaround as ideally, the greeter and-or shell
+    should coordinate when to shutdown the screen after they are given a
+    chance to possibly show a shutdown animation. fixes: lp: #1233564
+    (LP: #1233564)
+
+  [ Michael Terry ]
+  * Make sure that the active session has focus when multiple sessions
+    are opened.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 11 Mar 2014 03:37:20 +0000
+
 unity-system-compositor (0.0.2+14.04.20140311-0ubuntu1) trusty; urgency=low
 
   [ Ubuntu daily release ]
