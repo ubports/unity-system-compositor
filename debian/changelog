@@ -1,3 +1,9 @@
+unity-system-compositor (0.0.2+14.04.20140311.2-0ubuntu1) trusty; urgency=low
+
+  * New rebuild forced
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 11 Mar 2014 09:09:38 +0000
+
 unity-system-compositor (0.0.2+14.04.20140311.1-0ubuntu1) trusty; urgency=low
 
   [ Robert Ancell ]
