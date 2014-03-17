@@ -233,8 +233,6 @@ public:
             ("version", "Show version of Unity System Compositor")
             ("public-socket", po::value<bool>(), "Make the socket file publicly writable")
             ("power-off-delay", po::value<int>(), "Delay in milliseconds before powering off screen [int]");
-
-        setenv("MIR_SERVER_STANDALONE", "true", 0); // Default to standalone
     }
 
     void parse_config_file(
