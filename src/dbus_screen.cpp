@@ -34,19 +34,11 @@ static void set_screen_power_mode(MirPowerMode mode, const std::shared_ptr<mir::
     std::shared_ptr<mg::DisplayConfiguration> displayConfig = display->configuration();
     std::shared_ptr<mc::Compositor> compositor = config->the_compositor();
 
-    displayConfig->for_each_output([&](const mg::DisplayConfigurationOutput displayConfigOutput) {
-        if (displayConfigOutput.power_mode != mode) {
-            displayConfig->configure_output(
-                        displayConfigOutput.id,         //unchanged
-                        displayConfigOutput.used,       //unchanged
-                        displayConfigOutput.top_left,   //unchanged
-                        displayConfigOutput.current_mode_index, //unchanged
-                        displayConfigOutput.current_format,
-                        mode,
-                        displayConfigOutput.orientation //unchanged
-                        );
+    displayConfig->for_each_output(
+        [&](const mg::UserDisplayConfigurationOutput displayConfigOutput) {
+            displayConfigOutput.power_mode=mode;
         }
-    });
+    );
 
     if (mode != MirPowerMode::mir_power_mode_on)
         compositor->stop();

@@ -117,35 +117,11 @@ private:
     std::string active_session;
 };
 
-class SystemCompositorConfiguration : public mo::DefaultConfiguration
-{
-public:
-    SystemCompositorConfiguration(int argc, char **argv)
-        : mo::DefaultConfiguration(argc, const_cast<const char **>(argv))
-    {
-        add_options()
-            ("from-dm-fd", po::value<int>(),  "File descriptor of read end of pipe from display manager [int]")
-            ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]")
-            ("blacklist", po::value<std::string>(), "Video blacklist regex to use")
-            ("version", "Show version of Unity System Compositor")
-            ("public-socket", po::value<bool>(), "Make the socket file publicly writable")
-            ("power-off-delay", po::value<int>(), "Delay in milliseconds before powering off screen [int]");
-    }
-
-private:
-    void parse_config_file(po::options_description& desc, mo::ProgramOption& options) const
-    {
-        setenv("MIR_SERVER_STANDALONE", "true", 0); // Default to standalone
-        options.parse_file(desc, "unity-system-compositor.conf");
-    }
-};
-
 class SystemCompositorServerConfiguration : public mir::DefaultServerConfiguration
 {
 public:
-    SystemCompositorServerConfiguration(SystemCompositor *compositor, int argc, char **argv)
-        : mir::DefaultServerConfiguration(std::make_shared<SystemCompositorConfiguration>(argc, argv)),
-          compositor{compositor}
+    SystemCompositorServerConfiguration(SystemCompositor *compositor, std::shared_ptr<mo::Configuration> options)
+        : mir::DefaultServerConfiguration(options), compositor{compositor}
     {
     }
 
@@ -244,6 +220,29 @@ private:
     SystemCompositor *compositor;
 };
 
+class SystemCompositorConfigurationOptions : public mo::DefaultConfiguration
+{
+public:
+    SystemCompositorConfigurationOptions(int argc, char const* argv[]) :
+        DefaultConfiguration(argc, argv)
+    {
+        add_options()
+            ("from-dm-fd", po::value<int>(),  "File descriptor of read end of pipe from display manager [int]")
+            ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]")
+            ("blacklist", po::value<std::string>(), "Video blacklist regex to use")
+            ("version", "Show version of Unity System Compositor")
+            ("public-socket", po::value<bool>(), "Make the socket file publicly writable")
+            ("power-off-delay", po::value<int>(), "Delay in milliseconds before powering off screen [int]");
+    }
+
+    void parse_config_file(
+        boost::program_options::options_description& options_description,
+        mo::ProgramOption& options) const override
+    {
+        options.parse_file(options_description, "unity-system-compositor.conf");
+    }
+};
+
 bool check_blacklist(std::string blacklist, const char *vendor, const char *renderer, const char *version)
 {
     if (blacklist.empty())
@@ -279,7 +278,8 @@ bool check_blacklist(std::string blacklist, const char *vendor, const char *rend
 
 void SystemCompositor::run(int argc, char **argv)
 {
-    config = std::make_shared<SystemCompositorServerConfiguration>(this, argc, argv);
+    auto const options = std::make_shared<SystemCompositorConfigurationOptions>(argc, const_cast<char const **>(argv));
+    config = std::make_shared<SystemCompositorServerConfiguration>(this, options);
 
     if (config->show_version())
     {
