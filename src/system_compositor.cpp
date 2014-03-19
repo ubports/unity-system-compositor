@@ -24,9 +24,9 @@
 #include <mir/default_server_configuration.h>
 #include <mir/options/default_configuration.h>
 #include <mir/frontend/shell.h>
-#include <mir/frontend/surface.h>
 #include <mir/server_status_listener.h>
 #include <mir/shell/session.h>
+#include <mir/shell/surface.h>
 #include <mir/shell/focus_controller.h>
 #include <mir/input/cursor_listener.h>
 
@@ -45,6 +45,7 @@ namespace mf = mir::frontend;
 namespace mg = mir::graphics;
 namespace mi = mir::input;
 namespace mo = mir::options;
+namespace ms = mir::scene;
 namespace po = boost::program_options;
 
 class SystemCompositorSurface;
@@ -58,6 +59,7 @@ public:
 
     // These are defined below, since they reference methods defined in other classes
     void mark_ready();
+    void raise(std::shared_ptr<ms::SurfaceRanker> const& controller);
     std::shared_ptr<mf::Surface> get_surface(mf::SurfaceId surface) const;
     mf::SurfaceId create_surface(msh::SurfaceCreationParameters const& params);
 
@@ -97,19 +99,12 @@ private:
     bool ready;
 };
 
-class SystemCompositorSurface : public mf::Surface
+class SystemCompositorSurface : public msh::Surface
 {
 public:
-    SystemCompositorSurface(std::shared_ptr<mf::Surface> const& self,
+    SystemCompositorSurface(std::shared_ptr<msh::Surface> const& self,
                             SystemCompositorSession *session)
         : self{self}, session{session}, buffer_count{0} {}
-
-    void force_requests_to_complete() {self->force_requests_to_complete();}
-    geom::Size size() const {return self->size();}
-    MirPixelFormat pixel_format() const {return self->pixel_format();}
-    bool supports_input() const {return self->supports_input();}
-    int client_input_fd() const {return self->client_input_fd();}
-    int configure(MirSurfaceAttrib attrib, int value) {return self->configure(attrib, value);}
 
     void swap_buffers(mg::Buffer* old_buffer, std::function<void(mg::Buffer* new_buffer)> complete)
     {
@@ -120,8 +115,34 @@ public:
             session->mark_ready();
     }
 
+    // mf::Surface methods
+    void force_requests_to_complete() {self->force_requests_to_complete();}
+    geom::Size size() const {return self->size();}
+    MirPixelFormat pixel_format() const {return self->pixel_format();}
+    bool supports_input() const {return self->supports_input();}
+    int client_input_fd() const {return self->client_input_fd();}
+    int configure(MirSurfaceAttrib attrib, int value) {return self->configure(attrib, value);}
+
+    // msh::Surface methods
+    std::string name() const {return self->name();}
+    MirSurfaceType type() const {return self->type();}
+    MirSurfaceState state() const {return self->state();}
+    void hide() {self->hide();}
+    void show() {self->show();}
+    void move_to(geom::Point const& top_left) {self->move_to(top_left);}
+    geom::Point top_left() const {return self->top_left();}
+    void take_input_focus(std::shared_ptr<msh::InputTargeter> const& targeter) {self->take_input_focus(targeter);}
+    void set_input_region(std::vector<geom::Rectangle> const& region) {self->set_input_region(region);}
+    void allow_framedropping(bool allow) {self->allow_framedropping(allow);}
+    void raise(std::shared_ptr<ms::SurfaceRanker> const& controller) {self->raise(controller);}
+    void resize(geom::Size const& size) {self->resize(size);}
+    void set_rotation(float degrees, glm::vec3 const& axis) {self->set_rotation(degrees, axis);}
+    float alpha() const {return self->alpha();}
+    void set_alpha(float alpha) {self->set_alpha(alpha);}
+    void with_most_recent_buffer_do(std::function<void(mg::Buffer&)> const& exec) {self->with_most_recent_buffer_do(exec);}
+
 private:
-    std::shared_ptr<mf::Surface> const self;
+    std::shared_ptr<msh::Surface> const self;
     SystemCompositorSession *session;
     int buffer_count;
 };
@@ -131,8 +152,9 @@ class SystemCompositorShell : public mf::Shell
 public:
     SystemCompositorShell(SystemCompositor *compositor,
                           std::shared_ptr<mf::Shell> const& self,
-                          std::shared_ptr<msh::FocusController> const& focus_controller)
-        : compositor{compositor}, self(self), focus_controller{focus_controller} {}
+                          std::shared_ptr<msh::FocusController> const& focus_controller,
+                          std::shared_ptr<ms::SurfaceRanker> const& surface_ranker)
+        : compositor{compositor}, self(self), focus_controller{focus_controller}, surface_ranker{surface_ranker} {}
 
     std::shared_ptr<mf::Session> session_named(std::string const& name)
     {
@@ -156,6 +178,7 @@ public:
         auto spinner = sessions[spinner_session];
         auto next = sessions[next_session];
         auto active = sessions[active_session];
+        std::shared_ptr<SystemCompositorSession> to_show;
 
         if (spinner)
             spinner->hide();
@@ -163,12 +186,15 @@ public:
         if (next && next->is_ready())
         {
             std::cerr << "Setting next focus to session " << next_session;
-            focus_controller->set_focus_to(next);
+            next->hide();
+            next->raise(surface_ranker);
+            to_show = next;
         }
         else if (!next_session.empty() && spinner)
         {
             std::cerr << "Setting next focus to spinner";
-            focus_controller->set_focus_to(spinner);
+            spinner->raise(surface_ranker);
+            to_show = spinner;
         }
         else
         {
@@ -178,18 +204,21 @@ public:
         if (active && active->is_ready())
         {
             std::cerr << "; active focus to session " << active_session;
-            focus_controller->set_focus_to(active);
+            focus_controller->set_focus_to(active); // raises and focuses
         }
         else if (!active_session.empty() && spinner)
         {
             std::cerr << "; active focus to spinner";
             spinner->show();
-            focus_controller->set_focus_to(spinner);
+            focus_controller->set_focus_to(spinner); // raises and focuses
         }
         else
         {
             std::cerr << "; no active focus";
         }
+
+        if (to_show)
+            to_show->show();
 
         std::cerr << std::endl;
     }
@@ -255,6 +284,7 @@ private:
     SystemCompositor *compositor;
     std::shared_ptr<mf::Shell> const self;
     std::shared_ptr<msh::FocusController> const focus_controller;
+    std::shared_ptr<ms::SurfaceRanker> const surface_ranker;
     std::map<std::string, std::shared_ptr<SystemCompositorSession>> sessions;
     std::string active_session;
     std::string next_session;
@@ -270,6 +300,16 @@ void SystemCompositorSession::mark_ready()
     }
 }
 
+void SystemCompositorSession::raise(std::shared_ptr<ms::SurfaceRanker> const& controller)
+{
+    std::map<mf::SurfaceId, std::shared_ptr<SystemCompositorSurface>>::iterator iter;
+    for (iter = surfaces.begin(); iter != surfaces.end(); ++iter)
+    {
+        // This will iterate by creation order, which is fine.  New surfaces on top
+        iter->second->raise(controller);
+    }
+}
+
 std::shared_ptr<mf::Surface> SystemCompositorSession::get_surface(mf::SurfaceId surface) const
 {
     return surfaces.at(surface);
@@ -278,7 +318,16 @@ std::shared_ptr<mf::Surface> SystemCompositorSession::get_surface(mf::SurfaceId 
 mf::SurfaceId SystemCompositorSession::create_surface(msh::SurfaceCreationParameters const& params)
 {
     mf::SurfaceId id = self->create_surface(params);
-    std::shared_ptr<mf::Surface> surface = self->get_surface(id);
+    std::shared_ptr<mf::Surface> mf_surface = self->get_surface(id);
+
+    auto surface = std::dynamic_pointer_cast<msh::Surface>(mf_surface);
+    if (!surface)
+    {
+        std::cerr << "Unexpected non-shell surface" << std::endl;
+        self->destroy_surface(id);
+        return mf::SurfaceId(0);
+    }
+
     surfaces[id] = std::make_shared<SystemCompositorSurface>(surface, this);
     return id;
 }
@@ -381,7 +430,8 @@ public:
             return std::make_shared<SystemCompositorShell>(
                 compositor,
                 mir::DefaultServerConfiguration::the_frontend_shell(),
-                the_focus_controller());
+                the_focus_controller(),
+                the_surface_ranker());
         });
     }
 
