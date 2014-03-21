@@ -154,7 +154,7 @@ public:
                           std::shared_ptr<mf::Shell> const& self,
                           std::shared_ptr<msh::FocusController> const& focus_controller,
                           std::shared_ptr<ms::SurfaceRanker> const& surface_ranker)
-        : compositor{compositor}, self(self), focus_controller{focus_controller}, surface_ranker{surface_ranker} {}
+        : compositor{compositor}, self(self), focus_controller{focus_controller}, surface_ranker{surface_ranker}, active_ever_used{false} {}
 
     std::shared_ptr<mf::Session> session_named(std::string const& name)
     {
@@ -201,10 +201,17 @@ public:
             std::cerr << "Setting no next focus";
         }
 
-        if (active && active->is_ready())
+        // If we are booting, we want to wait for next session to be ready to
+        // go (it's a smoother experience if user is able to immediately swipe
+        // greeter out of way -- enough that it's worth the tiny wait).  So
+        // check here to see if next is all ready for us (or we've already
+        // focused the active before in which case we're not booting anymore).
+        bool next_all_set = next_session.empty() || (next && next->is_ready());
+        if (active && active->is_ready() && (next_all_set || active_ever_used))
         {
             std::cerr << "; active focus to session " << active_session;
             focus_controller->set_focus_to(active); // raises and focuses
+            active_ever_used = true;
         }
         else if (!active_session.empty() && spinner)
         {
@@ -289,6 +296,7 @@ private:
     std::string active_session;
     std::string next_session;
     std::string spinner_session;
+    bool active_ever_used;
 };
 
 void SystemCompositorSession::mark_ready()
