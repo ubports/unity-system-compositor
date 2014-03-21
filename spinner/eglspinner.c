@@ -19,12 +19,10 @@
 
 #include "eglapp.h"
 #include <assert.h>
-#include <libintl.h>
-#include <locale.h>
+#include <cairo.h>
 #include <stdio.h>
 #include <GLES2/gl2.h>
 #include <math.h>
-#include <pango/pangocairo.h>
 
 static GLuint load_shader(const char *src, GLenum type)
 {
@@ -139,109 +137,6 @@ cairo_surface_t* pngToSurface (const char* filename)
     return surface;
 }
 
-cairo_surface_t* textToSurface (const char* string,
-                                const char* font,
-                                double dpi,
-                                int size,
-                                float r,
-                                float g,
-                                float b,
-                                float a,
-                                float* aspect)
-{
-    // sanity check
-    if (!string || !font || dpi < 1.0 || size < 1)
-        return NULL;
-
-    // create scratch surface
-    cairo_surface_t* tmpSurf = NULL;
-    tmpSurf = cairo_image_surface_create (CAIRO_FORMAT_A1, 1, 1);
-    if (cairo_surface_status (tmpSurf) != CAIRO_STATUS_SUCCESS)
-        return NULL;
-
-    // create scratch context
-    cairo_t* tmpCr = NULL;
-    tmpCr = cairo_create (tmpSurf);
-    cairo_surface_destroy (tmpSurf);
-    if (cairo_status (tmpCr) != CAIRO_STATUS_SUCCESS)
-    {
-        cairo_surface_destroy (tmpSurf);
-        return NULL;
-    }
-
-    // determine needed texture-size in pixels
-    PangoLayout* layout = NULL;
-    layout = pango_cairo_create_layout (tmpCr);
-    PangoFontDescription* desc = NULL;
-    desc = pango_font_description_from_string (font);
-    pango_cairo_context_set_resolution (pango_layout_get_context (layout), dpi);
-    pango_layout_context_changed (layout);
-    pango_font_description_set_size (desc, size * PANGO_SCALE);
-    pango_font_description_set_weight (desc, PANGO_WEIGHT_NORMAL);
-    pango_layout_set_font_description (layout, desc);
-    pango_font_description_free (desc);
-    pango_layout_set_ellipsize (layout, PANGO_ELLIPSIZE_END);
-    pango_layout_set_wrap (layout, PANGO_WRAP_WORD_CHAR);
-    pango_layout_set_width (layout, -1);
-    pango_layout_set_height (layout, -1);
-    pango_layout_set_text (layout, string, -1);
-    PangoRectangle logRect = {0, 0, 0, 0};
-    pango_layout_get_extents (layout, NULL, &logRect);
-    int width = PANGO_PIXELS (logRect.width);
-    int height = PANGO_PIXELS (logRect.height);
-
-    // clean up scratch resources
-    g_object_unref (layout);
-    cairo_destroy (tmpCr);
-
-    // create surface for texture-creation
-    cairo_surface_t* surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
-    if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS)
-        return NULL;
-
-    // create scratch context
-    cairo_t* cr = cairo_create (surface);
-    cairo_surface_destroy (surface);
-    if (cairo_status (cr) != CAIRO_STATUS_SUCCESS)
-    {
-        cairo_surface_destroy (surface);
-        return NULL;
-    }
-
-    // clear drawing-context
-    cairo_scale (cr, 1.0f, 1.0f);
-    cairo_set_operator (cr, CAIRO_OPERATOR_CLEAR);
-    cairo_paint (cr);
-    cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
-
-    // set attributes for the font-layout
-    layout = pango_cairo_create_layout (cr);
-    desc = pango_font_description_from_string (font);
-    pango_font_description_set_size (desc, size * PANGO_SCALE);
-    pango_font_description_set_weight (desc, PANGO_WEIGHT_NORMAL);
-    pango_layout_set_font_description (layout, desc);
-    pango_font_description_free (desc);
-    pango_layout_set_wrap (layout, PANGO_WRAP_WORD_CHAR);
-    pango_layout_set_ellipsize (layout, PANGO_ELLIPSIZE_END);
-    pango_layout_set_width (layout, width * PANGO_SCALE);
-    pango_layout_set_height (layout, height * PANGO_SCALE);
-    pango_layout_set_text (layout, string, -1);
-    pango_layout_get_extents (layout, NULL, &logRect);
-    *aspect = (float) logRect.width  / (float) logRect.height;
-    pango_cairo_context_set_resolution (pango_layout_get_context (layout), dpi);
-    pango_layout_context_changed (layout);
-
-    // do the rendering of the text itself
-    cairo_move_to (cr, 0.0f, 0.0f);
-    cairo_set_source_rgba (cr, r, g , b, a);
-    pango_cairo_show_layout (cr, layout);
-
-    // clean up scratch resources
-    g_object_unref (layout);
-
-    return surface;
-}
-
 void uploadTexture(GLuint id, cairo_surface_t* surface)
 {
     if (!id || !surface)
@@ -323,19 +218,6 @@ int main(int argc, char *argv[])
         "    vTexCoords = aTexCoords;                    \n"
         "}                                               \n";
 
-    const char vShaderSrcText[] =
-        "attribute vec4 vPosition;                                         \n"
-        "attribute vec2 aTexCoords;                                        \n"
-        "uniform float uAspect;                                            \n"
-        "uniform mat4 uPersp;                                              \n"
-        "varying vec2 vTexCoords;                                          \n"
-        "void main()                                                       \n"
-        "{                                                                 \n"
-        "    vec2 p = 0.5 * vec2(vPosition.x * uAspect, vPosition.y - 0.2);\n"
-        "    gl_Position = uPersp * vec4(p, -1.0, 1.0);                    \n"
-        "    vTexCoords = aTexCoords;                                      \n"
-        "}                                                                 \n";
-
     const char fShaderSrc[] =
         "precision mediump float;                                    \n"
         "varying vec2 vTexCoords;                                    \n"
@@ -365,37 +247,23 @@ int main(int argc, char *argv[])
         1.0f, 0.0f,
     };
 
-    const GLfloat texCoordsText[] =
-    {
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 0.0f,
-        0.0f, 1.0f,
-    };
-
-    GLuint prog[2];
-    GLuint texture[2];
-    GLint vpos[2];
+    GLuint prog[1];
+    GLuint texture[1];
+    GLint vpos[1];
     GLint theta;
-    GLint aTexCoords[2];
-    GLint sampler[2];
-    GLint uPersp[2];
-    GLint uAspect;
+    GLint aTexCoords[1];
+    GLint sampler[1];
+    GLint uPersp[1];
     unsigned int width = 0, height = 0;
     GLfloat angle = 0.0f;
-
-    setlocale (LC_ALL, "");
-    bindtextdomain (PACKAGE, LOCALEDIR);
-    textdomain (PACKAGE);
 
     if (!mir_eglapp_init(argc, argv, &width, &height))
         return 1;
 
     prog[0] = createShaderProgram (vShaderSrcSpinner, fShaderSrc);
-    prog[1] = createShaderProgram (vShaderSrcText, fShaderSrc);
 
     // setup viewport and projection
-    glClearColor(MID_AUBERGINE, mir_eglapp_background_opacity);
+    glClearColor(BLACK, mir_eglapp_background_opacity);
     glViewport(0, 0, width, height);
     float persp[16];
     perspective (45.0f,
@@ -414,37 +282,17 @@ int main(int argc, char *argv[])
     theta = glGetUniformLocation(prog[0], "theta");
     sampler[0] = glGetUniformLocation(prog[0], "uSampler");
     uPersp[0] = glGetUniformLocation(prog[0], "uPersp");
-    vpos[1] = glGetAttribLocation(prog[1], "vPosition");
-    aTexCoords[1] = glGetAttribLocation(prog[1], "aTexCoords");
-    sampler[1] = glGetUniformLocation(prog[1], "uSampler");
-    uPersp[1] = glGetUniformLocation(prog[1], "uPersp");
-    uAspect = glGetUniformLocation(prog[1], "uAspect");
 
     // create and upload spinner-artwork
-    glGenTextures(2, texture);
-    float aspect = 1.0f;
+    glGenTextures(1, texture);
     cairo_surface_t* spinner = pngToSurface (PKGDATADIR "/spinner.png");
     uploadTexture(texture[0], spinner);
 
-    // create and upload text-texture
-    cairo_surface_t* text = textToSurface (gettext ("Loading…"),
-                                           "Ubuntu",
-                                           200.0,
-                                           32,
-                                           WHITE,
-                                           1.0f,
-                                           &aspect);
-    uploadTexture(texture[1], text);
-
     // bunch of shader-attributes to enable
     glVertexAttribPointer(vpos[0], 2, GL_FLOAT, GL_FALSE, 0, vertices);
-    glVertexAttribPointer(vpos[1], 2, GL_FLOAT, GL_FALSE, 0, vertices);
     glVertexAttribPointer(aTexCoords[0], 2, GL_FLOAT, GL_FALSE, 0, texCoordsSpinner);
-    glVertexAttribPointer(aTexCoords[1], 2, GL_FLOAT, GL_FALSE, 0, texCoordsText);
     glEnableVertexAttribArray(vpos[0]);
     glEnableVertexAttribArray(aTexCoords[0]);
-    glEnableVertexAttribArray(vpos[1]);
-    glEnableVertexAttribArray(aTexCoords[1]);
     glActiveTexture(GL_TEXTURE0);
 
     while (mir_eglapp_running())
@@ -459,14 +307,6 @@ int main(int argc, char *argv[])
         glUniformMatrix4fv(uPersp[0], 1, GL_FALSE, persp);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-        // draw text
-        glUseProgram(prog[1]);
-        glBindTexture(GL_TEXTURE_2D, texture[1]);
-        glUniform1i(sampler[1], 0);
-        glUniform1f(uAspect, aspect);
-        glUniformMatrix4fv(uPersp[1], 1, GL_FALSE, persp);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
         // update animation variable
         angle -= 0.04f;
 
@@ -475,7 +315,7 @@ int main(int argc, char *argv[])
 
     mir_eglapp_shutdown();
 
-    glDeleteTextures(2, texture);
+    glDeleteTextures(1, texture);
 
     return 0;
 }

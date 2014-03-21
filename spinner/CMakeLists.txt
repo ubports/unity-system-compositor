@@ -15,9 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 include_directories(
+  ${CAIRO_INCLUDE_DIRS}
   ${GLESv2_INCLUDE_DIRS}
   ${MIRCLIENT_INCLUDE_DIRS}
-  ${PANGOCAIRO_INCLUDE_DIRS}
 )
 add_definitions(
   -DPACKAGE="${PACKAGE}"
@@ -30,9 +30,9 @@ link_directories(${MIRCLIENT_LIBRARY_DIRS})
 add_executable(unity-system-compositor-spinner eglapp.c eglapp.h eglspinner.c)
 target_link_libraries(unity-system-compositor-spinner
   EGL
+  ${CAIRO_LDFLAGS}
   ${GLESv2_LIBRARIES}
   ${MIRCLIENT_LDFLAGS}
-  ${PANGOCAIRO_LDFLAGS}
 )
 install(TARGETS unity-system-compositor-spinner RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
