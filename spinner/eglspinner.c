@@ -22,8 +22,70 @@
 #include <cairo.h>
 #include <glib.h>
 #include <stdio.h>
+#include <string.h>
+#include <strings.h>
+#include <stdlib.h>
 #include <GLES2/gl2.h>
 #include <math.h>
+#include <hybris/properties/properties.h>
+
+// this is needed for get_gu() to obtain the grid-unit value
+#define MAX_LENGTH       256
+#define VALUE_KEY        "GRID_UNIT_PX"
+#define VALUE_KEY_LENGTH 12
+#define PROP_KEY         "ro.product.device"
+#define FILE_BASE        "/etc/ubuntu-touch-session.d/"
+#define FILE_EXTENSION   ".conf"
+
+int get_gu ()
+{
+    int   gu           = 10; // use 10 as a default value
+    char* defaultValue = "";
+    FILE* handle       = NULL;
+    int   i            = 0;
+    int   j            = 0;
+    int   len          = 0;
+    char  value[PROP_VALUE_MAX];
+    char  line[MAX_LENGTH];
+    char  filename[MAX_LENGTH];
+
+    // get name of file to read from
+    property_get (PROP_KEY, value, defaultValue);
+    bzero ((void*) filename, MAX_LENGTH);
+    strcpy (filename, FILE_BASE);
+    strcat (filename, value);
+    strcat (filename, FILE_EXTENSION);
+
+    // try to open it
+    handle = fopen ((const char*) filename, "r");
+    if (!handle)
+        return gu;
+
+    // read one line at a time
+    while (fgets (line, MAX_LENGTH, handle))
+    {
+        // strip line of whitespaces
+        i = 0;
+        j = 0;
+        len = (int) strlen (line);
+        while (i != len)
+        {
+            if (line[i] != ' ' && line[i] != '\t')
+                line[j++] = line[i];
+            i++;
+        }
+        line[j] = 0;
+
+        // parse the line for GU-value
+        if (!strncmp (line, VALUE_KEY, VALUE_KEY_LENGTH))
+            sscanf (line, VALUE_KEY"=%d", &gu);
+    }
+
+    // clean up
+    fclose (handle);
+
+    return gu;
+}
 
 static GLuint load_shader(const char *src, GLenum type)
 {
@@ -310,6 +372,10 @@ int main(int argc, char *argv[])
     GLint sampler[1];
     GLint uPersp[1];
     unsigned int width = 0, height = 0;
+    int gu = get_gu ();
+
+    // this is just for debugging
+    printf ("%s: %d\n", VALUE_KEY, gu);
 
     if (!mir_eglapp_init(argc, argv, &width, &height))
         return 1;

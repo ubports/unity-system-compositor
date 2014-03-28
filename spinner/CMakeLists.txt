@@ -17,6 +17,7 @@
 include_directories(
   ${CAIRO_INCLUDE_DIRS}
   ${GLIB_INCLUDE_DIRS}
+  ${ANDROIDPROPS_INCLUDE_DIRS}
   ${GLESv2_INCLUDE_DIRS}
   ${MIRCLIENT_INCLUDE_DIRS}
 )
@@ -33,6 +34,7 @@ target_link_libraries(unity-system-compositor-spinner
   EGL
   ${CAIRO_LDFLAGS}
   ${GLIB_LDFLAGS}
+  ${ANDROIDPROPS_LDFLAGS}
   ${GLESv2_LIBRARIES}
   ${MIRCLIENT_LDFLAGS}
 )
