@@ -230,7 +230,7 @@ updateAnimation (GTimer* timer, AnimationValues* anim)
         anim->fadeLogo += 1.6f * dt;
 
     // step 2.)
-    anim->angle += (0.017453292519943f * 360.0f / 6.0f) * dt;
+    anim->angle -= (0.017453292519943f * 360.0f / 6.0f) * dt;
 
     // step 3.) glow
     if (elapsed > 6.0f && elapsed < 6.833f)
