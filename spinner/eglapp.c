@@ -68,8 +68,6 @@ mir_eglapp_bool mir_eglapp_running(void)
 
 void mir_eglapp_swap_buffers(void)
 {
-    static time_t lasttime = 0;
-    time_t now = time(NULL);
     EGLint width, height;
 
     if (!running)
