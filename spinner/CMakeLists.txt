@@ -16,6 +16,7 @@
 
 include_directories(
   ${CAIRO_INCLUDE_DIRS}
+  ${GLIB_INCLUDE_DIRS}
   ${GLESv2_INCLUDE_DIRS}
   ${MIRCLIENT_INCLUDE_DIRS}
 )
@@ -31,6 +32,7 @@ add_executable(unity-system-compositor-spinner eglapp.c eglapp.h eglspinner.c)
 target_link_libraries(unity-system-compositor-spinner
   EGL
   ${CAIRO_LDFLAGS}
+  ${GLIB_LDFLAGS}
   ${GLESv2_LIBRARIES}
   ${MIRCLIENT_LDFLAGS}
 )
