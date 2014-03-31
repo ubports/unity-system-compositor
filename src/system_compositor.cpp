@@ -24,9 +24,10 @@
 #include <mir/default_server_configuration.h>
 #include <mir/options/default_configuration.h>
 #include <mir/frontend/shell.h>
+#include <mir/scene/surface.h>
+#include <mir/scene/surface_ranker.h>
 #include <mir/server_status_listener.h>
 #include <mir/shell/session.h>
-#include <mir/shell/surface.h>
 #include <mir/shell/focus_controller.h>
 #include <mir/input/cursor_listener.h>
 
@@ -99,10 +100,10 @@ private:
     bool ready;
 };
 
-class SystemCompositorSurface : public msh::Surface
+class SystemCompositorSurface : public ms::Surface
 {
 public:
-    SystemCompositorSurface(std::shared_ptr<msh::Surface> const& self,
+    SystemCompositorSurface(std::shared_ptr<ms::Surface> const& self,
                             SystemCompositorSession *session)
         : self{self}, session{session}, buffer_count{0} {}
 
@@ -134,15 +135,30 @@ public:
     void take_input_focus(std::shared_ptr<msh::InputTargeter> const& targeter) {self->take_input_focus(targeter);}
     void set_input_region(std::vector<geom::Rectangle> const& region) {self->set_input_region(region);}
     void allow_framedropping(bool allow) {self->allow_framedropping(allow);}
-    void raise(std::shared_ptr<ms::SurfaceRanker> const& controller) {self->raise(controller);}
     void resize(geom::Size const& size) {self->resize(size);}
-    void set_rotation(float degrees, glm::vec3 const& axis) {self->set_rotation(degrees, axis);}
+    void set_transformation(glm::mat4 const& t) {self->set_transformation(t);}
     float alpha() const {return self->alpha();}
     void set_alpha(float alpha) {self->set_alpha(alpha);}
     void with_most_recent_buffer_do(std::function<void(mg::Buffer&)> const& exec) {self->with_most_recent_buffer_do(exec);}
 
+    // ms::Surface methods
+    std::shared_ptr<mi::InputChannel> input_channel() const {return self->input_channel();}
+    void on_change(std::function<void()> change_notification) {self->on_change(change_notification);}
+
+    // mi::Surface methods
+    bool contains(geom::Point const& point) const {return self->contains(point);}
+
+    // mg::Renderable methods
+    std::shared_ptr<mg::Buffer> buffer(void const* user_id) const {return self->buffer(user_id);}
+    bool alpha_enabled() const {return self->alpha_enabled();}
+    geom::Rectangle screen_position() const {return self->screen_position();}
+    glm::mat4 transformation() const {return self->transformation();}
+    bool should_be_rendered_in(geom::Rectangle const& rect) const {return self->should_be_rendered_in(rect);}
+    bool shaped() const {return self->shaped();}
+    int buffers_ready_for_compositor() const {return self->buffers_ready_for_compositor();}
+
 private:
-    std::shared_ptr<msh::Surface> const self;
+    std::shared_ptr<ms::Surface> const self;
     SystemCompositorSession *session;
     int buffer_count;
 };
@@ -314,7 +330,7 @@ void SystemCompositorSession::raise(std::shared_ptr<ms::SurfaceRanker> const& co
     for (iter = surfaces.begin(); iter != surfaces.end(); ++iter)
     {
         // This will iterate by creation order, which is fine.  New surfaces on top
-        iter->second->raise(controller);
+        controller->raise(iter->second);
     }
 }
 
@@ -328,10 +344,10 @@ mf::SurfaceId SystemCompositorSession::create_surface(msh::SurfaceCreationParame
     mf::SurfaceId id = self->create_surface(params);
     std::shared_ptr<mf::Surface> mf_surface = self->get_surface(id);
 
-    auto surface = std::dynamic_pointer_cast<msh::Surface>(mf_surface);
+    auto surface = std::dynamic_pointer_cast<ms::Surface>(mf_surface);
     if (!surface)
     {
-        std::cerr << "Unexpected non-shell surface" << std::endl;
+        std::cerr << "Unexpected non-scene surface" << std::endl;
         self->destroy_surface(id);
         return mf::SurfaceId(0);
     }
