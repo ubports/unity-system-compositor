@@ -407,7 +407,7 @@ int main(int argc, char *argv[])
 
     // create and upload spinner-artwork
     glGenTextures(1, texture);
-    cairo_surface_t* spinner = pngToSurface (PKGDATADIR "/spinner.png");
+    cairo_surface_t* spinner = pngToSurface (PKGDATADIR "/spinner-logo.png");
     uploadTexture(texture[0], spinner);
 
     // bunch of shader-attributes to enable
