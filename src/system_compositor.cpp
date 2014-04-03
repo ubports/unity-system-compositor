@@ -107,6 +107,11 @@ public:
                             SystemCompositorSession *session)
         : self{self}, session{session}, buffer_count{0} {}
 
+    std::shared_ptr<ms::Surface> get_orig()
+    {
+        return self;
+    }
+
     void swap_buffers(mg::Buffer* old_buffer, std::function<void(mg::Buffer* new_buffer)> complete)
     {
         self->swap_buffers(old_buffer, complete);
@@ -143,7 +148,8 @@ public:
 
     // ms::Surface methods
     std::shared_ptr<mi::InputChannel> input_channel() const {return self->input_channel();}
-    void on_change(std::function<void()> change_notification) {self->on_change(change_notification);}
+    void add_observer(std::shared_ptr<ms::SurfaceObserver> const& observer) {self->add_observer(observer);}
+    void remove_observer(std::shared_ptr<ms::SurfaceObserver> const& observer) {self->remove_observer(observer);}
 
     // mi::Surface methods
     bool contains(geom::Point const& point) const {return self->contains(point);}
@@ -153,7 +159,7 @@ public:
     bool alpha_enabled() const {return self->alpha_enabled();}
     geom::Rectangle screen_position() const {return self->screen_position();}
     glm::mat4 transformation() const {return self->transformation();}
-    bool should_be_rendered_in(geom::Rectangle const& rect) const {return self->should_be_rendered_in(rect);}
+    bool visible() const {return self->visible();}
     bool shaped() const {return self->shaped();}
     int buffers_ready_for_compositor() const {return self->buffers_ready_for_compositor();}
 
@@ -330,7 +336,7 @@ void SystemCompositorSession::raise(std::shared_ptr<ms::SurfaceRanker> const& co
     for (iter = surfaces.begin(); iter != surfaces.end(); ++iter)
     {
         // This will iterate by creation order, which is fine.  New surfaces on top
-        controller->raise(iter->second);
+        controller->raise(iter->second->get_orig());
     }
 }
 
