@@ -16,7 +16,7 @@
  * Authored by: Robert Ancell <robert.ancell@canonical.com>
  */
 
-#include "dbus_screen.h"
+#include "screen_state_handler.h"
 #include "system_compositor.h"
 
 #include <mir/run_mir.h>
@@ -28,6 +28,7 @@
 #include <mir/shell/session.h>
 #include <mir/shell/focus_controller.h>
 #include <mir/input/cursor_listener.h>
+#include <mir/input/composite_event_filter.h>
 
 #include <cerrno>
 #include <iostream>
@@ -140,9 +141,14 @@ public:
         return the_options()->is_set("version");
     }
 
-    int power_off_delay()
+    int power_off_timeout()
     {
-        return the_options()->get("power-off-delay", 0);
+       return the_options()->get("power-off-timeout", 60);
+    }
+
+    int dimmer_timeout()
+    {
+       return the_options()->get("dimmer-timeout", 45);
     }
 
     std::string blacklist()
@@ -231,8 +237,9 @@ public:
             ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]")
             ("blacklist", po::value<std::string>(), "Video blacklist regex to use")
             ("version", "Show version of Unity System Compositor")
-            ("public-socket", po::value<bool>(), "Make the socket file publicly writable")
-            ("power-off-delay", po::value<int>(), "Delay in milliseconds before powering off screen [int]");
+            ("power-off-timeout", po::value<int>(), "The time in seconds before the screen is turned off when there are no active sessions")
+            ("dimmer-timeout", po::value<int>(), "The time in seconds before the screen is dimmed when there are no active sessions")
+            ("public-socket", po::value<bool>(), "Make the socket file publicly writable");
     }
 
     void parse_config_file(
@@ -370,6 +377,11 @@ void SystemCompositor::main()
 void SystemCompositor::qt_main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
-    DBusScreen dbus_screen(config, config->power_off_delay());
+
+    screen_state_handler = std::make_shared<ScreenStateHandler>(config,
+                                                                config->power_off_timeout(),
+                                                                config->dimmer_timeout());
+    auto composite_filter = config->the_composite_event_filter();
+    composite_filter->append(screen_state_handler);
     app.exec();
 }

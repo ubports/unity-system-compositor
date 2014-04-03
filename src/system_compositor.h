@@ -25,6 +25,7 @@ namespace mir { namespace shell { class Session; } }
 
 class SystemCompositorShell;
 class SystemCompositorServerConfiguration;
+class ScreenStateHandler;
 
 class SystemCompositor : public DMMessageHandler
 {
@@ -38,6 +39,7 @@ private:
     std::shared_ptr<SystemCompositorShell> shell;
     boost::asio::io_service io_service;
     std::shared_ptr<DMConnection> dm_connection;
+    std::shared_ptr<ScreenStateHandler> screen_state_handler;
 
     void set_active_session(std::string client_name);
     void set_next_session(std::string client_name);

@@ -17,11 +17,10 @@
 set(USC_SRCS
   main.cpp
   dbus_screen.cpp
-  dbus_screen.h
+  powerd_mediator.cpp
   dm_connection.cpp
-  dm_connection.h
   system_compositor.cpp
-  system_compositor.h
+  screen_state_handler.cpp
 )
 
 qt5_generate_dbus_interface(dbus_screen.h com.canonical.Unity.Screen.xml)

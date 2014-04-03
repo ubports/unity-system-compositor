@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013 Canonical Ltd.
+ * Copyright © 2014 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -14,33 +14,39 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DBUS_SCREEN_H_
-#define DBUS_SCREEN_H_
+#ifndef POWERD_MEDIATOR_
+#define POWERD_MEDIATOR_
 
 #include <mir_toolkit/common.h>
 
+#include <QString>
 #include <memory>
-#include <QObject>
-#include <QtCore>
 
 class QDBusInterface;
 
-class DBusScreen : public QObject
+class PowerdMediator
 {
-    Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "com.canonical.Unity.Screen")
-
 public:
-    explicit DBusScreen(std::function<void(MirPowerMode)> cb, QObject *parent = 0);
+    PowerdMediator();
+    ~PowerdMediator();
 
-    void emit_power_state_change(MirPowerMode mode);
+    void dim_backlight();
+    void bright_backlight();
+    void set_sys_state_for(MirPowerMode mode);
 
-public Q_SLOTS:
-    bool setScreenPowerMode(const QString &mode);
+    void change_backlight_defaults(int dim_brightness, int normal_brightness);
+
 
 private:
-    std::function<void(MirPowerMode mode)> notify_power_mode;
 
+    void release_sys_state();
+    void acquire_sys_state();
+
+    int dim_brightness;
+    int normal_brightness;
+    int last_brightness;
+    QString sys_state_cookie;
+    bool acquired_sys_state;
+    std::unique_ptr<QDBusInterface> powerd_interface;
 };
-
-#endif /* DBUS_SCREEN_H_ */
+#endif
