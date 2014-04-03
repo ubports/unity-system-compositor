@@ -144,6 +144,11 @@ public:
     {
         return the_options()->get("power-off-delay", 0);
     }
+    
+    bool enable_hardware_cursor()
+    {
+        return the_options()->get("enable-hardware-cursor", false);
+    }
 
     std::string blacklist()
     {
@@ -165,7 +170,14 @@ public:
             {
             }
         };
-        return std::make_shared<NullCursorListener>();
+        
+        // This is a workaround for u8 desktop preview in 14.04 for the lack of client cursor API.
+        // We need to disable the cursor for XMir but leave it on for the desktop preview.
+        // Luckily as it stands they run inside seperate instances of USC. ~racarr
+        if (enable_hardware_cursor())
+            return mir::DefaultServerConfiguration::the_cursor_listener();
+        else
+            return std::make_shared<NullCursorListener>();
     }
 
     std::shared_ptr<mir::ServerStatusListener> the_server_status_listener() override
@@ -232,7 +244,8 @@ public:
             ("blacklist", po::value<std::string>(), "Video blacklist regex to use")
             ("version", "Show version of Unity System Compositor")
             ("public-socket", po::value<bool>(), "Make the socket file publicly writable")
-            ("power-off-delay", po::value<int>(), "Delay in milliseconds before powering off screen [int]");
+            ("power-off-delay", po::value<int>(), "Delay in milliseconds before powering off screen [int]")
+            ("enable-hardware-cursor", po::value<bool>(), "Enable the hardware cursor (disabled by default)");
     }
 
     void parse_config_file(
