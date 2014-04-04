@@ -25,7 +25,7 @@
 #include <mir/options/default_configuration.h>
 #include <mir/frontend/shell.h>
 #include <mir/scene/surface.h>
-#include <mir/scene/surface_ranker.h>
+#include <mir/scene/surface_coordinator.h>
 #include <mir/server_status_listener.h>
 #include <mir/shell/session.h>
 #include <mir/shell/focus_controller.h>
@@ -60,7 +60,7 @@ public:
 
     // These are defined below, since they reference methods defined in other classes
     void mark_ready();
-    void raise(std::shared_ptr<ms::SurfaceRanker> const& controller);
+    void raise(std::shared_ptr<ms::SurfaceCoordinator> const& coordinator);
     std::shared_ptr<mf::Surface> get_surface(mf::SurfaceId surface) const;
     mf::SurfaceId create_surface(msh::SurfaceCreationParameters const& params);
 
@@ -84,13 +84,12 @@ public:
     void hide() {self->hide();}
     void show() {self->show();}
     void send_display_config(mg::DisplayConfiguration const&config) {self->send_display_config(config);}
-    int configure_surface(mf::SurfaceId id, MirSurfaceAttrib attrib, int value) {return self->configure_surface(id, attrib, value);}
 
     // msh::Session methods
     pid_t process_id() const {return self->process_id();}
     void force_requests_to_complete() {self->force_requests_to_complete();}
     void take_snapshot(msh::SnapshotCallback const& snapshot_taken) {self->take_snapshot(snapshot_taken);}
-    std::shared_ptr<msh::Surface> default_surface() const {return self->default_surface();}
+    std::shared_ptr<ms::Surface> default_surface() const {return self->default_surface();}
     void set_lifecycle_state(MirLifecycleState state) {self->set_lifecycle_state(state);}
 
 private:
@@ -129,7 +128,7 @@ public:
     int client_input_fd() const {return self->client_input_fd();}
     int configure(MirSurfaceAttrib attrib, int value) {return self->configure(attrib, value);}
 
-    // msh::Surface methods
+    // ms::Surface methods
     std::string name() const {return self->name();}
     MirSurfaceType type() const {return self->type();}
     MirSurfaceState state() const {return self->state();}
@@ -145,8 +144,6 @@ public:
     float alpha() const {return self->alpha();}
     void set_alpha(float alpha) {self->set_alpha(alpha);}
     void with_most_recent_buffer_do(std::function<void(mg::Buffer&)> const& exec) {self->with_most_recent_buffer_do(exec);}
-
-    // ms::Surface methods
     std::shared_ptr<mi::InputChannel> input_channel() const {return self->input_channel();}
     void add_observer(std::shared_ptr<ms::SurfaceObserver> const& observer) {self->add_observer(observer);}
     void remove_observer(std::shared_ptr<ms::SurfaceObserver> const& observer) {self->remove_observer(observer);}
@@ -162,6 +159,7 @@ public:
     bool visible() const {return self->visible();}
     bool shaped() const {return self->shaped();}
     int buffers_ready_for_compositor() const {return self->buffers_ready_for_compositor();}
+    mg::Renderable::ID id() const {return self->id();}
 
 private:
     std::shared_ptr<ms::Surface> const self;
@@ -175,8 +173,8 @@ public:
     SystemCompositorShell(SystemCompositor *compositor,
                           std::shared_ptr<mf::Shell> const& self,
                           std::shared_ptr<msh::FocusController> const& focus_controller,
-                          std::shared_ptr<ms::SurfaceRanker> const& surface_ranker)
-        : compositor{compositor}, self(self), focus_controller{focus_controller}, surface_ranker{surface_ranker}, active_ever_used{false} {}
+                          std::shared_ptr<ms::SurfaceCoordinator> const& surface_coordinator)
+        : compositor{compositor}, self(self), focus_controller{focus_controller}, surface_coordinator{surface_coordinator}, active_ever_used{false} {}
 
     std::shared_ptr<mf::Session> session_named(std::string const& name)
     {
@@ -209,13 +207,13 @@ public:
         {
             std::cerr << "Setting next focus to session " << next_session;
             next->hide();
-            next->raise(surface_ranker);
+            next->raise(surface_coordinator);
             to_show = next;
         }
         else if (!next_session.empty() && spinner)
         {
             std::cerr << "Setting next focus to spinner";
-            spinner->raise(surface_ranker);
+            spinner->raise(surface_coordinator);
             to_show = spinner;
         }
         else
@@ -313,7 +311,7 @@ private:
     SystemCompositor *compositor;
     std::shared_ptr<mf::Shell> const self;
     std::shared_ptr<msh::FocusController> const focus_controller;
-    std::shared_ptr<ms::SurfaceRanker> const surface_ranker;
+    std::shared_ptr<ms::SurfaceCoordinator> const surface_coordinator;
     std::map<std::string, std::shared_ptr<SystemCompositorSession>> sessions;
     std::string active_session;
     std::string next_session;
@@ -330,13 +328,13 @@ void SystemCompositorSession::mark_ready()
     }
 }
 
-void SystemCompositorSession::raise(std::shared_ptr<ms::SurfaceRanker> const& controller)
+void SystemCompositorSession::raise(std::shared_ptr<ms::SurfaceCoordinator> const& coordinator)
 {
     std::map<mf::SurfaceId, std::shared_ptr<SystemCompositorSurface>>::iterator iter;
     for (iter = surfaces.begin(); iter != surfaces.end(); ++iter)
     {
         // This will iterate by creation order, which is fine.  New surfaces on top
-        controller->raise(iter->second->get_orig());
+        coordinator->raise(iter->second->get_orig());
     }
 }
 
@@ -461,7 +459,7 @@ public:
                 compositor,
                 mir::DefaultServerConfiguration::the_frontend_shell(),
                 the_focus_controller(),
-                the_surface_ranker());
+                the_surface_coordinator());
         });
     }
 
