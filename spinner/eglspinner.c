@@ -307,8 +307,9 @@ updateAnimation (GTimer* timer, AnimationValues* anim)
         anim->fadeBackground -= 0.6f * dt;
 
     // step 5.)
-    if (elapsed > 6.833f)
-        anim->fadeLogo -= 1.6f * dt;
+    // Ignore this until we can synchronize with greeter
+    //if (elapsed > 6.833f)
+    //    anim->fadeLogo -= 1.6f * dt;
 }
 
 int main(int argc, char *argv[])
