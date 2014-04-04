@@ -20,9 +20,72 @@
 #include "eglapp.h"
 #include <assert.h>
 #include <cairo.h>
+#include <glib.h>
 #include <stdio.h>
+#include <string.h>
+#include <strings.h>
+#include <stdlib.h>
 #include <GLES2/gl2.h>
 #include <math.h>
+#include <hybris/properties/properties.h>
+
+// this is needed for get_gu() to obtain the grid-unit value
+#define MAX_LENGTH       256
+#define VALUE_KEY        "GRID_UNIT_PX"
+#define VALUE_KEY_LENGTH 12
+#define PROP_KEY         "ro.product.device"
+#define FILE_BASE        "/etc/ubuntu-touch-session.d/"
+#define FILE_EXTENSION   ".conf"
+
+int get_gu ()
+{
+    int   gu           = 10; // use 10 as a default value
+    char* defaultValue = "";
+    FILE* handle       = NULL;
+    int   i            = 0;
+    int   j            = 0;
+    int   len          = 0;
+    char  value[PROP_VALUE_MAX];
+    char  line[MAX_LENGTH];
+    char  filename[MAX_LENGTH];
+
+    // get name of file to read from
+    property_get (PROP_KEY, value, defaultValue);
+    bzero ((void*) filename, MAX_LENGTH);
+    strcpy (filename, FILE_BASE);
+    strcat (filename, value);
+    strcat (filename, FILE_EXTENSION);
+
+    // try to open it
+    handle = fopen ((const char*) filename, "r");
+    if (!handle)
+        return gu;
+
+    // read one line at a time
+    while (fgets (line, MAX_LENGTH, handle))
+    {
+        // strip line of whitespaces
+        i = 0;
+        j = 0;
+        len = (int) strlen (line);
+        while (i != len)
+        {
+            if (line[i] != ' ' && line[i] != '\t')
+                line[j++] = line[i];
+            i++;
+        }
+        line[j] = 0;
+
+        // parse the line for GU-value
+        if (!strncmp (line, VALUE_KEY, VALUE_KEY_LENGTH))
+            sscanf (line, VALUE_KEY"=%d", &gu);
+    }
+
+    // clean up
+    fclose (handle);
+
+    return gu;
+}
 
 static GLuint load_shader(const char *src, GLenum type)
 {
@@ -198,6 +261,57 @@ GLuint createShaderProgram(const char* vertexShaderSrc, const char* fragmentShad
     return progId;
 }
 
+typedef struct _AnimationValues
+{
+    double lastTimeStamp;
+    double angle;
+    double fadeBackground;
+    double fadeLogo;
+    double fadeGlow;
+} AnimationValues;
+
+void
+updateAnimation (GTimer* timer, AnimationValues* anim)
+{
+    if (!timer || !anim)
+        return;
+
+    //1.) 0.0   - 0.6:   logo fades in fully
+    //2.) 0.0   - 6.0:   logo does one full spin 360°
+    //3.) 6.0   - 6.833: glow fades in fully, black-background fades out to 50%
+    //4.) 6.833 - 7.666: glow fades out fully, black-background fades out to 0% 
+    //5.) 7.666 - 8.266: logo fades out fully
+    //8.266..:       now spinner can be closed as all its elements are faded out
+
+    double elapsed = g_timer_elapsed (timer, NULL);
+    double dt = elapsed - anim->lastTimeStamp;
+    anim->lastTimeStamp = elapsed;
+
+    // step 1.)
+    if (elapsed < 0.6f)
+        anim->fadeLogo += 1.6f * dt;
+
+    // step 2.)
+    anim->angle -= (0.017453292519943f * 360.0f / 6.0f) * dt;
+
+    // step 3.) glow
+    if (elapsed > 6.0f && elapsed < 6.833f)
+        anim->fadeGlow += 1.2f * dt;
+
+    // step 3.) background
+    if (elapsed > 6.0f && elapsed < 6.833f)
+        anim->fadeBackground -= 0.6f * dt;
+
+    // step 4.) background
+    if (elapsed > 7.0f)
+        anim->fadeBackground -= 0.6f * dt;
+
+    // step 5.)
+    // Ignore this until we can synchronize with greeter
+    //if (elapsed > 6.833f)
+    //    anim->fadeLogo -= 1.6f * dt;
+}
+
 int main(int argc, char *argv[])
 {
     const char vShaderSrcSpinner[] =
@@ -219,24 +333,27 @@ int main(int argc, char *argv[])
         "}                                               \n";
 
     const char fShaderSrc[] =
-        "precision mediump float;                                    \n"
-        "varying vec2 vTexCoords;                                    \n"
-        "uniform sampler2D uSampler;                                 \n"
-        "void main()                                                 \n"
-        "{                                                           \n"
-        "    // swizzle because texture was created with cairo       \n"
-        "    vec4 col = texture2D(uSampler, vTexCoords).bgra;        \n"
-        "    float a = col.a;                                        \n"
-        "    // revert cairo's premultiplied alpha                   \n"
-        "    gl_FragColor = vec4(col.r / a, col.g / a, col.b / a, a);\n"
-        "}                                                           \n";
+        "precision mediump float;                             \n"
+        "varying vec2 vTexCoords;                             \n"
+        "uniform sampler2D uSampler;                          \n"
+        "uniform float uFadeLogo;                             \n"
+        "void main()                                          \n"
+        "{                                                    \n"
+        "    // swizzle because texture was created with cairo\n"
+        "    vec4 col = texture2D(uSampler, vTexCoords).bgra; \n"
+        "    float r = col.r * uFadeLogo;                     \n"
+        "    float g = col.g * uFadeLogo;                     \n"
+        "    float b = col.b * uFadeLogo;                     \n"
+        "    float a = col.a * uFadeLogo;                     \n"
+        "    gl_FragColor = vec4(r, g, b, a);                 \n"
+        "}                                                    \n";
 
     const GLfloat vertices[] =
     {
-        0.05f, 0.05f,
-        0.05f, -0.05f,
-        -0.05f, 0.05f,
-        -0.05f, -0.05f,
+         0.1f,  0.1f,
+         0.1f, -0.1f,
+        -0.1f,  0.1f,
+        -0.1f, -0.1f,
     };
 
     const GLfloat texCoordsSpinner[] =
@@ -251,11 +368,15 @@ int main(int argc, char *argv[])
     GLuint texture[1];
     GLint vpos[1];
     GLint theta;
+    GLint fadeLogo;
     GLint aTexCoords[1];
     GLint sampler[1];
     GLint uPersp[1];
     unsigned int width = 0, height = 0;
-    GLfloat angle = 0.0f;
+    int gu = get_gu ();
+
+    // this is just for debugging
+    printf ("%s: %d\n", VALUE_KEY, gu);
 
     if (!mir_eglapp_init(argc, argv, &width, &height))
         return 1;
@@ -274,18 +395,20 @@ int main(int argc, char *argv[])
 
     // setup proper GL-blending
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendEquation(GL_FUNC_ADD);
 
     // get locations of shader-attributes/uniforms
     vpos[0] = glGetAttribLocation(prog[0], "vPosition");
     aTexCoords[0] = glGetAttribLocation(prog[0], "aTexCoords");
     theta = glGetUniformLocation(prog[0], "theta");
     sampler[0] = glGetUniformLocation(prog[0], "uSampler");
+    fadeLogo = glGetUniformLocation(prog[0], "uFadeLogo");
     uPersp[0] = glGetUniformLocation(prog[0], "uPersp");
 
     // create and upload spinner-artwork
     glGenTextures(1, texture);
-    cairo_surface_t* spinner = pngToSurface (PKGDATADIR "/spinner.png");
+    cairo_surface_t* spinner = pngToSurface (PKGDATADIR "/spinner-logo.png");
     uploadTexture(texture[0], spinner);
 
     // bunch of shader-attributes to enable
@@ -295,20 +418,25 @@ int main(int argc, char *argv[])
     glEnableVertexAttribArray(aTexCoords[0]);
     glActiveTexture(GL_TEXTURE0);
 
+    AnimationValues anim = {0.0, 0.0, 1.0, 0.0, 0.0};
+    GTimer* timer = g_timer_new ();
+
     while (mir_eglapp_running())
     {
+        glClearColor(BLACK, anim.fadeBackground);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // draw spinner
         glUseProgram(prog[0]);
         glBindTexture(GL_TEXTURE_2D, texture[0]);
         glUniform1i(sampler[0], 0);
-        glUniform1f(theta, angle);
+        glUniform1f(theta, anim.angle);
+        glUniform1f(fadeLogo, anim.fadeLogo);
         glUniformMatrix4fv(uPersp[0], 1, GL_FALSE, persp);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
         // update animation variable
-        angle -= 0.04f;
+        updateAnimation (timer, &anim);
 
         mir_eglapp_swap_buffers();
     }
@@ -316,6 +444,7 @@ int main(int argc, char *argv[])
     mir_eglapp_shutdown();
 
     glDeleteTextures(1, texture);
+    g_timer_destroy (timer);
 
     return 0;
 }

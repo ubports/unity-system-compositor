@@ -27,7 +27,7 @@
 
 float mir_eglapp_background_opacity = 1.0f;
 
-static const char appname[] = "egldemo";
+static const char appname[] = "eglspinner";
 
 static MirConnection *connection;
 static MirSurface *surface;
@@ -68,28 +68,12 @@ mir_eglapp_bool mir_eglapp_running(void)
 
 void mir_eglapp_swap_buffers(void)
 {
-    static time_t lasttime = 0;
-    static int lastcount = 0;
-    static int count = 0;
-    time_t now = time(NULL);
-    time_t dtime;
-    int dcount;
     EGLint width, height;
 
     if (!running)
         return;
 
     eglSwapBuffers(egldisplay, eglsurface);
-
-    count++;
-    dcount = count - lastcount;
-    dtime = now - lasttime;
-    if (dtime)
-    {
-        printf("%d FPS\n", dcount);
-        lasttime = now;
-        lastcount = count;
-    }
 
     /*
      * Querying the surface (actually the current buffer) dimensions here is
@@ -314,19 +298,6 @@ mir_eglapp_bool mir_eglapp_init(int argc, char *argv[],
         (MirPixelFormat*) format, mir_pixel_formats, &nformats);
 
     surfaceparm.pixel_format = (MirPixelFormat) format[0];
-    for (unsigned int f = 0; f < nformats; f++)
-    {
-        const int opaque = (format[f] == mir_pixel_format_xbgr_8888 ||
-                            format[f] == mir_pixel_format_xrgb_8888 ||
-                            format[f] == mir_pixel_format_bgr_888);
-
-        if ((mir_eglapp_background_opacity == 1.0f && opaque) ||
-            (mir_eglapp_background_opacity < 1.0f && !opaque))
-        {
-            surfaceparm.pixel_format = (MirPixelFormat) format[f];
-            break;
-        }
-    }
 
     printf("Current active output is %dx%d %+d%+d\n",
            mode->horizontal_resolution, mode->vertical_resolution,
