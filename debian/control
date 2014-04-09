@@ -42,7 +42,7 @@ Description: System compositor for Ubuntu
  server.
 
 Package: unity-system-compositor-autopilot
-Architecture: any
+Architecture: all
 Depends: python-autopilot,
          unity-system-compositor (>= ${source:Version}),
          ${misc:Depends},
@@ -51,7 +51,7 @@ Description: Test package for Unity System Compositor
  Autopilots tests for Unity System Compositor
 
 Package: ubuntu-desktop-mir
-Architecture: any
+Architecture: all
 Depends: lightdm (>= 1.9.4),
          unity-system-compositor,
          xserver-xorg-xmir,

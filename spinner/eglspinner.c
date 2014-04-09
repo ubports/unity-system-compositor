@@ -200,10 +200,12 @@ cairo_surface_t* pngToSurface (const char* filename)
     return surface;
 }
 
-void uploadTexture(GLuint id, cairo_surface_t* surface)
+void uploadTexture (GLuint id, const char* filename)
 {
-    if (!id || !surface)
+    if (!id || !filename)
         return;
+
+    cairo_surface_t* surface = pngToSurface (filename);
 
     glBindTexture(GL_TEXTURE_2D, id);
 
@@ -277,7 +279,7 @@ updateAnimation (GTimer* timer, AnimationValues* anim)
         return;
 
     //1.) 0.0   - 0.6:   logo fades in fully
-    //2.) 0.0   - 6.0:   logo does one full spin 360°
+    //2.) 0.0   - 8.0:   logo does one full spin 360°
     //3.) 6.0   - 6.833: glow fades in fully, black-background fades out to 50%
     //4.) 6.833 - 7.666: glow fades out fully, black-background fades out to 0% 
     //5.) 7.666 - 8.266: logo fades out fully
@@ -292,22 +294,23 @@ updateAnimation (GTimer* timer, AnimationValues* anim)
         anim->fadeLogo += 1.6f * dt;
 
     // step 2.)
-    anim->angle -= (0.017453292519943f * 360.0f / 6.0f) * dt;
+    anim->angle -= (0.017453292519943f * 360.0f / 8.0f) * dt;
 
     // step 3.) glow
     if (elapsed > 6.0f && elapsed < 6.833f)
         anim->fadeGlow += 1.2f * dt;
 
+    // Ignore the following three until we can synchronize with greeter
+
     // step 3.) background
-    if (elapsed > 6.0f && elapsed < 6.833f)
-        anim->fadeBackground -= 0.6f * dt;
+    //if (elapsed > 6.0f && elapsed < 6.833f)
+    //    anim->fadeBackground -= 0.6f * dt;
 
     // step 4.) background
-    if (elapsed > 7.0f)
-        anim->fadeBackground -= 0.6f * dt;
+    //if (elapsed > 7.0f)
+    //    anim->fadeBackground -= 0.6f * dt;
 
     // step 5.)
-    // Ignore this until we can synchronize with greeter
     //if (elapsed > 6.833f)
     //    anim->fadeLogo -= 1.6f * dt;
 }
@@ -332,7 +335,23 @@ int main(int argc, char *argv[])
         "    vTexCoords = aTexCoords;                    \n"
         "}                                               \n";
 
-    const char fShaderSrc[] =
+    const char fShaderSrcGlow[] =
+        "precision mediump float;                             \n"
+        "varying vec2 vTexCoords;                             \n"
+        "uniform sampler2D uSampler;                          \n"
+        "uniform float uFadeGlow;                             \n"
+        "void main()                                          \n"
+        "{                                                    \n"
+        "    // swizzle because texture was created with cairo\n"
+        "    vec4 col = texture2D(uSampler, vTexCoords).bgra; \n"
+        "    float r = col.r * uFadeGlow;                     \n"
+        "    float g = col.g * uFadeGlow;                     \n"
+        "    float b = col.b * uFadeGlow;                     \n"
+        "    float a = col.a * uFadeGlow;                     \n"
+        "    gl_FragColor = vec4(r, g, b, a);                 \n"
+        "}                                                    \n";
+
+    const char fShaderSrcLogo[] =
         "precision mediump float;                             \n"
         "varying vec2 vTexCoords;                             \n"
         "uniform sampler2D uSampler;                          \n"
@@ -364,14 +383,15 @@ int main(int argc, char *argv[])
         1.0f, 0.0f,
     };
 
-    GLuint prog[1];
-    GLuint texture[1];
-    GLint vpos[1];
+    GLuint prog[2];
+    GLuint texture[2];
+    GLint vpos[2];
     GLint theta;
+    GLint fadeGlow;
     GLint fadeLogo;
-    GLint aTexCoords[1];
-    GLint sampler[1];
-    GLint uPersp[1];
+    GLint aTexCoords[2];
+    GLint sampler[2];
+    GLint uPersp[2];
     unsigned int width = 0, height = 0;
     int gu = get_gu ();
 
@@ -381,7 +401,8 @@ int main(int argc, char *argv[])
     if (!mir_eglapp_init(argc, argv, &width, &height))
         return 1;
 
-    prog[0] = createShaderProgram (vShaderSrcSpinner, fShaderSrc);
+    prog[0] = createShaderProgram (vShaderSrcSpinner, fShaderSrcGlow);
+    prog[1] = createShaderProgram (vShaderSrcSpinner, fShaderSrcLogo);
 
     // setup viewport and projection
     glClearColor(BLACK, mir_eglapp_background_opacity);
@@ -403,19 +424,29 @@ int main(int argc, char *argv[])
     aTexCoords[0] = glGetAttribLocation(prog[0], "aTexCoords");
     theta = glGetUniformLocation(prog[0], "theta");
     sampler[0] = glGetUniformLocation(prog[0], "uSampler");
-    fadeLogo = glGetUniformLocation(prog[0], "uFadeLogo");
+    fadeGlow = glGetUniformLocation(prog[0], "uFadeGlow");
     uPersp[0] = glGetUniformLocation(prog[0], "uPersp");
+    vpos[1] = glGetAttribLocation(prog[1], "vPosition");
+    aTexCoords[1] = glGetAttribLocation(prog[1], "aTexCoords");
+    sampler[1] = glGetUniformLocation(prog[1], "uSampler");
+    fadeLogo = glGetUniformLocation(prog[1], "uFadeLogo");
+    uPersp[1] = glGetUniformLocation(prog[1], "uPersp");
+
 
     // create and upload spinner-artwork
-    glGenTextures(1, texture);
-    cairo_surface_t* spinner = pngToSurface (PKGDATADIR "/spinner-logo.png");
-    uploadTexture(texture[0], spinner);
+    glGenTextures(2, texture);
+    uploadTexture(texture[0], PKGDATADIR "/spinner-glow.png");
+    uploadTexture(texture[1], PKGDATADIR "/spinner-logo.png");
 
     // bunch of shader-attributes to enable
     glVertexAttribPointer(vpos[0], 2, GL_FLOAT, GL_FALSE, 0, vertices);
+    glVertexAttribPointer(vpos[1], 2, GL_FLOAT, GL_FALSE, 0, vertices);
     glVertexAttribPointer(aTexCoords[0], 2, GL_FLOAT, GL_FALSE, 0, texCoordsSpinner);
+    glVertexAttribPointer(aTexCoords[1], 2, GL_FLOAT, GL_FALSE, 0, texCoordsSpinner);
     glEnableVertexAttribArray(vpos[0]);
+    glEnableVertexAttribArray(vpos[1]);
     glEnableVertexAttribArray(aTexCoords[0]);
+    glEnableVertexAttribArray(aTexCoords[1]);
     glActiveTexture(GL_TEXTURE0);
 
     AnimationValues anim = {0.0, 0.0, 1.0, 0.0, 0.0};
@@ -426,13 +457,22 @@ int main(int argc, char *argv[])
         glClearColor(BLACK, anim.fadeBackground);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // draw spinner
+        // draw glow
         glUseProgram(prog[0]);
         glBindTexture(GL_TEXTURE_2D, texture[0]);
         glUniform1i(sampler[0], 0);
         glUniform1f(theta, anim.angle);
-        glUniform1f(fadeLogo, anim.fadeLogo);
+        glUniform1f(fadeGlow, anim.fadeGlow);
         glUniformMatrix4fv(uPersp[0], 1, GL_FALSE, persp);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+        // draw logo
+        glUseProgram(prog[1]);
+        glBindTexture(GL_TEXTURE_2D, texture[1]);
+        glUniform1i(sampler[1], 0);
+        glUniform1f(theta, anim.angle);
+        glUniform1f(fadeLogo, anim.fadeLogo);
+        glUniformMatrix4fv(uPersp[1], 1, GL_FALSE, persp);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
         // update animation variable
@@ -443,7 +483,7 @@ int main(int argc, char *argv[])
 
     mir_eglapp_shutdown();
 
-    glDeleteTextures(1, texture);
+    glDeleteTextures(2, texture);
     g_timer_destroy (timer);
 
     return 0;
