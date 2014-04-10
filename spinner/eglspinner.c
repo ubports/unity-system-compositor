@@ -118,72 +118,6 @@ static GLuint load_shader(const char *src, GLenum type)
 #define DARK_AUBERGINE  0.17254902f,  0.0f,         0.117647059f
 #define BLACK           0.0f,         0.0f,         0.0f
 #define WHITE           1.0f,         1.0f,         1.0f
-#define PI              3.141592654f
-
-void identity (float* out)
-{
-    out[0]  = 1.0f;
-    out[1]  = 0.0f;
-    out[2]  = 0.0f;
-    out[3]  = 0.0f;
-    out[4]  = 0.0f;
-    out[5]  = 1.0f;
-    out[6]  = 0.0f;
-    out[7]  = 0.0f;
-    out[8]  = 0.0f;
-    out[9]  = 0.0f;
-    out[10] = 1.0f;
-    out[11] = 0.0f;
-    out[12] = 0.0f;
-    out[13] = 0.0f;
-    out[14] = 0.0f;
-    out[15] = 1.0f;
-}
-
-void frustum (float a,
-              float b,
-              float c,
-              float d,
-              float e,
-              float g,
-              float* out)
-{
-    assert(out);
-
-    float h = b - a;
-    float i = d - c;
-    float j = g - e;
-
-    out[0]  = e * 2.0f / h;
-    out[1]  = 0.0f;
-    out[2]  = 0.0f;
-    out[3]  = 0.0f;
-    out[4]  = 0.0f;
-    out[5]  = e * 2.0f / i;
-    out[6]  = 0.0f;
-    out[7]  = 0.0f;
-    out[8]  = (b + a) / h;
-    out[9]  = (d + c) / i;
-    out[10] = -(g + e) / j;
-    out[11] = -1.0f;
-    out[12] = 0.0f;
-    out[13] = 0.0f;
-    out[14] = -(g * e * 2.0f) / j;
-    out[15] = 0.0f;
-}
-
-void perspective (float a,
-                  float b,
-                  float c,
-                  float d,
-                  float* out)
-{
-    assert(out);
-
-    a = c * tanf(a * PI / 360.0f);
-    b = a * b;
-    frustum (-b, b, -a, a, c, d, out);
-}
 
 cairo_surface_t* pngToSurface (const char* filename)
 {
@@ -200,10 +134,12 @@ cairo_surface_t* pngToSurface (const char* filename)
     return surface;
 }
 
-void uploadTexture(GLuint id, cairo_surface_t* surface)
+void uploadTexture (GLuint id, const char* filename)
 {
-    if (!id || !surface)
+    if (!id || !filename)
         return;
+
+    cairo_surface_t* surface = pngToSurface (filename);
 
     glBindTexture(GL_TEXTURE_2D, id);
 
@@ -298,16 +234,17 @@ updateAnimation (GTimer* timer, AnimationValues* anim)
     if (elapsed > 6.0f && elapsed < 6.833f)
         anim->fadeGlow += 1.2f * dt;
 
+    // Ignore the following three until we can synchronize with greeter
+
     // step 3.) background
-    if (elapsed > 6.0f && elapsed < 6.833f)
-        anim->fadeBackground -= 0.6f * dt;
+    //if (elapsed > 6.0f && elapsed < 6.833f)
+    //    anim->fadeBackground -= 0.6f * dt;
 
     // step 4.) background
-    if (elapsed > 7.0f)
-        anim->fadeBackground -= 0.6f * dt;
+    //if (elapsed > 7.0f)
+    //    anim->fadeBackground -= 0.6f * dt;
 
     // step 5.)
-    // Ignore this until we can synchronize with greeter
     //if (elapsed > 6.833f)
     //    anim->fadeLogo -= 1.6f * dt;
 }
@@ -318,7 +255,6 @@ int main(int argc, char *argv[])
         "attribute vec4 vPosition;                       \n"
         "attribute vec2 aTexCoords;                      \n"
         "uniform float theta;                            \n"
-        "uniform mat4 uPersp;                            \n"
         "varying vec2 vTexCoords;                        \n"
         "void main()                                     \n"
         "{                                               \n"
@@ -327,12 +263,27 @@ int main(int argc, char *argv[])
         "    mat2 m;                                     \n"
         "    m[0] = vec2(c, s);                          \n"
         "    m[1] = vec2(-s, c);                         \n"
-        "    vec2 p = m * vec2(vPosition.x, vPosition.y);\n"
-        "    gl_Position = uPersp * vec4(p, -1.0, 1.0);  \n"
-        "    vTexCoords = aTexCoords;                    \n"
+        "    vTexCoords = m * aTexCoords + vec2 (0.5, 0.5); \n"
+        "    gl_Position = vec4(vPosition.xy, -1.0, 1.0); \n"
         "}                                               \n";
 
-    const char fShaderSrc[] =
+    const char fShaderSrcGlow[] =
+        "precision mediump float;                             \n"
+        "varying vec2 vTexCoords;                             \n"
+        "uniform sampler2D uSampler;                          \n"
+        "uniform float uFadeGlow;                             \n"
+        "void main()                                          \n"
+        "{                                                    \n"
+        "    // swizzle because texture was created with cairo\n"
+        "    vec4 col = texture2D(uSampler, vTexCoords).bgra; \n"
+        "    float r = col.r * uFadeGlow;                     \n"
+        "    float g = col.g * uFadeGlow;                     \n"
+        "    float b = col.b * uFadeGlow;                     \n"
+        "    float a = col.a * uFadeGlow;                     \n"
+        "    gl_FragColor = vec4(r, g, b, a);                 \n"
+        "}                                                    \n";
+
+    const char fShaderSrcLogo[] =
         "precision mediump float;                             \n"
         "varying vec2 vTexCoords;                             \n"
         "uniform sampler2D uSampler;                          \n"
@@ -348,50 +299,46 @@ int main(int argc, char *argv[])
         "    gl_FragColor = vec4(r, g, b, a);                 \n"
         "}                                                    \n";
 
-    const GLfloat vertices[] =
-    {
-         0.1f,  0.1f,
-         0.1f, -0.1f,
-        -0.1f,  0.1f,
-        -0.1f, -0.1f,
-    };
-
-    const GLfloat texCoordsSpinner[] =
-    {
-        0.0f, 1.0f,
-        0.0f, 0.0f,
-        1.0f, 1.0f,
-        1.0f, 0.0f,
-    };
-
-    GLuint prog[1];
-    GLuint texture[1];
-    GLint vpos[1];
+    GLuint prog[2];
+    GLuint texture[2];
+    GLint vpos[2];
     GLint theta;
+    GLint fadeGlow;
     GLint fadeLogo;
-    GLint aTexCoords[1];
-    GLint sampler[1];
-    GLint uPersp[1];
-    unsigned int width = 0, height = 0;
-    int gu = get_gu ();
-
-    // this is just for debugging
-    printf ("%s: %d\n", VALUE_KEY, gu);
+    GLint aTexCoords[2];
+    GLint sampler[2];
+    unsigned int width = 0;
+    unsigned int height = 0;
 
     if (!mir_eglapp_init(argc, argv, &width, &height))
         return 1;
 
-    prog[0] = createShaderProgram (vShaderSrcSpinner, fShaderSrc);
+    double pixelSize = (double) get_gu () * 11.18;
+    double halfRealWidth = ((2.0 / (double) width) * pixelSize) / 2.0;
+    double halfRealHeight = ((2.0 / (double) height) * pixelSize) / 2.0;
+
+    const GLfloat vertices[] =
+    {
+         halfRealWidth,  halfRealHeight,
+         halfRealWidth, -halfRealHeight,
+        -halfRealWidth,  halfRealHeight,
+        -halfRealWidth, -halfRealHeight,
+    };
+
+    const GLfloat texCoordsSpinner[] =
+    {
+        -0.5f, 0.5f,
+        -0.5f, -0.5f,
+        0.5f, 0.5f,
+        0.5f, -0.5f,
+    };
+
+    prog[0] = createShaderProgram (vShaderSrcSpinner, fShaderSrcGlow);
+    prog[1] = createShaderProgram (vShaderSrcSpinner, fShaderSrcLogo);
 
     // setup viewport and projection
     glClearColor(BLACK, mir_eglapp_background_opacity);
     glViewport(0, 0, width, height);
-    float persp[16];
-    perspective (45.0f,
-                 (float) width / (float) height,
-                 0.1f,
-                 100.0f,
-                 persp);
 
     // setup proper GL-blending
     glEnable(GL_BLEND);
@@ -403,19 +350,26 @@ int main(int argc, char *argv[])
     aTexCoords[0] = glGetAttribLocation(prog[0], "aTexCoords");
     theta = glGetUniformLocation(prog[0], "theta");
     sampler[0] = glGetUniformLocation(prog[0], "uSampler");
-    fadeLogo = glGetUniformLocation(prog[0], "uFadeLogo");
-    uPersp[0] = glGetUniformLocation(prog[0], "uPersp");
+    fadeGlow = glGetUniformLocation(prog[0], "uFadeGlow");
+    vpos[1] = glGetAttribLocation(prog[1], "vPosition");
+    aTexCoords[1] = glGetAttribLocation(prog[1], "aTexCoords");
+    sampler[1] = glGetUniformLocation(prog[1], "uSampler");
+    fadeLogo = glGetUniformLocation(prog[1], "uFadeLogo");
 
     // create and upload spinner-artwork
-    glGenTextures(1, texture);
-    cairo_surface_t* spinner = pngToSurface (PKGDATADIR "/spinner-logo.png");
-    uploadTexture(texture[0], spinner);
+    glGenTextures(2, texture);
+    uploadTexture(texture[0], PKGDATADIR "/spinner-glow.png");
+    uploadTexture(texture[1], PKGDATADIR "/spinner-logo.png");
 
     // bunch of shader-attributes to enable
     glVertexAttribPointer(vpos[0], 2, GL_FLOAT, GL_FALSE, 0, vertices);
+    glVertexAttribPointer(vpos[1], 2, GL_FLOAT, GL_FALSE, 0, vertices);
     glVertexAttribPointer(aTexCoords[0], 2, GL_FLOAT, GL_FALSE, 0, texCoordsSpinner);
+    glVertexAttribPointer(aTexCoords[1], 2, GL_FLOAT, GL_FALSE, 0, texCoordsSpinner);
     glEnableVertexAttribArray(vpos[0]);
+    glEnableVertexAttribArray(vpos[1]);
     glEnableVertexAttribArray(aTexCoords[0]);
+    glEnableVertexAttribArray(aTexCoords[1]);
     glActiveTexture(GL_TEXTURE0);
 
     AnimationValues anim = {0.0, 0.0, 1.0, 0.0, 0.0};
@@ -426,13 +380,20 @@ int main(int argc, char *argv[])
         glClearColor(BLACK, anim.fadeBackground);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // draw spinner
+        // draw glow
         glUseProgram(prog[0]);
         glBindTexture(GL_TEXTURE_2D, texture[0]);
         glUniform1i(sampler[0], 0);
         glUniform1f(theta, anim.angle);
+        glUniform1f(fadeGlow, anim.fadeGlow);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+        // draw logo
+        glUseProgram(prog[1]);
+        glBindTexture(GL_TEXTURE_2D, texture[1]);
+        glUniform1i(sampler[1], 0);
+        glUniform1f(theta, anim.angle);
         glUniform1f(fadeLogo, anim.fadeLogo);
-        glUniformMatrix4fv(uPersp[0], 1, GL_FALSE, persp);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
         // update animation variable
@@ -443,7 +404,7 @@ int main(int argc, char *argv[])
 
     mir_eglapp_shutdown();
 
-    glDeleteTextures(1, texture);
+    glDeleteTextures(2, texture);
     g_timer_destroy (timer);
 
     return 0;
