@@ -279,7 +279,7 @@ updateAnimation (GTimer* timer, AnimationValues* anim)
         return;
 
     //1.) 0.0   - 0.6:   logo fades in fully
-    //2.) 0.0   - 8.0:   logo does one full spin 360°
+    //2.) 0.0   - 6.0:   logo does one full spin 360°
     //3.) 6.0   - 6.833: glow fades in fully, black-background fades out to 50%
     //4.) 6.833 - 7.666: glow fades out fully, black-background fades out to 0% 
     //5.) 7.666 - 8.266: logo fades out fully
@@ -294,7 +294,7 @@ updateAnimation (GTimer* timer, AnimationValues* anim)
         anim->fadeLogo += 1.6f * dt;
 
     // step 2.)
-    anim->angle -= (0.017453292519943f * 360.0f / 8.0f) * dt;
+    anim->angle -= (0.017453292519943f * 360.0f / 6.0f) * dt;
 
     // step 3.) glow
     if (elapsed > 6.0f && elapsed < 6.833f)
