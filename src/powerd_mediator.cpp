@@ -31,13 +31,13 @@ PowerdMediator::PowerdMediator()
                                           "com.canonical.powerd",
                                           QDBusConnection::systemBus())}
 {
-    QDBusPendingReply<int, int, int, bool> reply =
+    QDBusPendingReply<int, int, int, int, bool> reply =
         powerd_interface->asyncCall("getBrightnessParams");
     reply.waitForFinished();
     if (!reply.isError())
     {
         dim_brightness = reply.argumentAt<0>();
-        normal_brightness = reply.argumentAt<2>();
+        normal_brightness = reply.argumentAt<3>();
     }
 }
 
