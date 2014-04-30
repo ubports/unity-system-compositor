@@ -21,7 +21,7 @@
 
 #include "dm_connection.h"
 
-namespace mir { namespace shell { class Session; } }
+namespace mir { namespace scene { class Session; } }
 
 class SystemCompositorShell;
 class SystemCompositorServerConfiguration;
