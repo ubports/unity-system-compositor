@@ -25,7 +25,7 @@
 #include <mir/options/default_configuration.h>
 #include <mir/frontend/shell.h>
 #include <mir/server_status_listener.h>
-#include <mir/shell/session.h>
+#include <mir/scene/session.h>
 #include <mir/shell/focus_controller.h>
 #include <mir/input/cursor_listener.h>
 
@@ -39,6 +39,7 @@
 #include <QCoreApplication>
 
 namespace msh = mir::shell;
+namespace msc = mir::scene;
 namespace mf = mir::frontend;
 namespace mi = mir::input;
 namespace mo = mir::options;
@@ -72,9 +73,9 @@ public:
 private:
     void update_session_focus()
     {
-        auto spinner = std::static_pointer_cast<msh::Session>(session_named(spinner_session));
-        auto next = std::static_pointer_cast<msh::Session>(session_named(next_session));
-        auto active = std::static_pointer_cast<msh::Session>(session_named(active_session));
+        auto spinner = std::static_pointer_cast<msc::Session>(session_named(spinner_session));
+        auto next = std::static_pointer_cast<msc::Session>(session_named(next_session));
+        auto active = std::static_pointer_cast<msc::Session>(session_named(active_session));
 
         if (spinner)
             spinner->hide();
@@ -132,7 +133,7 @@ private:
 
     mf::SurfaceId create_surface_for(
         std::shared_ptr<mf::Session> const& session,
-        msh::SurfaceCreationParameters const& params)
+        msc::SurfaceCreationParameters const& params)
     {
         return self->create_surface_for(session, params);
     }
