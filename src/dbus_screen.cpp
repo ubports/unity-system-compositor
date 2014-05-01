@@ -40,13 +40,9 @@ static void set_screen_power_mode(MirPowerMode mode, const std::shared_ptr<mir::
         }
     );
 
-    if (mode != MirPowerMode::mir_power_mode_on)
-        compositor->stop();
-
+    compositor->stop();
     display->configure(*displayConfig.get());
-
-    if (mode == MirPowerMode::mir_power_mode_on)
-        compositor->start();
+    compositor->start();
 }
 
 // Note: this class should be created only after when the Mir DisplayServer has started

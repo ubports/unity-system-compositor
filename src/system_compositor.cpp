@@ -25,9 +25,9 @@
 #include <mir/options/default_configuration.h>
 #include <mir/frontend/shell.h>
 #include <mir/scene/surface.h>
-#include <mir/scene/surface_ranker.h>
+#include <mir/scene/surface_coordinator.h>
 #include <mir/server_status_listener.h>
-#include <mir/shell/session.h>
+#include <mir/scene/session.h>
 #include <mir/shell/focus_controller.h>
 #include <mir/input/cursor_listener.h>
 
@@ -42,34 +42,34 @@
 
 namespace geom = mir::geometry;
 namespace msh = mir::shell;
+namespace msc = mir::scene;
 namespace mf = mir::frontend;
 namespace mg = mir::graphics;
 namespace mi = mir::input;
 namespace mo = mir::options;
-namespace ms = mir::scene;
 namespace po = boost::program_options;
 
 class SystemCompositorSurface;
 
-class SystemCompositorSession : public msh::Session
+class SystemCompositorSession : public msc::Session
 {
 public:
-    SystemCompositorSession(std::shared_ptr<msh::Session> const& self,
+    SystemCompositorSession(std::shared_ptr<msc::Session> const& self,
                             SystemCompositorShell *shell)
         : self{self}, shell{shell}, ready{false} {}
 
     // These are defined below, since they reference methods defined in other classes
     void mark_ready();
-    void raise(std::shared_ptr<ms::SurfaceRanker> const& controller);
+    void raise(std::shared_ptr<msc::SurfaceCoordinator> const& coordinator);
     std::shared_ptr<mf::Surface> get_surface(mf::SurfaceId surface) const;
-    mf::SurfaceId create_surface(msh::SurfaceCreationParameters const& params);
+    mf::SurfaceId create_surface(msc::SurfaceCreationParameters const& params);
 
     bool is_ready() const
     {
         return ready;
     }
 
-    std::shared_ptr<msh::Session> get_orig()
+    std::shared_ptr<msc::Session> get_orig()
     {
         return self;
     }
@@ -84,30 +84,27 @@ public:
     void hide() {self->hide();}
     void show() {self->show();}
     void send_display_config(mg::DisplayConfiguration const&config) {self->send_display_config(config);}
-    int configure_surface(mf::SurfaceId id, MirSurfaceAttrib attrib, int value) {return self->configure_surface(id, attrib, value);}
-
-    // msh::Session methods
     pid_t process_id() const {return self->process_id();}
     void force_requests_to_complete() {self->force_requests_to_complete();}
-    void take_snapshot(msh::SnapshotCallback const& snapshot_taken) {self->take_snapshot(snapshot_taken);}
-    std::shared_ptr<msh::Surface> default_surface() const {return self->default_surface();}
+    void take_snapshot(msc::SnapshotCallback const& snapshot_taken) {self->take_snapshot(snapshot_taken);}
+    std::shared_ptr<msc::Surface> default_surface() const {return self->default_surface();}
     void set_lifecycle_state(MirLifecycleState state) {self->set_lifecycle_state(state);}
 
 private:
-    std::shared_ptr<msh::Session> const self;
+    std::shared_ptr<msc::Session> const self;
     SystemCompositorShell *shell;
     std::map<mf::SurfaceId, std::shared_ptr<SystemCompositorSurface>> surfaces;
     bool ready;
 };
 
-class SystemCompositorSurface : public ms::Surface
+class SystemCompositorSurface : public msc::Surface
 {
 public:
-    SystemCompositorSurface(std::shared_ptr<ms::Surface> const& self,
+    SystemCompositorSurface(std::shared_ptr<msc::Surface> const& self,
                             SystemCompositorSession *session)
         : self{self}, session{session}, buffer_count{0} {}
 
-    std::shared_ptr<ms::Surface> get_orig()
+    std::shared_ptr<msc::Surface> get_orig()
     {
         return self;
     }
@@ -129,7 +126,7 @@ public:
     int client_input_fd() const {return self->client_input_fd();}
     int configure(MirSurfaceAttrib attrib, int value) {return self->configure(attrib, value);}
 
-    // msh::Surface methods
+    // msc::Surface methods
     std::string name() const {return self->name();}
     MirSurfaceType type() const {return self->type();}
     MirSurfaceState state() const {return self->state();}
@@ -146,11 +143,10 @@ public:
     void set_alpha(float alpha) {self->set_alpha(alpha);}
     void with_most_recent_buffer_do(std::function<void(mg::Buffer&)> const& exec) {self->with_most_recent_buffer_do(exec);}
 
-    // ms::Surface methods
+    // msc::Surface methods
     std::shared_ptr<mi::InputChannel> input_channel() const {return self->input_channel();}
-    void on_change(std::function<void()> change_notification) {self->on_change(change_notification);}
-    void add_observer(std::shared_ptr<ms::SurfaceObserver> const& observer) {self->add_observer(observer);}
-    void remove_observer(std::shared_ptr<ms::SurfaceObserver> const& observer) {self->remove_observer(observer);}
+    void add_observer(std::shared_ptr<msc::SurfaceObserver> const& observer) {self->add_observer(observer);}
+    void remove_observer(std::shared_ptr<msc::SurfaceObserver> const& observer) {self->remove_observer(observer);}
 
     // mi::Surface methods
     bool contains(geom::Point const& point) const {return self->contains(point);}
@@ -163,9 +159,10 @@ public:
     bool visible() const {return self->visible();}
     bool shaped() const {return self->shaped();}
     int buffers_ready_for_compositor() const {return self->buffers_ready_for_compositor();}
+    mg::Renderable::ID id() const {return self->id();}
 
 private:
-    std::shared_ptr<ms::Surface> const self;
+    std::shared_ptr<msc::Surface> const self;
     SystemCompositorSession *session;
     int buffer_count;
 };
@@ -176,8 +173,8 @@ public:
     SystemCompositorShell(SystemCompositor *compositor,
                           std::shared_ptr<mf::Shell> const& self,
                           std::shared_ptr<msh::FocusController> const& focus_controller,
-                          std::shared_ptr<ms::SurfaceRanker> const& surface_ranker)
-        : compositor{compositor}, self(self), focus_controller{focus_controller}, surface_ranker{surface_ranker}, active_ever_used{false} {}
+                          std::shared_ptr<msc::SurfaceCoordinator> const& surface_coordinator)
+        : compositor{compositor}, self(self), focus_controller{focus_controller}, surface_coordinator{surface_coordinator}, active_ever_used{false} {}
 
     std::shared_ptr<mf::Session> session_named(std::string const& name)
     {
@@ -210,13 +207,13 @@ public:
         {
             std::cerr << "Setting next focus to session " << next_session;
             next->hide();
-            next->raise(surface_ranker);
+            next->raise(surface_coordinator);
             to_show = next;
         }
         else if (!next_session.empty() && spinner)
         {
             std::cerr << "Setting next focus to spinner";
-            spinner->raise(surface_ranker);
+            spinner->raise(surface_coordinator);
             to_show = spinner;
         }
         else
@@ -261,10 +258,10 @@ private:
     {
         std::cerr << "Opening session " << name << std::endl;
 
-        // We need msh::Session objects because that is what the focus controller
+        // We need msc::Session objects because that is what the focus controller
         // works with.  But the mf::Shell interface deals with mf::Session objects.
-        // So we cast here since in practice, these objects are also msh::Sessions.
-        auto orig = std::dynamic_pointer_cast<msh::Session>(self->open_session(client_pid, name, sink));
+        // So we cast here since in practice, these objects are also msc::Sessions.
+        auto orig = std::dynamic_pointer_cast<msc::Session>(self->open_session(client_pid, name, sink));
         if (!orig)
         {
             std::cerr << "Unexpected non-shell session" << std::endl;
@@ -297,7 +294,7 @@ private:
 
     mf::SurfaceId create_surface_for(
         std::shared_ptr<mf::Session> const& session,
-        msh::SurfaceCreationParameters const& params)
+        msc::SurfaceCreationParameters const& params)
     {
         return self->create_surface_for(session, params);
     }
@@ -314,7 +311,7 @@ private:
     SystemCompositor *compositor;
     std::shared_ptr<mf::Shell> const self;
     std::shared_ptr<msh::FocusController> const focus_controller;
-    std::shared_ptr<ms::SurfaceRanker> const surface_ranker;
+    std::shared_ptr<msc::SurfaceCoordinator> const surface_coordinator;
     std::map<std::string, std::shared_ptr<SystemCompositorSession>> sessions;
     std::string active_session;
     std::string next_session;
@@ -331,13 +328,13 @@ void SystemCompositorSession::mark_ready()
     }
 }
 
-void SystemCompositorSession::raise(std::shared_ptr<ms::SurfaceRanker> const& controller)
+void SystemCompositorSession::raise(std::shared_ptr<msc::SurfaceCoordinator> const& coordinator)
 {
     std::map<mf::SurfaceId, std::shared_ptr<SystemCompositorSurface>>::iterator iter;
     for (iter = surfaces.begin(); iter != surfaces.end(); ++iter)
     {
         // This will iterate by creation order, which is fine.  New surfaces on top
-        controller->raise(iter->second->get_orig());
+        coordinator->raise(iter->second->get_orig());
     }
 }
 
@@ -346,12 +343,12 @@ std::shared_ptr<mf::Surface> SystemCompositorSession::get_surface(mf::SurfaceId 
     return surfaces.at(surface);
 }
 
-mf::SurfaceId SystemCompositorSession::create_surface(msh::SurfaceCreationParameters const& params)
+mf::SurfaceId SystemCompositorSession::create_surface(msc::SurfaceCreationParameters const& params)
 {
     mf::SurfaceId id = self->create_surface(params);
     std::shared_ptr<mf::Surface> mf_surface = self->get_surface(id);
 
-    auto surface = std::dynamic_pointer_cast<ms::Surface>(mf_surface);
+    auto surface = std::dynamic_pointer_cast<msc::Surface>(mf_surface);
     if (!surface)
     {
         std::cerr << "Unexpected non-scene surface" << std::endl;
@@ -474,7 +471,7 @@ public:
                 compositor,
                 mir::DefaultServerConfiguration::the_frontend_shell(),
                 the_focus_controller(),
-                the_surface_ranker());
+                the_surface_coordinator());
         });
     }
 
