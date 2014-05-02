@@ -1,3 +1,20 @@
+unity-system-compositor (0.0.2+14.04.20140411-0ubuntu1) trusty; urgency=low
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+  [ Kevin Gunn ]
+  * unchanged, rebuild
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 11 Apr 2014 20:53:30 +0000
+
+unity-system-compositor (0.0.2+14.04.20140403-0ubuntu1) trusty; urgency=low
+
+  [ Robert Carr ]
+  * allow hw cursor option (LP: #1289072)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 03 Apr 2014 06:09:57 +0000
+
 unity-system-compositor (0.0.2+14.04.20140317.2-0ubuntu1) trusty; urgency=low
 
   [ Ubuntu daily release ]
