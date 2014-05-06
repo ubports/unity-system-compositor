@@ -27,7 +27,9 @@
 #include <stdlib.h>
 #include <GLES2/gl2.h>
 #include <math.h>
+#if HAVE_PROPS
 #include <hybris/properties/properties.h>
+#endif
 
 // this is needed for get_gu() to obtain the grid-unit value
 #define MAX_LENGTH       256
@@ -40,20 +42,22 @@
 int get_gu ()
 {
     int   gu           = 10; // use 10 as a default value
-    char* defaultValue = "";
     FILE* handle       = NULL;
     int   i            = 0;
     int   j            = 0;
     int   len          = 0;
-    char  value[PROP_VALUE_MAX];
     char  line[MAX_LENGTH];
     char  filename[MAX_LENGTH];
 
     // get name of file to read from
-    property_get (PROP_KEY, value, defaultValue);
     bzero ((void*) filename, MAX_LENGTH);
     strcpy (filename, FILE_BASE);
+#ifdef HAVE_PROPS
+    char* defaultValue = "";
+    char  value[PROP_VALUE_MAX];
+    property_get (PROP_KEY, value, defaultValue);
     strcat (filename, value);
+#endif
     strcat (filename, FILE_EXTENSION);
 
     // try to open it

@@ -27,6 +27,10 @@ add_definitions(
   -DPKGDATADIR="${CMAKE_INSTALL_FULL_DATAROOTDIR}/${PACKAGE}"
 )
 
+if(ANDROIDPROPS_FOUND)
+add_definitions(-DHAVE_PROPS)
+endif()
+
 link_directories(${MIRCLIENT_LIBRARY_DIRS})
 
 add_executable(unity-system-compositor-spinner eglapp.c eglapp.h eglspinner.c)
