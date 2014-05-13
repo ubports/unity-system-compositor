@@ -17,6 +17,7 @@
 set(USC_SRCS
   main.cpp
   dbus_screen.cpp
+  dbus_powerkey.cpp
   powerd_mediator.cpp
   dm_connection.cpp
   system_compositor.cpp
@@ -56,6 +57,9 @@ install(TARGETS unity-system-compositor
 
 # Install data files
 install(FILES com.canonical.Unity.Screen.conf
+  DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/dbus-1/system.d
+)
+install(FILES com.canonical.Unity.PowerKey.conf
   DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/dbus-1/system.d
 )
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/com.canonical.Unity.Screen.xml

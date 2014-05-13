@@ -392,9 +392,14 @@ void SystemCompositor::qt_main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
 
+    std::chrono::seconds power_off_timeout{config->power_off_timeout()};
+    std::chrono::seconds dimmer_timeout{config->dimmer_timeout()};
+    std::chrono::milliseconds power_key_held_timeout{2000};
     screen_state_handler = std::make_shared<ScreenStateHandler>(config,
-                                                                config->power_off_timeout(),
-                                                                config->dimmer_timeout());
+        std::chrono::duration_cast<std::chrono::milliseconds>(power_off_timeout),
+        std::chrono::duration_cast<std::chrono::milliseconds>(dimmer_timeout),
+        power_key_held_timeout);
+
     auto composite_filter = config->the_composite_event_filter();
     composite_filter->append(screen_state_handler);
     app.exec();

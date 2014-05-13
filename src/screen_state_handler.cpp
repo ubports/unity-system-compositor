@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2014 Canonical Ltd.
+ * Copyright © 2014 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -14,141 +14,47 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "screen_state_handler.h"
-#include "dbus_screen.h"
-#include "powerd_mediator.h"
-
+#include <mir/main_loop.h>
+#include <mir/time/timer.h>
 #include <mir/compositor/compositor.h>
 #include <mir/default_server_configuration.h>
 #include <mir/graphics/display.h>
 #include <mir/graphics/display_configuration.h>
 
-#include <thread>
-#include <condition_variable>
+#include "screen_state_handler.h"
+#include "dbus_screen.h"
+#include "dbus_powerkey.h"
+#include "powerd_mediator.h"
 
 namespace mi = mir::input;
 namespace mc = mir::compositor;
 namespace mg = mir::graphics;
 
-class OneshotTimer
-{
-public:
-    //Callback is not allowed to call methods in this timer functor
-    OneshotTimer(int initial_timer_value, std::function<void()> const& cb)
-        : shutdown{false},
-          run_timer{false},
-          cancel_notification{false},
-          timer_value{initial_timer_value},
-          notify_timer_event{cb}
-    {
-        thread = std::thread(&OneshotTimer::run, this);
-    }
-
-    ~OneshotTimer()
-    {
-        stop();
-        if (thread.joinable())
-            thread.join();
-    }
-
-    void start(int seconds)
-    {
-        std::unique_lock<std::mutex> lock{timer_mutex};
-
-        //Calling start during a pending timer is essentially a reset
-        if (run_timer)
-            cancel_l();
-
-        //Wait until any pending timers have been canceled
-        timer_ready_condition.wait(lock, [&]{ return !run_timer;});
-
-        timer_value = seconds;
-        run_timer = true;
-        run_timer_condition.notify_one();
-    }
-
-    void cancel()
-    {
-        std::unique_lock<std::mutex> lock{timer_mutex};
-        cancel_l();
-    }
-
-    void reset()
-    {
-        start(timer_value);
-    }
-
-private:
-    void run() noexcept
-    {
-       std::unique_lock<std::mutex> lock{timer_mutex};
-       while (!shutdown)
-       {
-           run_timer = false;
-           timer_ready_condition.notify_all();
-
-           //This is one-shot timer, so wait until client signals timer to start again
-           run_timer_condition.wait(lock, [&]{ return run_timer || shutdown;});
-
-           if (!shutdown)
-           {
-               cancel_notification = false;
-               std::chrono::seconds duration(timer_value);
-               timer.wait_for(lock, duration);
-               if (!cancel_notification)
-               {
-                   lock.unlock();
-                   notify_timer_event();
-                   lock.lock();
-               }
-           }
-       }
-    }
-
-    void stop()
-    {
-        std::unique_lock<std::mutex> lock{timer_mutex};
-
-        shutdown = true;
-        run_timer = false;
-        cancel_l();
-        run_timer_condition.notify_one();
-    }
-
-    void cancel_l()
-    {
-        cancel_notification = true;
-        //Could be in the middle of waiting for timeout, signal to cancel timer
-        timer.notify_one();
-    }
-
-    bool shutdown;
-    bool run_timer;
-    bool cancel_notification;
-    std::mutex timer_mutex;
-    std::condition_variable timer;
-    std::condition_variable run_timer_condition;
-    std::condition_variable timer_ready_condition;
-    int timer_value;
-    std::function<void()> notify_timer_event;
-    std::thread thread;
-};
-
 ScreenStateHandler::ScreenStateHandler(std::shared_ptr<mir::DefaultServerConfiguration> const& config,
-                                       int power_off_timeout,
-                                       int dimmer_timeout)
-    : power_off_timer{new OneshotTimer(power_off_timeout, [&]{ power_off_timer_notification(); })},
-      dimmer_timer{new OneshotTimer(dimmer_timeout, [&]{ dimmer_timer_notification(); })},
-      current_power_mode{MirPowerMode::mir_power_mode_on},
-      power_off_delay{power_off_timeout},
-      dimming_delay{dimmer_timeout},
-      auto_brightness{true},
-      dbus_screen{new DBusScreen([&](MirPowerMode m){ set_screen_power_mode(m);})},
+                                       std::chrono::milliseconds power_off_timeout,
+                                       std::chrono::milliseconds dimmer_timeout,
+                                       std::chrono::milliseconds power_key_held_timeout)
+    : current_power_mode{MirPowerMode::mir_power_mode_on},
+      long_press_detected{false},
+      power_off_timeout{power_off_timeout},
+      dimming_timeout{dimmer_timeout},
+      power_key_long_press_timeout{power_key_held_timeout},
       powerd_mediator{new PowerdMediator()},
-      config{config}
+      config{config},
+      power_off_alarm{config->the_main_loop()->notify_in(power_off_timeout,
+          std::bind(&ScreenStateHandler::power_off_alarm_notification, this))},
+      dimmer_alarm{config->the_main_loop()->notify_in(dimming_timeout,
+          std::bind(&ScreenStateHandler::dimmer_alarm_notification, this))},
+      long_press_alarm{config->the_main_loop()->notify_in(power_key_long_press_timeout,
+          std::bind(&ScreenStateHandler::long_press_alarm_notification, this))},
+      dbus_screen{new DBusScreen([this](MirPowerMode m){
+          std::lock_guard<std::mutex> lock{guard};
+          set_screen_power_mode_l(m);})},
+      dbus_powerkey{new DBusPowerKey()}
 {
-    power_off_timer->start(power_off_delay);
-    dimmer_timer->start(dimming_delay);
+
+    /* TODO: change to using create_alarm once the api is added */
+    long_press_alarm->cancel();
 }
 
 ScreenStateHandler::~ScreenStateHandler() = default;
@@ -158,51 +64,57 @@ bool ScreenStateHandler::handle(MirEvent const& event)
     static const int32_t POWER_KEY_CODE = 26;
 
     if (event.type == mir_event_type_key &&
-        event.key.key_code == POWER_KEY_CODE &&
-        event.key.action == mir_key_action_up)
+        event.key.key_code == POWER_KEY_CODE)
     {
-        toggle_screen_power_mode();
+        if (event.key.action == mir_key_action_down)
+            power_key_down();
+        else if (event.key.action == mir_key_action_up)
+            power_key_up();
     }
     else if (event.type == mir_event_type_motion)
     {
-        reset_timers();
-        powerd_mediator->bright_backlight();
+        std::lock_guard<std::mutex> lock{guard};
+        reset_timers_l();
+        powerd_mediator->set_normal_backlight();
     }
     return false;
 }
 
-void ScreenStateHandler::set_timeouts(int power_off_timeout, int dimming_timeout)
+void ScreenStateHandler::set_timeouts(std::chrono::milliseconds the_power_off_timeout,
+                                      std::chrono::milliseconds the_dimming_timeout)
 {
-    power_off_delay = power_off_timeout;
-    dimming_delay = dimming_timeout;
+    std::lock_guard<std::mutex> lock{guard};
+    power_off_timeout = the_power_off_timeout;
+    dimming_timeout = the_dimming_timeout;
 }
 
-void ScreenStateHandler::toggle_screen_power_mode()
+void ScreenStateHandler::set_screen_power_mode_l(MirPowerMode mode)
+{
+    if (mode == MirPowerMode::mir_power_mode_on)
+    {
+        configure_display_l(mode);
+        reset_timers_l();
+    }
+    else
+    {
+        cancel_timers_l();
+        configure_display_l(mode);
+    }
+}
+
+void ScreenStateHandler::toggle_screen_power_mode_l()
 {
     MirPowerMode new_mode = (current_power_mode == MirPowerMode::mir_power_mode_on) ?
             MirPowerMode::mir_power_mode_off : MirPowerMode::mir_power_mode_on;
 
-    set_screen_power_mode(new_mode);
+    set_screen_power_mode_l(new_mode);
 }
 
-void ScreenStateHandler::set_screen_power_mode(MirPowerMode mode)
+void ScreenStateHandler::configure_display_l(MirPowerMode mode)
 {
-    if (current_power_mode == MirPowerMode::mir_power_mode_off)
-    {
-        set_display_power_mode(MirPowerMode::mir_power_mode_on);
-        power_off_timer->start(power_off_delay);
-        dimmer_timer->start(dimming_delay);
-    }
-    else
-    {
-        cancel_timers();
-        set_display_power_mode(MirPowerMode::mir_power_mode_off);
-    }
-}
+    if (current_power_mode == mode)
+        return;
 
-void ScreenStateHandler::set_display_power_mode(MirPowerMode mode)
-{
-    std::lock_guard<std::mutex> lock{power_mode_mutex};
     std::shared_ptr<mg::Display> display = config->the_display();
     std::shared_ptr<mg::DisplayConfiguration> displayConfig = display->configuration();
     std::shared_ptr<mc::Compositor> compositor = config->the_compositor();
@@ -213,15 +125,19 @@ void ScreenStateHandler::set_display_power_mode(MirPowerMode mode)
         }
     );
 
-    if (mode != MirPowerMode::mir_power_mode_on)
-        compositor->stop();
-
+    compositor->stop();
     display->configure(*displayConfig.get());
+    //TODO: once the new swap unblock solution lands in mir
+    //only start compositor on power on state
+    compositor->start();
 
     if (mode == MirPowerMode::mir_power_mode_on)
     {
-        powerd_mediator->bright_backlight();
-        compositor->start();
+        powerd_mediator->set_normal_backlight();
+    }
+    else
+    {
+        powerd_mediator->turn_off_backlight();
     }
 
     current_power_mode = mode;
@@ -229,27 +145,56 @@ void ScreenStateHandler::set_display_power_mode(MirPowerMode mode)
     dbus_screen->emit_power_state_change(mode);
 }
 
-void ScreenStateHandler::power_off_timer_notification()
+void ScreenStateHandler::cancel_timers_l()
 {
-    set_display_power_mode(MirPowerMode::mir_power_mode_off);
+    power_off_alarm->cancel();
+    dimmer_alarm->cancel();
 }
 
-void ScreenStateHandler::dimmer_timer_notification()
-{
-    powerd_mediator->dim_backlight();
-}
-
-void ScreenStateHandler::cancel_timers()
-{
-    power_off_timer->cancel();
-    dimmer_timer->cancel();
-}
-
-void ScreenStateHandler::reset_timers()
+void ScreenStateHandler::reset_timers_l()
 {
     if (current_power_mode != MirPowerMode::mir_power_mode_off)
     {
-        power_off_timer->start(power_off_delay);
-        dimmer_timer->start(dimming_delay);
+        power_off_alarm->reschedule_in(power_off_timeout);
+        dimmer_alarm->reschedule_in(dimming_timeout);
+    }
+}
+
+void ScreenStateHandler::power_off_alarm_notification()
+{
+    std::lock_guard<std::mutex> lock{guard};
+    configure_display_l(MirPowerMode::mir_power_mode_off);
+}
+
+void ScreenStateHandler::dimmer_alarm_notification()
+{
+    std::lock_guard<std::mutex> lock{guard};
+    powerd_mediator->set_dim_backlight();
+}
+
+void ScreenStateHandler::long_press_alarm_notification()
+{
+    std::lock_guard<std::mutex> lock{guard};
+    long_press_detected = true;
+    dbus_powerkey->emit_power_off_request();
+    reset_timers_l();
+}
+
+void ScreenStateHandler::power_key_down()
+{
+    std::lock_guard<std::mutex> lock{guard};
+    cancel_timers_l();
+    long_press_detected = false;
+    long_press_alarm->reschedule_in(power_key_long_press_timeout);
+}
+
+void ScreenStateHandler::power_key_up()
+{
+    std::lock_guard<std::mutex> lock{guard};
+    long_press_alarm->cancel();
+
+    if (!long_press_detected)
+    {
+        toggle_screen_power_mode_l();
     }
 }

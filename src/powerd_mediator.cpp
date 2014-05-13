@@ -19,50 +19,126 @@
 #include <QDBusConnection>
 #include <QDBusInterface>
 #include <QDBusReply>
-#include <QDBusPendingReply>
+#include <QDBusMetaType>
+#include <QDBusArgument>
+
+#include <iostream>
+
+/* Struct for reply to getBrightnessParams DBus call */
+struct BrightnessParams
+ {
+    int dim_brightness;
+    int min_brightness;
+    int max_brightness;
+    int default_brightness;
+    bool auto_brightness_supported;
+};
+Q_DECLARE_METATYPE(BrightnessParams);
+
+/* Not used but required by qDBusRegisterMetaType*/
+QDBusArgument &operator<<(QDBusArgument &argument, const BrightnessParams &mystruct)
+{
+    argument.beginStructure();
+    argument << mystruct.dim_brightness <<
+                mystruct.min_brightness <<
+                mystruct.max_brightness <<
+                mystruct.default_brightness <<
+                mystruct.auto_brightness_supported;
+    argument.endStructure();
+    return argument;
+}
+
+/* Needed to un-marshall powerd response */
+const QDBusArgument &operator>>(const QDBusArgument &argument, BrightnessParams &mystruct)
+{
+    argument.beginStructure();
+    argument >> mystruct.dim_brightness >>
+                mystruct.min_brightness >>
+                mystruct.max_brightness >>
+                mystruct.default_brightness >>
+                mystruct.auto_brightness_supported;
+    argument.endStructure();
+    return argument;
+}
 
 PowerdMediator::PowerdMediator()
-    : dim_brightness{0},
-      normal_brightness{100},
-      last_brightness{-1},
+    : dim_brightness{10},
+      normal_brightness{102},
+      current_brightness{0},
+      min_brightness_{10},
+      max_brightness_{102},
+      auto_brightness_supported_{false},
       acquired_sys_state{false},
       powerd_interface{new QDBusInterface("com.canonical.powerd",
                                           "/com/canonical/powerd",
                                           "com.canonical.powerd",
                                           QDBusConnection::systemBus())}
 {
-    QDBusPendingReply<int, int, int, int, bool> reply =
-        powerd_interface->asyncCall("getBrightnessParams");
-    reply.waitForFinished();
-    if (!reply.isError())
+    qDBusRegisterMetaType<BrightnessParams>();
+    QDBusReply<BrightnessParams> reply = powerd_interface->call("getBrightnessParams");
+    if (reply.isValid())
     {
-        dim_brightness = reply.argumentAt<0>();
-        normal_brightness = reply.argumentAt<3>();
+        auto const& params = reply.value();
+        dim_brightness = params.dim_brightness;
+        normal_brightness = params.default_brightness;
+        min_brightness_ = params.min_brightness;
+        max_brightness_ = params.max_brightness;
+        auto_brightness_supported_ = params.auto_brightness_supported;
     }
 }
 
 PowerdMediator::~PowerdMediator() = default;
 
-void PowerdMediator::dim_backlight()
+void PowerdMediator::set_dim_backlight()
 {
-    if (last_brightness == dim_brightness) return;
-
-    powerd_interface->call("setUserBrightness", dim_brightness);
-    last_brightness = dim_brightness;
+    set_brightness(dim_brightness);
 }
 
-void PowerdMediator::bright_backlight()
+void PowerdMediator::set_normal_backlight()
 {
-    if (last_brightness == normal_brightness) return;
-
-    powerd_interface->call("setUserBrightness", normal_brightness);
-    last_brightness = normal_brightness;
+    set_brightness(normal_brightness);
 }
 
-void PowerdMediator::change_backlight_defaults(int dim, int bright)
+void PowerdMediator::turn_off_backlight()
 {
-    normal_brightness = bright;
-    dim_brightness = dim;
+    set_brightness(0);
+}
+
+void PowerdMediator::change_backlight_values(int dim, int normal)
+{
+    if (normal >= min_brightness_ && normal <= max_brightness_)
+        normal_brightness = normal;
+    if (dim >= min_brightness_ && dim <= max_brightness_)
+        dim_brightness = dim;
+}
+
+void PowerdMediator::enable_auto_brightness(bool flag)
+{
+    if (auto_brightness_supported_)
+        powerd_interface->call("userAutobrightnessEnable", flag);
+}
+
+bool PowerdMediator::auto_brightness_supported()
+{
+    return auto_brightness_supported_;
+}
+
+int PowerdMediator::min_brightness()
+{
+    return min_brightness_;
+}
+
+int PowerdMediator::max_brightness()
+{
+    return max_brightness_;
+}
+
+void PowerdMediator::set_brightness(int brightness)
+{
+    if (current_brightness == brightness) return;
+
+    powerd_interface->call("setUserBrightness", brightness);
+    current_brightness = brightness;
 }
 
 void PowerdMediator::set_sys_state_for(MirPowerMode mode)

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013 Canonical Ltd.
+ * Copyright © 2013-2014 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -21,7 +21,6 @@
 #include <QDBusConnection>
 #include <QDebug>
 
-// Note: this class should be created only after when the Mir DisplayServer has started
 DBusScreen::DBusScreen(std::function<void(MirPowerMode)> cb, QObject *parent)
     : QObject(parent),
       notify_power_mode{cb}

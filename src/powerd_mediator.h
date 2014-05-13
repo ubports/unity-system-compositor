@@ -21,32 +21,46 @@
 
 #include <QString>
 #include <memory>
+#include <mutex>
 
 class QDBusInterface;
-
+/*
+ * A Proxy to powerd. Note this class is not thread-safe,
+ * synchronization should be done externally.
+ */
 class PowerdMediator
 {
 public:
     PowerdMediator();
     ~PowerdMediator();
 
-    void dim_backlight();
-    void bright_backlight();
+    void set_dim_backlight();
+    void set_normal_backlight();
+    void turn_off_backlight();
     void set_sys_state_for(MirPowerMode mode);
 
-    void change_backlight_defaults(int dim_brightness, int normal_brightness);
+    void change_backlight_values(int dim_brightness, int normal_brightness);
+    void enable_auto_brightness(bool flag);
 
+    bool auto_brightness_supported();
+    int min_brightness();
+    int max_brightness();
 
 private:
-
+    void set_brightness(int brightness);
     void release_sys_state();
     void acquire_sys_state();
 
     int dim_brightness;
     int normal_brightness;
-    int last_brightness;
+    int current_brightness;
+    int min_brightness_;
+    int max_brightness_;
+    bool auto_brightness_supported_;
+
     QString sys_state_cookie;
     bool acquired_sys_state;
+
     std::unique_ptr<QDBusInterface> powerd_interface;
 };
 #endif

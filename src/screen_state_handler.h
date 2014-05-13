@@ -19,59 +19,70 @@
 
 #include "mir/input/event_filter.h"
 
+#include <chrono>
 #include <memory>
 #include <mutex>
 
-class OneshotTimer;
 class DBusScreen;
+class DBusPowerKey;
 class PowerdMediator;
 
 namespace mir
 {
-    class DefaultServerConfiguration;
+class DefaultServerConfiguration;
+namespace time
+{
+class Alarm;
+}
 }
 
 class ScreenStateHandler: public mir::input::EventFilter
 {
 public:
     ScreenStateHandler(std::shared_ptr<mir::DefaultServerConfiguration> const& config,
-                       int power_off_timeout,
-                       int dimmer_timeout);
+                       std::chrono::milliseconds power_off_timeout,
+                       std::chrono::milliseconds dimmer_timeout,
+                       std::chrono::milliseconds power_key_held_timeout);
     ~ScreenStateHandler();
 
     //from EventFilter
     bool handle(MirEvent const& event) override;
 
-    //timeout values in seconds
-    void set_timeouts(int power_off_delay, int dimming_delay);
+    void set_timeouts(std::chrono::milliseconds power_off_timeout,
+                      std::chrono::milliseconds dimmer_timeout);
 
 private:
-    void toggle_screen_power_mode();
-    void set_screen_power_mode(MirPowerMode mode);
-    void set_display_power_mode(MirPowerMode mode);
+    void set_screen_power_mode_l(MirPowerMode mode);
+    void toggle_screen_power_mode_l();
+    void configure_display_l(MirPowerMode mode);
 
+    void cancel_timers_l();
+    void reset_timers_l();
 
-    void display_on();
-    void display_off();
+    void power_off_alarm_notification();
+    void dimmer_alarm_notification();
+    void long_press_alarm_notification();
+    void power_key_up();
+    void power_key_down();
 
-    void power_off_timer_notification();
-    void dimmer_timer_notification();
+    std::mutex guard;
 
-    void cancel_timers();
-    void reset_timers();
-
-    std::unique_ptr<OneshotTimer> power_off_timer;
-    std::unique_ptr<OneshotTimer> dimmer_timer;
     MirPowerMode current_power_mode;
+    bool long_press_detected;
 
-    int power_off_delay;
-    int dimming_delay;
-    bool auto_brightness;
+    std::chrono::milliseconds power_off_timeout;
+    std::chrono::milliseconds dimming_timeout;
+    std::chrono::milliseconds power_key_long_press_timeout;
 
-    std::mutex power_mode_mutex;
-    std::unique_ptr<DBusScreen> dbus_screen;
     std::unique_ptr<PowerdMediator> powerd_mediator;
     std::shared_ptr<mir::DefaultServerConfiguration> config;
+
+    std::unique_ptr<mir::time::Alarm> power_off_alarm;
+    std::unique_ptr<mir::time::Alarm> dimmer_alarm;
+    std::unique_ptr<mir::time::Alarm> long_press_alarm;
+
+    std::unique_ptr<DBusScreen> dbus_screen;
+    std::unique_ptr<DBusPowerKey> dbus_powerkey;
 };
 
 #endif
