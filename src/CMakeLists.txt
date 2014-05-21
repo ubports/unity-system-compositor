@@ -58,9 +58,6 @@ install(TARGETS unity-system-compositor
 install(FILES com.canonical.Unity.Screen.conf
   DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/dbus-1/system.d
 )
-install(FILES com.canonical.Unity.PowerKey.conf
-  DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/dbus-1/system.d
-)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/com.canonical.Unity.Screen.xml
   DESTINATION ${CMAKE_INSTALL_DATADIR}/dbus-1/interfaces
 )
