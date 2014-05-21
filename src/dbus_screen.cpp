@@ -21,7 +21,7 @@
 #include <QDBusConnection>
 #include <QDebug>
 
-DBusScreen::DBusScreen(std::function<void(MirPowerMode)> cb, QObject *parent)
+DBusScreen::DBusScreen(Callback cb, QObject *parent)
     : QObject(parent),
       notify_power_mode{cb}
 {
@@ -31,8 +31,11 @@ DBusScreen::DBusScreen(std::function<void(MirPowerMode)> cb, QObject *parent)
     bus.registerService("com.canonical.Unity.Screen");
 }
 
-bool DBusScreen::setScreenPowerMode(const QString &mode)
+bool DBusScreen::setScreenPowerMode(const QString &mode, int reason)
 {
+    if (reason < Reason::normal || reason >= Reason::max_reasons)
+        return false;
+
     MirPowerMode newPowerMode;
 
     // Note: the "standby" and "suspend" modes are mostly unused
@@ -49,12 +52,12 @@ bool DBusScreen::setScreenPowerMode(const QString &mode)
         return false;
     }
 
-    notify_power_mode(newPowerMode);
+    notify_power_mode(newPowerMode, static_cast<Reason>(reason));
 
     return true;
 }
 
-void DBusScreen::emit_power_state_change(MirPowerMode power_mode)
+void DBusScreen::emit_power_state_change(MirPowerMode power_mode, Reason reason)
 {
     QDBusMessage message =  QDBusMessage::createSignal("/com/canonical/Unity/Screen",
         "com.canonical.Unity.Screen", "DisplayPowerStateChange");
@@ -63,6 +66,7 @@ void DBusScreen::emit_power_state_change(MirPowerMode power_mode)
     QVariant state(power_state);
     QList<QVariant> arguments;
     arguments.append(state);
+    arguments.append(static_cast<int>(reason));
     message.setArguments(arguments);
 
     QDBusConnection bus = QDBusConnection::systemBus();

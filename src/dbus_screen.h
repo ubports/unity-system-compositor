@@ -31,14 +31,23 @@ class DBusScreen : public QObject
     Q_CLASSINFO("D-Bus Interface", "com.canonical.Unity.Screen")
 
 public:
-    explicit DBusScreen(std::function<void(MirPowerMode)> cb, QObject *parent = 0);
-    void emit_power_state_change(MirPowerMode mode);
+    enum Reason
+    {
+        normal = 0,
+        inactivity = 1,
+        power_key = 2,
+        proximity = 3,
+        max_reasons
+    };
+    typedef std::function<void(MirPowerMode mode, Reason reason)> Callback;
+    explicit DBusScreen(Callback cb, QObject *parent = 0);
+    void emit_power_state_change(MirPowerMode mode, Reason reason);
 
 public Q_SLOTS:
-    bool setScreenPowerMode(const QString &mode);
+    bool setScreenPowerMode(const QString &mode, int reason);
 
 private:
-    std::function<void(MirPowerMode mode)> notify_power_mode;
+    Callback notify_power_mode;
 
 };
 

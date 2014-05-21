@@ -24,7 +24,6 @@
 #include <mutex>
 
 class DBusScreen;
-class DBusPowerKey;
 class PowerdMediator;
 
 namespace mir
@@ -52,9 +51,9 @@ public:
                       std::chrono::milliseconds dimmer_timeout);
 
 private:
-    void set_screen_power_mode_l(MirPowerMode mode);
+    void set_screen_power_mode_l(MirPowerMode mode, int reason);
     void toggle_screen_power_mode_l();
-    void configure_display_l(MirPowerMode mode);
+    void configure_display_l(MirPowerMode mode, int reason);
 
     void cancel_timers_l();
     void reset_timers_l();
@@ -82,7 +81,6 @@ private:
     std::unique_ptr<mir::time::Alarm> long_press_alarm;
 
     std::unique_ptr<DBusScreen> dbus_screen;
-    std::unique_ptr<DBusPowerKey> dbus_powerkey;
 };
 
 #endif

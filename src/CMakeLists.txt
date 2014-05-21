@@ -17,7 +17,6 @@
 set(USC_SRCS
   main.cpp
   dbus_screen.cpp
-  dbus_powerkey.cpp
   powerd_mediator.cpp
   dm_connection.cpp
   system_compositor.cpp
