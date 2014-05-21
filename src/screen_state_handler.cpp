@@ -92,6 +92,9 @@ void ScreenStateHandler::set_screen_power_mode_l(MirPowerMode mode, int reason)
 {
     if (mode == MirPowerMode::mir_power_mode_on)
     {
+        /* The screen may be dim, but on - make sure to reset backlight */
+        if (current_power_mode == MirPowerMode::mir_power_mode_on)
+            powerd_mediator->set_normal_backlight();
         configure_display_l(mode, reason);
         reset_timers_l();
     }
