@@ -41,7 +41,8 @@ public:
     ScreenStateHandler(std::shared_ptr<mir::DefaultServerConfiguration> const& config,
                        std::chrono::milliseconds power_off_timeout,
                        std::chrono::milliseconds dimmer_timeout,
-                       std::chrono::milliseconds power_key_held_timeout);
+                       std::chrono::milliseconds power_key_ignore_timeout,
+                       std::chrono::milliseconds shutdown_timeout);
     ~ScreenStateHandler();
 
     //from EventFilter
@@ -71,13 +72,15 @@ private:
 
     std::chrono::milliseconds power_off_timeout;
     std::chrono::milliseconds dimming_timeout;
-    std::chrono::milliseconds power_key_long_press_timeout;
+    std::chrono::milliseconds power_key_ignore_timeout;
+    std::chrono::milliseconds shutdown_timeout;
 
     std::unique_ptr<PowerdMediator> powerd_mediator;
     std::shared_ptr<mir::DefaultServerConfiguration> config;
 
     std::unique_ptr<mir::time::Alarm> power_off_alarm;
     std::unique_ptr<mir::time::Alarm> dimmer_alarm;
+    std::unique_ptr<mir::time::Alarm> shutdown_alarm;
     std::unique_ptr<mir::time::Alarm> long_press_alarm;
 
     std::unique_ptr<DBusScreen> dbus_screen;

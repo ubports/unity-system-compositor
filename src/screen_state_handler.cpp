@@ -34,27 +34,31 @@ namespace mg = mir::graphics;
 ScreenStateHandler::ScreenStateHandler(std::shared_ptr<mir::DefaultServerConfiguration> const& config,
                                        std::chrono::milliseconds power_off_timeout,
                                        std::chrono::milliseconds dimmer_timeout,
-                                       std::chrono::milliseconds power_key_held_timeout)
+                                       std::chrono::milliseconds power_key_ignore_timeout,
+                                       std::chrono::milliseconds shutdown_timeout)
     : current_power_mode{MirPowerMode::mir_power_mode_on},
       long_press_detected{false},
       power_off_timeout{power_off_timeout},
       dimming_timeout{dimmer_timeout},
-      power_key_long_press_timeout{power_key_held_timeout},
+      power_key_ignore_timeout{power_key_ignore_timeout},
+      shutdown_timeout{shutdown_timeout},
       powerd_mediator{new PowerdMediator()},
       config{config},
       power_off_alarm{config->the_main_loop()->notify_in(power_off_timeout,
           std::bind(&ScreenStateHandler::power_off_alarm_notification, this))},
       dimmer_alarm{config->the_main_loop()->notify_in(dimming_timeout,
           std::bind(&ScreenStateHandler::dimmer_alarm_notification, this))},
-      long_press_alarm{config->the_main_loop()->notify_in(power_key_long_press_timeout,
+      shutdown_alarm{config->the_main_loop()->notify_in(shutdown_timeout,
+          []{ system("shutdown -P now"); })},
+      long_press_alarm{config->the_main_loop()->notify_in(power_key_ignore_timeout,
           std::bind(&ScreenStateHandler::long_press_alarm_notification, this))},
       dbus_screen{new DBusScreen([this](MirPowerMode m, DBusScreen::Reason reason) {
           std::lock_guard<std::mutex> lock{guard};
           set_screen_power_mode_l(m, reason);})}
 {
-
     /* TODO: change to using create_alarm once the api is added */
     long_press_alarm->cancel();
+    shutdown_alarm->cancel();
 }
 
 ScreenStateHandler::~ScreenStateHandler() = default;
@@ -179,7 +183,6 @@ void ScreenStateHandler::long_press_alarm_notification()
 {
     std::lock_guard<std::mutex> lock{guard};
     long_press_detected = true;
-    system("shutdown -P now");
 }
 
 void ScreenStateHandler::power_key_down()
@@ -187,14 +190,15 @@ void ScreenStateHandler::power_key_down()
     std::lock_guard<std::mutex> lock{guard};
     cancel_timers_l();
     long_press_detected = false;
-    long_press_alarm->reschedule_in(power_key_long_press_timeout);
+    long_press_alarm->reschedule_in(power_key_ignore_timeout);
+    shutdown_alarm->reschedule_in(shutdown_timeout);
 }
 
 void ScreenStateHandler::power_key_up()
 {
     std::lock_guard<std::mutex> lock{guard};
+    shutdown_alarm->cancel();
     long_press_alarm->cancel();
-
     if (!long_press_detected)
     {
         toggle_screen_power_mode_l();

@@ -142,19 +142,24 @@ public:
         return the_options()->is_set("version");
     }
 
-    int power_off_timeout()
+    int inactivity_display_off_timeout()
     {
-       return the_options()->get("power-off-timeout", 60);
+       return the_options()->get("inactivity-display-off-timeout", 60);
     }
 
-    int dimmer_timeout()
+    int inactivity_display_dim_timeout()
     {
-       return the_options()->get("dimmer-timeout", 45);
+       return the_options()->get("inactivity-display-dim-timeout", 45);
     }
 
-    int power_key_down_timeout()
+    int shutdown_timeout()
     {
-       return the_options()->get("power-key-down-timeout", 5);
+       return the_options()->get("shutdown-timeout", 5000);
+    }
+
+    int power_key_ignore_timeout()
+    {
+       return the_options()->get("power-key-ignore-timeout", 1500);
     }
 
     bool enable_hardware_cursor()
@@ -257,9 +262,10 @@ public:
             ("version", "Show version of Unity System Compositor")
             ("public-socket", po::value<bool>(), "Make the socket file publicly writable")
             ("enable-hardware-cursor", po::value<bool>(), "Enable the hardware cursor (disabled by default)")
-            ("power-off-timeout", po::value<int>(), "The time in seconds before the screen is turned off when there are no active sessions")
-            ("dimmer-timeout", po::value<int>(), "The time in seconds before the screen is dimmed when there are no active sessions")
-            ("power-key-down-timeout", po::value<int>(), "The time in seconds before that the power key must be held to initiate a clean system shutdown");
+            ("inactivity-display-off-timeout", po::value<int>(), "The time in seconds before the screen is turned off when there are no active sessions")
+            ("inactivity-display-dim-timeout", po::value<int>(), "The time in seconds before the screen is dimmed when there are no active sessions")
+            ("shutdown-timeout", po::value<int>(), "The time in milli-seconds the power key must be held to initiate a clean system shutdown")
+            ("power-key-ignore-timeout", po::value<int>(), "The time in milli-seconds the power key must be held to ignore - must be less than shutdown-timeout");
     }
 
     void parse_config_file(
@@ -398,13 +404,16 @@ void SystemCompositor::qt_main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
 
-    std::chrono::seconds power_off_timeout{config->power_off_timeout()};
-    std::chrono::seconds dimmer_timeout{config->dimmer_timeout()};
-    std::chrono::seconds power_key_down_timeout{config->power_key_down_timeout()};
+    std::chrono::seconds inactivity_display_off_timeout{config->inactivity_display_off_timeout()};
+    std::chrono::seconds inactivity_display_dim_timeout{config->inactivity_display_dim_timeout()};
+    std::chrono::milliseconds power_key_ignore_timeout{config->power_key_ignore_timeout()};
+    std::chrono::milliseconds shutdown_timeout{config->shutdown_timeout()};
+
     screen_state_handler = std::make_shared<ScreenStateHandler>(config,
-        std::chrono::duration_cast<std::chrono::milliseconds>(power_off_timeout),
-        std::chrono::duration_cast<std::chrono::milliseconds>(dimmer_timeout),
-        std::chrono::duration_cast<std::chrono::milliseconds>(power_key_down_timeout));
+        std::chrono::duration_cast<std::chrono::milliseconds>(inactivity_display_off_timeout),
+        std::chrono::duration_cast<std::chrono::milliseconds>(inactivity_display_dim_timeout),
+        power_key_ignore_timeout,
+        shutdown_timeout);
 
     auto composite_filter = config->the_composite_event_filter();
     composite_filter->append(screen_state_handler);
