@@ -1,8 +1,17 @@
-unity-system-compositor (0.0.3) UNRELEASED; urgency=medium
+unity-system-compositor (0.0.3+14.10.20140529-0ubuntu1) utopic; urgency=medium
 
+  [ Michael Terry ]
   * Bump version so unity8 can depend on new behavior
+  * This branch adds a new option "--spinner=/path" which allows for an
+    interstitial 'busy wait' program to be specified during boot and
+    between greeter and user sessions.
 
- -- Michael Terry <mterry@ubuntu.com>  Thu, 29 May 2014 10:05:13 +0200
+  [ Mirco Müller ]
+  * This branch adds a new option "--spinner=/path" which allows for an
+    interstitial 'busy wait' program to be specified during boot and
+    between greeter and user sessions.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 29 May 2014 14:38:46 +0000
 
 unity-system-compositor (0.0.2+14.10.20140430.1-0ubuntu1) utopic; urgency=low
 
