@@ -1,3 +1,9 @@
+unity-system-compositor (0.0.3) UNRELEASED; urgency=medium
+
+  * Bump version so unity8 can depend on new behavior
+
+ -- Michael Terry <mterry@ubuntu.com>  Thu, 29 May 2014 10:05:13 +0200
+
 unity-system-compositor (0.0.2+14.10.20140430.1-0ubuntu1) utopic; urgency=low
 
   [ Alberto Aguirre ]
