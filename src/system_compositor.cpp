@@ -48,9 +48,10 @@ namespace po = boost::program_options;
 class SystemCompositorShell : public mf::Shell
 {
 public:
-    SystemCompositorShell(std::shared_ptr<mf::Shell> const& self,
+    SystemCompositorShell(SystemCompositor *compositor,
+                          std::shared_ptr<mf::Shell> const& self,
                           std::shared_ptr<msh::FocusController> const& focus_controller)
-        : self(self), focus_controller{focus_controller} {}
+        : compositor{compositor}, self(self), focus_controller{focus_controller} {}
 
     std::shared_ptr<mf::Session> session_named(std::string const& name)
     {
@@ -60,42 +61,72 @@ public:
     void set_active_session(std::string const& name)
     {
         active_session = name;
-
-        if (auto session = std::static_pointer_cast<msc::Session>(session_named(name)))
-            focus_controller->set_focus_to(session);
-        else
-            std::cerr << "Unable to set active session, unknown client name " << name << std::endl;
+        update_session_focus();
     }
 
     void set_next_session(std::string const& name)
     {
-        if (auto const session = std::static_pointer_cast<msc::Session>(session_named(name)))
-        {
-            focus_controller->set_focus_to(session); // raise session inside its depth id set
-            set_active_session(active_session); // to restore input focus to where it should be
-        }
-        else
-            std::cerr << "Unable to set next session, unknown client name " << name << std::endl;
+        next_session = name;
+        update_session_focus();
     }
 
 private:
+    void update_session_focus()
+    {
+        auto spinner = std::static_pointer_cast<msc::Session>(session_named(spinner_session));
+        auto next = std::static_pointer_cast<msc::Session>(session_named(next_session));
+        auto active = std::static_pointer_cast<msc::Session>(session_named(active_session));
+
+        if (spinner)
+            spinner->hide();
+
+        if (next)
+        {
+            std::cerr << "Setting next focus to session " << next_session;
+            focus_controller->set_focus_to(next);
+        }
+        else if (spinner)
+        {
+            std::cerr << "Setting next focus to spinner";
+            spinner->show();
+            focus_controller->set_focus_to(spinner);
+        }
+
+        if (active)
+        {
+            std::cerr << "; active focus to session " << active_session << std::endl;
+            focus_controller->set_focus_to(active);
+        }
+        else if (spinner)
+        {
+            std::cerr << "; active focus to spinner" << std::endl;
+            spinner->show();
+            focus_controller->set_focus_to(spinner);
+        }
+    }
+
     std::shared_ptr<mf::Session> open_session(
         pid_t client_pid,
         std::string const& name,
         std::shared_ptr<mf::EventSink> const& sink)
     {
+        std::cerr << "Opening session " << name << std::endl;
         auto result = self->open_session(client_pid, name, sink);
         sessions[name] = result;
 
-        // Opening a new session will steal focus from our active session, so
-        // restore the focus if needed.
-        set_active_session(active_session);
+        if (client_pid == compositor->get_spinner_pid())
+            spinner_session = name;
 
         return result;
     }
 
     void close_session(std::shared_ptr<mf::Session> const& session)
     {
+        std::cerr << "Closing session " << session->name() << std::endl;
+
+        if (session->name() == spinner_session)
+            spinner_session = "";
+
         sessions.erase(session->name());
         self->close_session(session);
     }
@@ -110,12 +141,19 @@ private:
     void handle_surface_created(std::shared_ptr<mf::Session> const& session)
     {
         self->handle_surface_created(session);
+
+        // Opening a new surface will steal focus from our active surface, so
+        // restore the focus if needed.
+        update_session_focus();
     }
 
+    SystemCompositor *compositor;
     std::shared_ptr<mf::Shell> const self;
     std::shared_ptr<msh::FocusController> const focus_controller;
     std::map<std::string, std::shared_ptr<mf::Session>> sessions;
     std::string active_session;
+    std::string next_session;
+    std::string spinner_session;
 };
 
 class SystemCompositorServerConfiguration : public mir::DefaultServerConfiguration
@@ -154,6 +192,15 @@ public:
     std::string blacklist()
     {
         auto x = the_options()->get("blacklist", "");
+        boost::trim(x);
+        return x;
+    }
+
+    std::string spinner()
+    {
+        // TODO: once our default spinner is ready for use everywhere, replace
+        // default value with DEFAULT_SPINNER instead of the empty string.
+        auto x = the_options()->get("spinner", "");
         boost::trim(x);
         return x;
     }
@@ -217,6 +264,7 @@ public:
         return sc_shell([this]
         {
             return std::make_shared<SystemCompositorShell>(
+                compositor,
                 mir::DefaultServerConfiguration::the_frontend_shell(),
                 the_focus_controller());
         });
@@ -244,6 +292,7 @@ public:
             ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]")
             ("blacklist", po::value<std::string>(), "Video blacklist regex to use")
             ("version", "Show version of Unity System Compositor")
+            ("spinner", po::value<std::string>(), "Path to spinner executable")
             ("public-socket", po::value<bool>(), "Make the socket file publicly writable")
             ("power-off-delay", po::value<int>(), "Delay in milliseconds before powering off screen [int]")
             ("enable-hardware-cursor", po::value<bool>(), "Enable the hardware cursor (disabled by default)");
@@ -354,6 +403,11 @@ void SystemCompositor::resume()
         active_session->set_lifecycle_state(mir_lifecycle_state_resumed);
 }
 
+pid_t SystemCompositor::get_spinner_pid() const
+{
+    return spinner_process.pid();
+}
+
 void SystemCompositor::set_active_session(std::string client_name)
 {
     std::cerr << "set_active_session" << std::endl;
@@ -381,9 +435,22 @@ void SystemCompositor::main()
     io_service.run();
 }
 
+void SystemCompositor::launch_spinner()
+{
+    if (config->spinner().empty())
+        return;
+
+    // Launch spinner process to provide default background when a session isn't ready
+    QStringList env = QProcess::systemEnvironment();
+    env << "MIR_SOCKET=" + QString(config->get_socket_file().c_str());
+    spinner_process.setEnvironment(env);
+    spinner_process.start(config->spinner().c_str());
+}
+
 void SystemCompositor::qt_main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
     DBusScreen dbus_screen(config, config->power_off_delay());
+    launch_spinner();
     app.exec();
 }
