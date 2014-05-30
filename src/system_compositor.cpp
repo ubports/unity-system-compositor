@@ -16,8 +16,10 @@
  * Authored by: Robert Ancell <robert.ancell@canonical.com>
  */
 
-#include "screen_state_handler.h"
+
 #include "system_compositor.h"
+#include "screen_state_handler.h"
+#include "powerkey_handler.h"
 
 #include <mir/run_mir.h>
 #include <mir/abnormal_exit.h>
@@ -29,6 +31,7 @@
 #include <mir/shell/focus_controller.h>
 #include <mir/input/cursor_listener.h>
 #include <mir/input/composite_event_filter.h>
+#include <mir/main_loop.h>
 
 #include <cerrno>
 #include <iostream>
@@ -144,12 +147,12 @@ public:
 
     int inactivity_display_off_timeout()
     {
-       return the_options()->get("inactivity-display-off-timeout", 60);
+       return the_options()->get("inactivity-display-off-timeout", 15);
     }
 
     int inactivity_display_dim_timeout()
     {
-       return the_options()->get("inactivity-display-dim-timeout", 45);
+       return the_options()->get("inactivity-display-dim-timeout", 10);
     }
 
     int shutdown_timeout()
@@ -411,11 +414,15 @@ void SystemCompositor::qt_main(int argc, char **argv)
 
     screen_state_handler = std::make_shared<ScreenStateHandler>(config,
         std::chrono::duration_cast<std::chrono::milliseconds>(inactivity_display_off_timeout),
-        std::chrono::duration_cast<std::chrono::milliseconds>(inactivity_display_dim_timeout),
+        std::chrono::duration_cast<std::chrono::milliseconds>(inactivity_display_dim_timeout));
+
+    power_key_handler = std::make_shared<PowerKeyHandler>(*(config->the_main_loop()),
         power_key_ignore_timeout,
-        shutdown_timeout);
+        shutdown_timeout,
+        *screen_state_handler);
 
     auto composite_filter = config->the_composite_event_filter();
     composite_filter->append(screen_state_handler);
+    composite_filter->append(power_key_handler);
     app.exec();
 }

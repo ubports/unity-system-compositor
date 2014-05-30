@@ -25,6 +25,8 @@ set(USC_SRCS
   system_compositor.h
   screen_state_handler.cpp
   screen_state_handler.h
+  powerkey_handler.cpp
+  powerkey_handler.h
 )
 
 qt5_generate_dbus_interface(dbus_screen.h com.canonical.Unity.Screen.xml)
