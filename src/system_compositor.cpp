@@ -165,7 +165,7 @@ public:
 
     // mi::Surface methods
     bool input_area_contains(geom::Point const& point) const override {return self->input_area_contains(point);}
-    mi::InputReceptionMode reception_mode() const { return self->reception_mode(); }
+    mi::InputReceptionMode reception_mode() const override { return self->reception_mode(); }
 
     // mg::Renderable methods
     std::unique_ptr<mg::Renderable> compositor_snapshot(void const* compositor_id) const override { return self->compositor_snapshot(compositor_id); }
