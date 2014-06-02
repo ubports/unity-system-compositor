@@ -21,9 +21,12 @@
 
 #include <mir/run_mir.h>
 #include <mir/abnormal_exit.h>
+#include <mir/compositor/scene.h>
 #include <mir/default_server_configuration.h>
 #include <mir/options/default_configuration.h>
 #include <mir/frontend/shell.h>
+#include <mir/scene/surface.h>
+#include <mir/scene/surface_coordinator.h>
 #include <mir/server_status_listener.h>
 #include <mir/scene/session.h>
 #include <mir/shell/focus_controller.h>
@@ -38,19 +41,151 @@
 #include <boost/algorithm/string.hpp>
 #include <QCoreApplication>
 
+namespace geom = mir::geometry;
+namespace mc = mir::compositor;
 namespace msh = mir::shell;
 namespace msc = mir::scene;
 namespace mf = mir::frontend;
+namespace mg = mir::graphics;
 namespace mi = mir::input;
 namespace mo = mir::options;
 namespace po = boost::program_options;
 
+class SystemCompositorSurface;
+
+class SystemCompositorSession : public msc::Session
+{
+public:
+    SystemCompositorSession(std::shared_ptr<msc::Session> const& self,
+                            SystemCompositorShell *shell)
+        : self{self}, shell{shell}, ready{false} {}
+
+    // These are defined below, since they reference methods defined in other classes
+    void mark_ready();
+    void raise(std::shared_ptr<msc::SurfaceCoordinator> const& coordinator);
+    std::shared_ptr<mf::Surface> get_surface(mf::SurfaceId surface) const;
+    mf::SurfaceId create_surface(msc::SurfaceCreationParameters const& params);
+
+    bool is_ready() const
+    {
+        return ready;
+    }
+
+    std::shared_ptr<msc::Session> get_orig()
+    {
+        return self;
+    }
+
+    void destroy_surface(mf::SurfaceId surface)
+    {
+        surfaces.erase(surface);
+        self->destroy_surface(surface);
+    }
+
+    // This is just for convience of USC
+    std::vector<std::shared_ptr<SystemCompositorSurface>> get_surfaces()
+    {
+        std::vector<std::shared_ptr<SystemCompositorSurface>> vector;
+        for(auto surface: surfaces)
+            vector.push_back(surface.second);
+        return vector;
+    }
+
+    std::string name() const {return self->name();}
+    void hide() {self->hide();}
+    void show() {self->show();}
+    void send_display_config(mg::DisplayConfiguration const&config) {self->send_display_config(config);}
+    pid_t process_id() const {return self->process_id();}
+    void force_requests_to_complete() {self->force_requests_to_complete();}
+    void take_snapshot(msc::SnapshotCallback const& snapshot_taken) {self->take_snapshot(snapshot_taken);}
+    std::shared_ptr<msc::Surface> default_surface() const {return self->default_surface();}
+    void set_lifecycle_state(MirLifecycleState state) {self->set_lifecycle_state(state);}
+
+private:
+    std::shared_ptr<msc::Session> const self;
+    SystemCompositorShell *shell;
+    std::map<mf::SurfaceId, std::shared_ptr<SystemCompositorSurface>> surfaces;
+    bool ready;
+};
+
+class SystemCompositorSurface : public msc::Surface
+{
+public:
+    SystemCompositorSurface(std::shared_ptr<msc::Surface> const& self,
+                            SystemCompositorSession *session)
+        : self{self}, session{session}, buffer_count{0} {}
+
+    std::shared_ptr<msc::Surface> get_orig()
+    {
+        return self;
+    }
+
+    void swap_buffers(mg::Buffer* old_buffer, std::function<void(mg::Buffer* new_buffer)> complete)
+    {
+        self->swap_buffers(old_buffer, complete);
+        // If we have content (and we're not the first buffer -- first buffer
+        // is actually not enough in my experience; maybe a bug in Qt?)
+        if (old_buffer != NULL && !session->is_ready() && buffer_count++ == 2)
+            session->mark_ready();
+    }
+
+    // mf::Surface methods
+    void force_requests_to_complete() {self->force_requests_to_complete();}
+    geom::Size size() const {return self->size();}
+    MirPixelFormat pixel_format() const {return self->pixel_format();}
+    bool supports_input() const {return self->supports_input();}
+    int client_input_fd() const {return self->client_input_fd();}
+    int configure(MirSurfaceAttrib attrib, int value) {return self->configure(attrib, value);}
+
+    // msc::Surface methods
+    std::string name() const {return self->name();}
+    MirSurfaceType type() const {return self->type();}
+    MirSurfaceState state() const {return self->state();}
+    void hide() {self->hide();}
+    void show() {self->show();}
+    void move_to(geom::Point const& top_left) {self->move_to(top_left);}
+    geom::Point top_left() const {return self->top_left();}
+    void take_input_focus(std::shared_ptr<msh::InputTargeter> const& targeter) {self->take_input_focus(targeter);}
+    void set_input_region(std::vector<geom::Rectangle> const& region) {self->set_input_region(region);}
+    void allow_framedropping(bool allow) {self->allow_framedropping(allow);}
+    void resize(geom::Size const& size) {self->resize(size);}
+    void set_transformation(glm::mat4 const& t) {self->set_transformation(t);}
+    float alpha() const {return self->alpha();}
+    void set_alpha(float alpha) {self->set_alpha(alpha);}
+    void with_most_recent_buffer_do(std::function<void(mg::Buffer&)> const& exec) {self->with_most_recent_buffer_do(exec);}
+
+    // msc::Surface methods
+    std::shared_ptr<mi::InputChannel> input_channel() const {return self->input_channel();}
+    void add_observer(std::shared_ptr<msc::SurfaceObserver> const& observer) {self->add_observer(observer);}
+    void remove_observer(std::shared_ptr<msc::SurfaceObserver> const& observer) {self->remove_observer(observer);}
+
+    // mi::Surface methods
+    bool contains(geom::Point const& point) const {return self->contains(point);}
+
+    // mg::Renderable methods
+    std::shared_ptr<mg::Buffer> buffer(void const* user_id) const {return self->buffer(user_id);}
+    bool alpha_enabled() const {return self->alpha_enabled();}
+    geom::Rectangle screen_position() const {return self->screen_position();}
+    glm::mat4 transformation() const {return self->transformation();}
+    bool visible() const {return self->visible();}
+    bool shaped() const {return self->shaped();}
+    int buffers_ready_for_compositor() const {return self->buffers_ready_for_compositor();}
+    mg::Renderable::ID id() const {return self->id();}
+
+private:
+    std::shared_ptr<msc::Surface> const self;
+    SystemCompositorSession *session;
+    int buffer_count;
+};
+
 class SystemCompositorShell : public mf::Shell
 {
 public:
-    SystemCompositorShell(std::shared_ptr<mf::Shell> const& self,
-                          std::shared_ptr<msh::FocusController> const& focus_controller)
-        : self(self), focus_controller{focus_controller} {}
+    SystemCompositorShell(SystemCompositor *compositor,
+                          std::shared_ptr<mf::Shell> const& self,
+                          std::shared_ptr<msh::FocusController> const& focus_controller,
+                          std::shared_ptr<msc::SurfaceCoordinator> const& surface_coordinator)
+        : compositor{compositor}, self(self), focus_controller{focus_controller}, surface_coordinator{surface_coordinator}, active_ever_used{false} {}
 
     std::shared_ptr<mf::Session> session_named(std::string const& name)
     {
@@ -59,23 +194,89 @@ public:
 
     void set_active_session(std::string const& name)
     {
-        active_session = name;
-
-        if (auto session = std::static_pointer_cast<msc::Session>(session_named(name)))
-            focus_controller->set_focus_to(session);
-        else
-            std::cerr << "Unable to set active session, unknown client name " << name << std::endl;
+        active_name = name;
+        update_session_focus();
     }
 
     void set_next_session(std::string const& name)
     {
-        if (auto const session = std::static_pointer_cast<msc::Session>(session_named(name)))
+        next_name = name;
+        update_session_focus();
+    }
+
+    std::shared_ptr<SystemCompositorSession> get_active_session()
+    {
+        return active_session;
+    }
+
+    std::shared_ptr<SystemCompositorSession> get_next_session()
+    {
+        return next_session;
+    }
+
+    void update_session_focus()
+    {
+        auto spinner = sessions[spinner_name];
+        auto next = sessions[next_name];
+        auto active = sessions[active_name];
+
+        if (spinner)
+            spinner->hide();
+
+        if (next && next->is_ready())
         {
-            focus_controller->set_focus_to(session); // raise session inside its depth id set
-            set_active_session(active_session); // to restore input focus to where it should be
+            std::cerr << "Setting next focus to session " << next_name;
+            next->hide();
+            next->raise(surface_coordinator);
+            next_session = next;
+        }
+        else if (!next_name.empty() && spinner)
+        {
+            std::cerr << "Setting next focus to spinner";
+            spinner->raise(surface_coordinator);
+            next_session = spinner;
         }
         else
-            std::cerr << "Unable to set next session, unknown client name " << name << std::endl;
+        {
+            std::cerr << "Setting no next focus";
+            next_session.reset();
+        }
+
+        // If we are booting, we want to wait for next session to be ready to
+        // go (it's a smoother experience if user is able to immediately swipe
+        // greeter out of way -- enough that it's worth the tiny wait).  So
+        // check here to see if next is all ready for us (or we've already
+        // focused the active before in which case we're not booting anymore).
+        bool next_all_set = next_name.empty() || (next && next->is_ready());
+        if (active && active->is_ready() && (next_all_set || active_ever_used))
+        {
+            std::cerr << "; active focus to session " << active_name;
+            focus_controller->set_focus_to(active); // raises and focuses
+            active_ever_used = true;
+            active_session = active;
+            if (active_session == next_session)
+                next_session.reset();
+        }
+        else if (!active_name.empty() && spinner)
+        {
+            std::cerr << "; active focus to spinner";
+            focus_controller->set_focus_to(spinner); // raises and focuses
+            active_session = spinner;
+            next_session.reset();
+        }
+        else
+        {
+            std::cerr << "; no active focus";
+            active_session.reset();
+            next_session.reset();
+        }
+
+        if (active_session)
+            active_session->show();
+        if (next_session)
+            next_session->show();
+
+        std::cerr << std::endl;
     }
 
 private:
@@ -84,20 +285,40 @@ private:
         std::string const& name,
         std::shared_ptr<mf::EventSink> const& sink)
     {
-        auto result = self->open_session(client_pid, name, sink);
+        std::cerr << "Opening session " << name << std::endl;
+
+        // We need msc::Session objects because that is what the focus controller
+        // works with.  But the mf::Shell interface deals with mf::Session objects.
+        // So we cast here since in practice, these objects are also msc::Sessions.
+        auto orig = std::dynamic_pointer_cast<msc::Session>(self->open_session(client_pid, name, sink));
+        if (!orig)
+        {
+            std::cerr << "Unexpected non-shell session" << std::endl;
+            return std::shared_ptr<mf::Session>();
+        }
+
+        auto result = std::make_shared<SystemCompositorSession>(orig, this);
         sessions[name] = result;
 
-        // Opening a new session will steal focus from our active session, so
-        // restore the focus if needed.
-        set_active_session(active_session);
+        if (client_pid == compositor->get_spinner_pid())
+            spinner_name = name;
 
         return result;
     }
 
-    void close_session(std::shared_ptr<mf::Session> const& session)
+    void close_session(std::shared_ptr<mf::Session> const& session_in)
     {
+        std::cerr << "Closing session " << session_in->name() << std::endl;
+
+        auto session = std::dynamic_pointer_cast<SystemCompositorSession>(session_in);
+        if (!session)
+            return; // shouldn't happen
+
+        if (session->name() == spinner_name)
+            spinner_name = "";
+
+        self->close_session(session->get_orig());
         sessions.erase(session->name());
-        self->close_session(session);
     }
 
     mf::SurfaceId create_surface_for(
@@ -110,13 +331,103 @@ private:
     void handle_surface_created(std::shared_ptr<mf::Session> const& session)
     {
         self->handle_surface_created(session);
+
+        // Opening a new surface will steal focus from our active surface, so
+        // restore the focus if needed.
+        update_session_focus();
     }
 
+    SystemCompositor *compositor;
     std::shared_ptr<mf::Shell> const self;
     std::shared_ptr<msh::FocusController> const focus_controller;
-    std::map<std::string, std::shared_ptr<mf::Session>> sessions;
-    std::string active_session;
+    std::shared_ptr<msc::SurfaceCoordinator> const surface_coordinator;
+    std::map<std::string, std::shared_ptr<SystemCompositorSession>> sessions;
+    std::string active_name;
+    std::string next_name;
+    std::string spinner_name;
+    std::shared_ptr<SystemCompositorSession> active_session;
+    std::shared_ptr<SystemCompositorSession> next_session;
+    bool active_ever_used;
 };
+
+
+class SystemCompositorScene : public mc::Scene
+{
+public:
+    SystemCompositorScene(std::shared_ptr<mc::Scene> const& self,
+                          std::shared_ptr<SystemCompositorShell> shell)
+        : self{self}, shell{shell} {}
+
+    mg::RenderableList generate_renderable_list() const
+    {
+        mg::RenderableList list;
+        std::shared_ptr<SystemCompositorSession> session;
+
+        session = shell->get_next_session();
+        if (session)
+        {
+            for (auto const& surface : session->get_surfaces())
+                list.emplace_back(surface);
+        }
+
+        session = shell->get_active_session();
+        if (session)
+        {
+            for (auto const& surface : session->get_surfaces())
+                list.emplace_back(surface);
+        }
+
+        return list;
+    }
+
+    void set_change_callback(std::function<void()> const& f) {self->set_change_callback(f);}
+
+private:
+    std::shared_ptr<mc::Scene> const self;
+    std::shared_ptr<SystemCompositorShell> const shell;
+};
+
+
+void SystemCompositorSession::mark_ready()
+{
+    if (!ready)
+    {
+        ready = true;
+        shell->update_session_focus();
+    }
+}
+
+void SystemCompositorSession::raise(std::shared_ptr<msc::SurfaceCoordinator> const& coordinator)
+{
+    std::map<mf::SurfaceId, std::shared_ptr<SystemCompositorSurface>>::iterator iter;
+    for (iter = surfaces.begin(); iter != surfaces.end(); ++iter)
+    {
+        // This will iterate by creation order, which is fine.  New surfaces on top
+        coordinator->raise(iter->second->get_orig());
+    }
+}
+
+std::shared_ptr<mf::Surface> SystemCompositorSession::get_surface(mf::SurfaceId surface) const
+{
+    return surfaces.at(surface);
+}
+
+mf::SurfaceId SystemCompositorSession::create_surface(msc::SurfaceCreationParameters const& params)
+{
+    mf::SurfaceId id = self->create_surface(params);
+    std::shared_ptr<mf::Surface> mf_surface = self->get_surface(id);
+
+    auto surface = std::dynamic_pointer_cast<msc::Surface>(mf_surface);
+    if (!surface)
+    {
+        std::cerr << "Unexpected non-scene surface" << std::endl;
+        self->destroy_surface(id);
+        return mf::SurfaceId(0);
+    }
+
+    surfaces[id] = std::make_shared<SystemCompositorSurface>(surface, this);
+    return id;
+}
 
 class SystemCompositorServerConfiguration : public mir::DefaultServerConfiguration
 {
@@ -154,6 +465,15 @@ public:
     std::string blacklist()
     {
         auto x = the_options()->get("blacklist", "");
+        boost::trim(x);
+        return x;
+    }
+
+    std::string spinner()
+    {
+        // TODO: once our default spinner is ready for use everywhere, replace
+        // default value with DEFAULT_SPINNER instead of the empty string.
+        auto x = the_options()->get("spinner", "");
         boost::trim(x);
         return x;
     }
@@ -217,13 +537,26 @@ public:
         return sc_shell([this]
         {
             return std::make_shared<SystemCompositorShell>(
+                compositor,
                 mir::DefaultServerConfiguration::the_frontend_shell(),
-                the_focus_controller());
+                the_focus_controller(),
+                the_surface_coordinator());
+        });
+    }
+
+    std::shared_ptr<mc::Scene> the_scene()
+    {
+        return sc_scene([this]
+        {
+            return std::make_shared<SystemCompositorScene>(
+                mir::DefaultServerConfiguration::the_scene(),
+                the_system_compositor_shell());
         });
     }
 
 private:
     mir::CachedPtr<SystemCompositorShell> sc_shell;
+    mir::CachedPtr<SystemCompositorScene> sc_scene;
 
     std::shared_ptr<mf::Shell> the_frontend_shell() override
     {
@@ -244,6 +577,7 @@ public:
             ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]")
             ("blacklist", po::value<std::string>(), "Video blacklist regex to use")
             ("version", "Show version of Unity System Compositor")
+            ("spinner", po::value<std::string>(), "Path to spinner executable")
             ("public-socket", po::value<bool>(), "Make the socket file publicly writable")
             ("power-off-delay", po::value<int>(), "Delay in milliseconds before powering off screen [int]")
             ("enable-hardware-cursor", po::value<bool>(), "Enable the hardware cursor (disabled by default)");
@@ -354,6 +688,11 @@ void SystemCompositor::resume()
         active_session->set_lifecycle_state(mir_lifecycle_state_resumed);
 }
 
+pid_t SystemCompositor::get_spinner_pid() const
+{
+    return spinner_process.pid();
+}
+
 void SystemCompositor::set_active_session(std::string client_name)
 {
     std::cerr << "set_active_session" << std::endl;
@@ -381,9 +720,22 @@ void SystemCompositor::main()
     io_service.run();
 }
 
+void SystemCompositor::launch_spinner()
+{
+    if (config->spinner().empty())
+        return;
+
+    // Launch spinner process to provide default background when a session isn't ready
+    QStringList env = QProcess::systemEnvironment();
+    env << "MIR_SOCKET=" + QString(config->get_socket_file().c_str());
+    spinner_process.setEnvironment(env);
+    spinner_process.start(config->spinner().c_str());
+}
+
 void SystemCompositor::qt_main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
     DBusScreen dbus_screen(config, config->power_off_delay());
+    launch_spinner();
     app.exec();
 }
