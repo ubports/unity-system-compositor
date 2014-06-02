@@ -63,8 +63,8 @@ public:
     // These are defined below, since they reference methods defined in other classes
     void mark_ready();
     void raise(std::shared_ptr<msc::SurfaceCoordinator> const& coordinator);
-    std::shared_ptr<mf::Surface> get_surface(mf::SurfaceId surface) const;
-    mf::SurfaceId create_surface(msc::SurfaceCreationParameters const& params);
+    std::shared_ptr<mf::Surface> get_surface(mf::SurfaceId surface) const override;
+    mf::SurfaceId create_surface(msc::SurfaceCreationParameters const& params) override;
 
     bool is_ready() const
     {
@@ -76,7 +76,7 @@ public:
         return self;
     }
 
-    void destroy_surface(mf::SurfaceId surface)
+    void destroy_surface(mf::SurfaceId surface) override
     {
         surfaces.erase(surface);
         self->destroy_surface(surface);
@@ -91,15 +91,15 @@ public:
         return vector;
     }
 
-    std::string name() const {return self->name();}
-    void hide() {self->hide();}
-    void show() {self->show();}
-    void send_display_config(mg::DisplayConfiguration const&config) {self->send_display_config(config);}
-    pid_t process_id() const {return self->process_id();}
-    void force_requests_to_complete() {self->force_requests_to_complete();}
-    void take_snapshot(msc::SnapshotCallback const& snapshot_taken) {self->take_snapshot(snapshot_taken);}
-    std::shared_ptr<msc::Surface> default_surface() const {return self->default_surface();}
-    void set_lifecycle_state(MirLifecycleState state) {self->set_lifecycle_state(state);}
+    std::string name() const override {return self->name();}
+    void hide() override {self->hide();}
+    void show() override {self->show();}
+    void send_display_config(mg::DisplayConfiguration const&config) override {self->send_display_config(config);}
+    pid_t process_id() const override {return self->process_id();}
+    void force_requests_to_complete() override {self->force_requests_to_complete();}
+    void take_snapshot(msc::SnapshotCallback const& snapshot_taken) override {self->take_snapshot(snapshot_taken);}
+    std::shared_ptr<msc::Surface> default_surface() const override {return self->default_surface();}
+    void set_lifecycle_state(MirLifecycleState state) override {self->set_lifecycle_state(state);}
 
 private:
     std::shared_ptr<msc::Session> const self;
@@ -159,7 +159,7 @@ public:
 
     // msc::Surface methods
     std::shared_ptr<mi::InputChannel> input_channel() const override {return self->input_channel();}
-    void set_reception_mode(mi::InputReceptionMode mode) override {return self->set_reception_mode(mode); }
+    void set_reception_mode(mi::InputReceptionMode mode) override { self->set_reception_mode(mode); }
     void add_observer(std::shared_ptr<msc::SurfaceObserver> const& observer) override {self->add_observer(observer);}
     void remove_observer(std::weak_ptr<msc::SurfaceObserver> const& observer) override {self->remove_observer(observer);}
 
@@ -281,7 +281,7 @@ private:
     std::shared_ptr<mf::Session> open_session(
         pid_t client_pid,
         std::string const& name,
-        std::shared_ptr<mf::EventSink> const& sink)
+        std::shared_ptr<mf::EventSink> const& sink) override
     {
         std::cerr << "Opening session " << name << std::endl;
 
@@ -304,7 +304,7 @@ private:
         return result;
     }
 
-    void close_session(std::shared_ptr<mf::Session> const& session_in)
+    void close_session(std::shared_ptr<mf::Session> const& session_in) override
     {
         std::cerr << "Closing session " << session_in->name() << std::endl;
 
@@ -321,12 +321,12 @@ private:
 
     mf::SurfaceId create_surface_for(
         std::shared_ptr<mf::Session> const& session,
-        msc::SurfaceCreationParameters const& params)
+        msc::SurfaceCreationParameters const& params) override
     {
         return self->create_surface_for(session, params);
     }
 
-    void handle_surface_created(std::shared_ptr<mf::Session> const& session)
+    void handle_surface_created(std::shared_ptr<mf::Session> const& session) override
     {
         self->handle_surface_created(session);
 
@@ -378,14 +378,8 @@ public:
         return list;
     }
 
-    void add_observer(std::shared_ptr<msc::Observer> const& observer) override
-    {
-        return self->add_observer(observer);
-    }
-    void remove_observer(std::weak_ptr<msc::Observer> const& observer) override
-    {
-        return self->remove_observer(observer);
-    }
+    void add_observer(std::shared_ptr<msc::Observer> const& observer) override { self->add_observer(observer); }
+    void remove_observer(std::weak_ptr<msc::Observer> const& observer) override { self->remove_observer(observer); }
 
 private:
     std::shared_ptr<mc::Scene> const self;
