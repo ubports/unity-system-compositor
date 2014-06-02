@@ -120,7 +120,7 @@ public:
         return self;
     }
 
-    void swap_buffers(mg::Buffer* old_buffer, std::function<void(mg::Buffer* new_buffer)> complete)
+    void swap_buffers(mg::Buffer* old_buffer, std::function<void(mg::Buffer* new_buffer)> complete) override
     {
         self->swap_buffers(old_buffer, complete);
         // If we have content (and we're not the first buffer -- first buffer
@@ -130,47 +130,45 @@ public:
     }
 
     // mf::Surface methods
-    void force_requests_to_complete() {self->force_requests_to_complete();}
-    geom::Size size() const {return self->size();}
-    MirPixelFormat pixel_format() const {return self->pixel_format();}
-    bool supports_input() const {return self->supports_input();}
-    int client_input_fd() const {return self->client_input_fd();}
-    int configure(MirSurfaceAttrib attrib, int value) {return self->configure(attrib, value);}
+    void force_requests_to_complete() override {self->force_requests_to_complete();}
+    geom::Size size() const override {return self->size();}
+    MirPixelFormat pixel_format() const override {return self->pixel_format();}
+    bool supports_input() const override {return self->supports_input();}
+    int client_input_fd() const override {return self->client_input_fd();}
+    int configure(MirSurfaceAttrib attrib, int value) override {return self->configure(attrib, value);}
 
     // msc::Surface methods
-    std::string name() const {return self->name();}
-    MirSurfaceType type() const {return self->type();}
-    MirSurfaceState state() const {return self->state();}
-    void hide() {self->hide();}
-    void show() {self->show();}
-    void move_to(geom::Point const& top_left) {self->move_to(top_left);}
-    geom::Point top_left() const {return self->top_left();}
-    void take_input_focus(std::shared_ptr<msh::InputTargeter> const& targeter) {self->take_input_focus(targeter);}
-    void set_input_region(std::vector<geom::Rectangle> const& region) {self->set_input_region(region);}
-    void allow_framedropping(bool allow) {self->allow_framedropping(allow);}
-    void resize(geom::Size const& size) {self->resize(size);}
-    void set_transformation(glm::mat4 const& t) {self->set_transformation(t);}
-    float alpha() const {return self->alpha();}
-    void set_alpha(float alpha) {self->set_alpha(alpha);}
-    void with_most_recent_buffer_do(std::function<void(mg::Buffer&)> const& exec) {self->with_most_recent_buffer_do(exec);}
+    std::string name() const override {return self->name();}
+    geom::Size client_size() const override { return self->client_size(); };
+    geom::Rectangle input_bounds() const override { return self->input_bounds(); };
+
+    MirSurfaceType type() const override {return self->type();}
+    MirSurfaceState state() const override {return self->state();}
+    void hide() override {self->hide();}
+    void show() override {self->show();}
+    void move_to(geom::Point const& top_left) override {self->move_to(top_left);}
+    geom::Point top_left() const override {return self->top_left();}
+    void take_input_focus(std::shared_ptr<msh::InputTargeter> const& targeter) override {self->take_input_focus(targeter);}
+    void set_input_region(std::vector<geom::Rectangle> const& region) override {self->set_input_region(region);}
+    void allow_framedropping(bool allow) override {self->allow_framedropping(allow);}
+    void resize(geom::Size const& size) override {self->resize(size);}
+    void set_transformation(glm::mat4 const& t) override {self->set_transformation(t);}
+    float alpha() const override {return self->alpha();}
+    void set_alpha(float alpha) override {self->set_alpha(alpha);}
+    void with_most_recent_buffer_do(std::function<void(mg::Buffer&)> const& exec) override {self->with_most_recent_buffer_do(exec);}
 
     // msc::Surface methods
-    std::shared_ptr<mi::InputChannel> input_channel() const {return self->input_channel();}
-    void add_observer(std::shared_ptr<msc::SurfaceObserver> const& observer) {self->add_observer(observer);}
-    void remove_observer(std::shared_ptr<msc::SurfaceObserver> const& observer) {self->remove_observer(observer);}
+    std::shared_ptr<mi::InputChannel> input_channel() const override {return self->input_channel();}
+    void set_reception_mode(mi::InputReceptionMode mode) override {return self->set_reception_mode(mode); }
+    void add_observer(std::shared_ptr<msc::SurfaceObserver> const& observer) override {self->add_observer(observer);}
+    void remove_observer(std::weak_ptr<msc::SurfaceObserver> const& observer) override {self->remove_observer(observer);}
 
     // mi::Surface methods
-    bool contains(geom::Point const& point) const {return self->contains(point);}
+    bool input_area_contains(geom::Point const& point) const override {return self->input_area_contains(point);}
+    mi::InputReceptionMode reception_mode() const { return self->reception_mode(); }
 
     // mg::Renderable methods
-    std::shared_ptr<mg::Buffer> buffer(void const* user_id) const {return self->buffer(user_id);}
-    bool alpha_enabled() const {return self->alpha_enabled();}
-    geom::Rectangle screen_position() const {return self->screen_position();}
-    glm::mat4 transformation() const {return self->transformation();}
-    bool visible() const {return self->visible();}
-    bool shaped() const {return self->shaped();}
-    int buffers_ready_for_compositor() const {return self->buffers_ready_for_compositor();}
-    mg::Renderable::ID id() const {return self->id();}
+    std::unique_ptr<mg::Renderable> compositor_snapshot(void const* compositor_id) const override { return self->compositor_snapshot(compositor_id); }
 
 private:
     std::shared_ptr<msc::Surface> const self;
@@ -358,7 +356,7 @@ public:
                           std::shared_ptr<SystemCompositorShell> shell)
         : self{self}, shell{shell} {}
 
-    mg::RenderableList generate_renderable_list() const
+    mg::RenderableList renderable_list_for(CompositorID id) const override
     {
         mg::RenderableList list;
         std::shared_ptr<SystemCompositorSession> session;
@@ -367,20 +365,27 @@ public:
         if (session)
         {
             for (auto const& surface : session->get_surfaces())
-                list.emplace_back(surface);
+                list.emplace_back(surface->compositor_snapshot(id));
         }
 
         session = shell->get_active_session();
         if (session)
         {
             for (auto const& surface : session->get_surfaces())
-                list.emplace_back(surface);
+                list.emplace_back(surface->compositor_snapshot(id));
         }
 
         return list;
     }
 
-    void set_change_callback(std::function<void()> const& f) {self->set_change_callback(f);}
+    void add_observer(std::shared_ptr<msc::Observer> const& observer) override
+    {
+        return self->add_observer(observer);
+    }
+    void remove_observer(std::weak_ptr<msc::Observer> const& observer) override
+    {
+        return self->remove_observer(observer);
+    }
 
 private:
     std::shared_ptr<mc::Scene> const self;
