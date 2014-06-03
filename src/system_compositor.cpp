@@ -123,9 +123,8 @@ public:
     void swap_buffers(mg::Buffer* old_buffer, std::function<void(mg::Buffer* new_buffer)> complete) override
     {
         self->swap_buffers(old_buffer, complete);
-        // If we have content (and we're not the first buffer -- first buffer
-        // is actually not enough in my experience; maybe a bug in Qt?)
-        if (old_buffer != NULL && !session->is_ready() && buffer_count++ == 2)
+        // Mark it available only after some content has been rendered
+        if (old_buffer != NULL && !session->is_ready() && buffer_count++ == 1)
             session->mark_ready();
     }
 
@@ -352,12 +351,19 @@ private:
 class SystemCompositorScene : public mc::Scene
 {
 public:
-    SystemCompositorScene(std::shared_ptr<mc::Scene> const& self,
-                          std::shared_ptr<SystemCompositorShell> shell)
-        : self{self}, shell{shell} {}
+    SystemCompositorScene(std::shared_ptr<mc::Scene> const& self)
+        : self{self}, shell{nullptr} {}
+
+    void set_shell(std::shared_ptr<SystemCompositorShell> const& the_shell)
+    {
+        shell = the_shell;
+    }
 
     mg::RenderableList renderable_list_for(CompositorID id) const override
     {
+        if (shell == nullptr)
+            return self->renderable_list_for(id);
+
         mg::RenderableList list;
         std::shared_ptr<SystemCompositorSession> session;
 
@@ -383,7 +389,7 @@ public:
 
 private:
     std::shared_ptr<mc::Scene> const self;
-    std::shared_ptr<SystemCompositorShell> const shell;
+    std::shared_ptr<SystemCompositorShell> shell;
 };
 
 
@@ -533,7 +539,7 @@ public:
 
     std::shared_ptr<SystemCompositorShell> the_system_compositor_shell()
     {
-        return sc_shell([this]
+        auto shell =  sc_shell([this]
         {
             return std::make_shared<SystemCompositorShell>(
                 compositor,
@@ -541,16 +547,23 @@ public:
                 the_focus_controller(),
                 the_surface_coordinator());
         });
+
+        the_system_compositor_scene()->set_shell(shell);
+        return shell;
     }
 
-    std::shared_ptr<mc::Scene> the_scene()
+    std::shared_ptr<SystemCompositorScene> the_system_compositor_scene()
     {
         return sc_scene([this]
         {
             return std::make_shared<SystemCompositorScene>(
-                mir::DefaultServerConfiguration::the_scene(),
-                the_system_compositor_shell());
+                mir::DefaultServerConfiguration::the_scene());
         });
+    }
+
+    std::shared_ptr<mc::Scene> the_scene()
+    {
+        return the_system_compositor_scene();
     }
 
 private:
