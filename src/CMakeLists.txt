@@ -50,7 +50,7 @@ add_definitions(
 # Link against libmirserver
 link_directories(${MIRSERVER_LIBRARY_DIRS})
 target_link_libraries(unity-system-compositor
-  mirserver
+  ${MIRSERVER_LDFLAGS}
   pthread
   ${Boost_LIBRARIES}
   ${GLESv2_LIBRARIES}
