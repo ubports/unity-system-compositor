@@ -169,6 +169,9 @@ public:
     // mg::Renderable methods
     std::unique_ptr<mg::Renderable> compositor_snapshot(void const* compositor_id) const override { return self->compositor_snapshot(compositor_id); }
 
+    void set_cursor_image(std::shared_ptr<mg::CursorImage> const& image) override { self->set_cursor_image(image); }
+    std::shared_ptr<mg::CursorImage> cursor_image() override { return self->cursor_image(); }
+
 private:
     std::shared_ptr<msc::Surface> const self;
     SystemCompositorSession *session;
