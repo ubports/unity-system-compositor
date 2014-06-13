@@ -1,3 +1,22 @@
+unity-system-compositor (0.0.3+14.10.20140605-0ubuntu1) utopic; urgency=low
+
+  [ Alberto Aguirre ]
+  * Bumped Mir server ABI to 20.
+
+  [ Michał Sawicz ]
+  * Bumped Mir server ABI to 20.
+
+  [ Cemil Azizoglu ]
+  * Bumped Mir server ABI to 20.
+
+  [ Kevin Gunn ]
+  * Bumped Mir server ABI to 20.
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 05 Jun 2014 13:50:00 +0000
+
 unity-system-compositor (0.0.3+14.10.20140529-0ubuntu1) utopic; urgency=medium
 
   [ Michael Terry ]
