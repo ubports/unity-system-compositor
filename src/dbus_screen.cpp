@@ -19,6 +19,7 @@
 
 #include <atomic>
 #include <memory>
+#include <iostream>
 
 #include <QDBusMessage>
 #include <QDBusConnection>
@@ -108,6 +109,8 @@ int DBusScreen::keepDisplayOn()
         service_watcher->addWatchedService(caller);
 
     caller_requests.insert(id);
+    std::cerr << "keepDisplayOn request id:" << id;
+    std::cerr << " requested by \"" << caller.toStdString() << "\"" << std::endl;
     return id;
 }
 
@@ -119,6 +122,9 @@ void DBusScreen::removeDisplayOnRequest(int cookie)
     if (it == display_requests.end())
         return;
 
+    std::cerr << "removeDisplayOnRequest id:" << cookie;
+    std::cerr << " requested by \"" << requestor.toStdString() << "\"" << std::endl;
+
     auto caller_requests = it->second;
     caller_requests.erase(cookie);
     if (caller_requests.size() == 0)
@@ -127,6 +133,9 @@ void DBusScreen::removeDisplayOnRequest(int cookie)
 
 void DBusScreen::remove_display_on_requestor(QString const& requestor)
 {
+    std::cerr << "remove_display_on_requestor \"" << requestor.toStdString() << "\"";
+    std::cerr << std::endl;
+
     display_requests.erase(requestor.toStdString());
     service_watcher->removeWatchedService(requestor);
     if (display_requests.size() == 0)

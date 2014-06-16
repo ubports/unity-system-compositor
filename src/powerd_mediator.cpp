@@ -74,6 +74,13 @@ PowerdMediator::PowerdMediator()
                                           "com.canonical.powerd",
                                           QDBusConnection::systemBus())}
 {
+    if (!powerd_interface->isValid())
+    {
+        std::cerr << "Interface to powerd is invalid - last error: ";
+        std::cerr << powerd_interface->lastError().message().toStdString();
+        std::cerr << std::endl;
+    }
+
     qDBusRegisterMetaType<BrightnessParams>();
     QDBusReply<BrightnessParams> reply = powerd_interface->call("getBrightnessParams");
     if (reply.isValid())
@@ -84,6 +91,11 @@ PowerdMediator::PowerdMediator()
         min_brightness_ = params.min_brightness;
         max_brightness_ = params.max_brightness;
         auto_brightness_supported_ = params.auto_brightness_supported;
+    }
+    else
+    {
+        std::cerr << "getBrightnessParams call failed with: ";
+        std::cerr << reply.error().message().toStdString() << std::endl;
     }
 }
 
