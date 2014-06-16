@@ -20,6 +20,7 @@
 #define SYSTEM_COMPOSITOR_H_
 
 #include "dm_connection.h"
+#include <QProcess>
 
 namespace mir { namespace scene { class Session; } }
 
@@ -34,6 +35,7 @@ public:
     void run(int argc, char **argv);
     void pause();
     void resume();
+    pid_t get_spinner_pid() const;
 
 private:
     std::shared_ptr<SystemCompositorServerConfiguration> config;
@@ -42,11 +44,13 @@ private:
     std::shared_ptr<DMConnection> dm_connection;
     std::shared_ptr<ScreenStateHandler> screen_state_handler;
     std::shared_ptr<PowerKeyHandler> power_key_handler;
+    QProcess spinner_process;
 
     void set_active_session(std::string client_name);
     void set_next_session(std::string client_name);
     void main();
     void qt_main(int argc, char **argv);
+    void launch_spinner();
 };
 
 #endif /* SYSTEM_COMPOSITOR_H_ */

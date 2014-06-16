@@ -44,11 +44,18 @@ add_executable(
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_BINARY_DIR}
+  ${Boost_INCLUDE_DIRS}
+  ${GLESv2_INCLUDE_DIRS}
+  ${MIRSERVER_INCLUDE_DIRS}
+)
+add_definitions(
+  -DDEFAULT_SPINNER="${CMAKE_INSTALL_FULL_BINDIR}/unity-system-compositor-spinner"
 )
 
 # Link against libmirserver
+link_directories(${MIRSERVER_LIBRARY_DIRS})
 target_link_libraries(unity-system-compositor
-  mirserver
+  ${MIRSERVER_LDFLAGS}
   pthread
   ${Boost_LIBRARIES}
   ${GLESv2_LIBRARIES}
