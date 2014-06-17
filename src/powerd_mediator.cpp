@@ -68,8 +68,8 @@ PowerdMediator::PowerdMediator()
       min_brightness_{10},
       max_brightness_{102},
       auto_brightness_supported_{false},
-      auto_brightness_enabled{false},
       auto_brightness_requested{false},
+      backlight_state{BacklightState::normal},
       acquired_sys_state{false},
       powerd_interface{new QDBusInterface("com.canonical.powerd",
                                           "/com/canonical/powerd",
@@ -105,21 +105,20 @@ PowerdMediator::~PowerdMediator() = default;
 
 void PowerdMediator::set_dim_backlight()
 {
-    auto_brightness_enabled = false;
-    apply_brightness(dim_brightness);
+    change_backlight_state(BacklightState::dim);
 }
 
 void PowerdMediator::set_normal_backlight()
 {
     if (auto_brightness_requested)
-        enable_auto_brightness(true);
+        change_backlight_state(BacklightState::automatic);
     else
-        apply_brightness(normal_brightness);
+        change_backlight_state(BacklightState::normal);
 }
 
 void PowerdMediator::turn_off_backlight()
 {
-    apply_brightness(0);
+    change_backlight_state(BacklightState::off);
 }
 
 void PowerdMediator::change_backlight_values(int dim, int normal)
@@ -132,19 +131,11 @@ void PowerdMediator::change_backlight_values(int dim, int normal)
 
 void PowerdMediator::enable_auto_brightness(bool enable)
 {
-    if (auto_brightness_supported_ && enable && !auto_brightness_enabled)
-    {
-        powerd_interface->call("userAutobrightnessEnable", true);
-        auto_brightness_enabled = true;
-        auto_brightness_requested = true;
-        current_brightness = normal_brightness;
-    }
-    else if (auto_brightness_enabled && !enable)
-    {
-        auto_brightness_enabled = false;
-        auto_brightness_requested = false;
-        apply_brightness(normal_brightness);
-    }
+    auto_brightness_requested = enable;
+    if (auto_brightness_supported_ && enable)
+        change_backlight_state(BacklightState::automatic);
+    else
+        change_backlight_state(BacklightState::normal);
 }
 
 bool PowerdMediator::auto_brightness_supported()
@@ -166,17 +157,40 @@ void PowerdMediator::set_brightness(int brightness)
 {
     normal_brightness = brightness;
 
-    if (!auto_brightness_enabled)
-        apply_brightness(brightness);
+    if (backlight_state != BacklightState::automatic)
+        powerd_interface->call("setUserBrightness", brightness);
 }
 
-void PowerdMediator::apply_brightness(int brightness)
+void PowerdMediator::change_backlight_state(BacklightState new_state)
 {
-    if (current_brightness == brightness)
+    if (backlight_state == new_state)
         return;
 
-    powerd_interface->call("setUserBrightness", brightness);
-    current_brightness = brightness;
+    if (new_state == BacklightState::automatic)
+    {
+        powerd_interface->call("userAutobrightnessEnable", true);
+        backlight_state = BacklightState::automatic;
+        return;
+    }
+
+    switch (new_state)
+    {
+        case BacklightState::normal:
+            current_brightness = normal_brightness;
+            break;
+        case BacklightState::off:
+            current_brightness = 0;
+            break;
+        case BacklightState::dim:
+            current_brightness = dim_brightness;
+            break;
+        default:
+            std::cerr << "unknown backlight state" << std::endl;
+            break;
+    }
+
+    powerd_interface->call("setUserBrightness", current_brightness);
+    backlight_state = new_state;
 }
 
 void PowerdMediator::set_sys_state_for(MirPowerMode mode)
