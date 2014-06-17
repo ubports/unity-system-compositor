@@ -28,8 +28,10 @@
 #include <QDBusContext>
 
 class DBusScreenAdaptor;
+class DBusScreenObserver;
 class QDBusInterface;
 class QDBusServiceWatcher;
+enum class PowerStateChangeReason;
 
 class DBusScreen : public QObject, protected QDBusContext
 {
@@ -37,26 +39,19 @@ class DBusScreen : public QObject, protected QDBusContext
     Q_CLASSINFO("D-Bus Interface", "com.canonical.Unity.Screen")
 
 public:
-    enum Reason
-    {
-        normal = 0,
-        inactivity = 1,
-        power_key = 2,
-        proximity = 3,
-        max_reasons
-    };
-    typedef std::function<void(MirPowerMode mode, Reason reason)> SetPowerModeFunc;
-    typedef std::function<void(bool flag)> KeepDisplayOnFunc;
-
-    explicit DBusScreen(SetPowerModeFunc pm_func,
-        KeepDisplayOnFunc func, QObject *parent = 0);
+    explicit DBusScreen(DBusScreenObserver& observer, QObject *parent = 0);
     virtual ~DBusScreen();
-    void emit_power_state_change(MirPowerMode mode, Reason reason);
+
+    void emit_power_state_change(MirPowerMode mode, PowerStateChangeReason reason);
 
 public Q_SLOTS:
     bool setScreenPowerMode(const QString &mode, int reason);
     int keepDisplayOn();
-    void removeDisplayOnRequest(int cookie);
+    void removeDisplayOnRequest(int id);
+
+    //TODO: Expose same DBus powerd interface for now
+    void setUserBrightness(int brightness);
+    void userAutobrightnessEnable(bool enable);
 
 private Q_SLOTS:
     void remove_display_on_requestor(QString const& requestor);
@@ -65,8 +60,7 @@ private:
     std::unique_ptr<DBusScreenAdaptor> dbus_adaptor;
     std::unique_ptr<QDBusServiceWatcher> service_watcher;
     std::unordered_map<std::string, std::unordered_set<int>> display_requests;
-    SetPowerModeFunc notify_power_mode;
-    KeepDisplayOnFunc keep_display_on;
+    DBusScreenObserver* const observer;
 };
 
 #endif /* DBUS_SCREEN_H_ */

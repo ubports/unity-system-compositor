@@ -16,6 +16,8 @@
 
 #include "dbus_screen.h"
 #include "dbus_screen_adaptor.h"
+#include "dbus_screen_observer.h"
+#include "power_state_change_reason.h"
 
 #include <atomic>
 #include <memory>
@@ -26,13 +28,26 @@
 #include <QDBusServiceWatcher>
 #include <QDebug>
 
-DBusScreen::DBusScreen(SetPowerModeFunc notify_power_mode,
-    KeepDisplayOnFunc keep_display_on_func, QObject *parent)
+bool is_invalid_reason(int raw_reason)
+{
+    auto reason = static_cast<PowerStateChangeReason>(raw_reason);
+    switch (reason)
+    {
+    case PowerStateChangeReason::unknown:
+    case PowerStateChangeReason::inactivity:
+    case PowerStateChangeReason::power_key:
+    case PowerStateChangeReason::proximity:
+        return false;
+    }
+    return true;
+}
+
+
+DBusScreen::DBusScreen(DBusScreenObserver& observer, QObject *parent)
     : QObject(parent),
       dbus_adaptor{new DBusScreenAdaptor(this)},
       service_watcher{new QDBusServiceWatcher()},
-      notify_power_mode{notify_power_mode},
-      keep_display_on{keep_display_on_func}
+      observer{&observer}
 {
     QDBusConnection bus = QDBusConnection::systemBus();
     bus.registerObject("/com/canonical/Unity/Screen", this);
@@ -54,7 +69,7 @@ DBusScreen::~DBusScreen() = default;
 
 bool DBusScreen::setScreenPowerMode(const QString &mode, int reason)
 {
-    if (reason < Reason::normal || reason >= Reason::max_reasons)
+    if (is_invalid_reason(reason))
         return false;
 
     MirPowerMode newPowerMode;
@@ -73,12 +88,12 @@ bool DBusScreen::setScreenPowerMode(const QString &mode, int reason)
         return false;
     }
 
-    notify_power_mode(newPowerMode, static_cast<Reason>(reason));
+    observer->set_screen_power_mode(newPowerMode, static_cast<PowerStateChangeReason>(reason));
 
     return true;
 }
 
-void DBusScreen::emit_power_state_change(MirPowerMode power_mode, Reason reason)
+void DBusScreen::emit_power_state_change(MirPowerMode power_mode, PowerStateChangeReason reason)
 {
     QDBusMessage message =  QDBusMessage::createSignal("/com/canonical/Unity/Screen",
         "com.canonical.Unity.Screen", "DisplayPowerStateChange");
@@ -100,7 +115,7 @@ int DBusScreen::keepDisplayOn()
     static std::atomic<uint32_t> request_id{0};
 
     int id = request_id.fetch_add(1);
-    keep_display_on(true);
+    observer->keep_display_on(true);
 
     auto const& caller = message().service();
     auto& caller_requests = display_requests[caller.toStdString()];
@@ -139,5 +154,15 @@ void DBusScreen::remove_display_on_requestor(QString const& requestor)
     display_requests.erase(requestor.toStdString());
     service_watcher->removeWatchedService(requestor);
     if (display_requests.size() == 0)
-        keep_display_on(false);
+        observer->keep_display_on(false);
+}
+
+void DBusScreen::setUserBrightness(int brightness)
+{
+    observer->set_brightness(brightness);
+}
+
+void DBusScreen::userAutobrightnessEnable(bool enable)
+{
+    observer->enable_auto_brightness(enable);
 }

@@ -46,8 +46,9 @@ public:
     int min_brightness();
     int max_brightness();
 
-private:
     void set_brightness(int brightness);
+
+private:
     void release_sys_state();
     void acquire_sys_state();
 

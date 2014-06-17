@@ -25,7 +25,9 @@
 
 #include <cstdio>
 #include "dbus_screen.h"
+#include "dbus_screen_observer.h"
 #include "powerd_mediator.h"
+#include "power_state_change_reason.h"
 
 namespace mi = mir::input;
 namespace mc = mir::compositor;
@@ -44,16 +46,7 @@ ScreenStateHandler::ScreenStateHandler(std::shared_ptr<mir::DefaultServerConfigu
           std::bind(&ScreenStateHandler::power_off_alarm_notification, this))},
       dimmer_alarm{config->the_main_loop()->notify_in(dimming_timeout,
           std::bind(&ScreenStateHandler::dimmer_alarm_notification, this))},
-      dbus_screen{new DBusScreen(
-          [this](MirPowerMode m, DBusScreen::Reason reason)
-          {
-              std::lock_guard<std::mutex> lock{guard};
-              set_screen_power_mode_l(m, reason);
-          },
-          [this](bool flag)
-          {
-              keep_display_on(flag);
-          })}
+      dbus_screen{new DBusScreen(*this)}
 {
 }
 
@@ -84,6 +77,21 @@ void ScreenStateHandler::enable_inactivity_timers(bool enable)
     enable_inactivity_timers_l(enable);
 }
 
+void ScreenStateHandler::toggle_screen_power_mode()
+{
+    std::lock_guard<std::mutex> lock{guard};
+    MirPowerMode new_mode = (current_power_mode == MirPowerMode::mir_power_mode_on) ?
+            MirPowerMode::mir_power_mode_off : MirPowerMode::mir_power_mode_on;
+
+    set_screen_power_mode_l(new_mode, PowerStateChangeReason::power_key);
+}
+
+void ScreenStateHandler::set_screen_power_mode(MirPowerMode mode, PowerStateChangeReason reason)
+{
+    std::lock_guard<std::mutex> lock{guard};
+    set_screen_power_mode_l(mode, reason);
+}
+
 void ScreenStateHandler::keep_display_on(bool on)
 {
     std::lock_guard<std::mutex> lock{guard};
@@ -94,17 +102,19 @@ void ScreenStateHandler::keep_display_on(bool on)
         powerd_mediator->set_normal_backlight();
 }
 
-void ScreenStateHandler::toggle_screen_power_mode()
+void ScreenStateHandler::set_brightness(int brightness)
 {
     std::lock_guard<std::mutex> lock{guard};
-    MirPowerMode new_mode = (current_power_mode == MirPowerMode::mir_power_mode_on) ?
-            MirPowerMode::mir_power_mode_off : MirPowerMode::mir_power_mode_on;
-
-    set_screen_power_mode_l(new_mode, DBusScreen::Reason::power_key);
+    powerd_mediator->set_brightness(brightness);
 }
 
+void ScreenStateHandler::enable_auto_brightness(bool enable)
+{
+    std::lock_guard<std::mutex> lock{guard};
+    powerd_mediator->enable_auto_brightness(enable);
+}
 
-void ScreenStateHandler::set_screen_power_mode_l(MirPowerMode mode, int reason)
+void ScreenStateHandler::set_screen_power_mode_l(MirPowerMode mode, PowerStateChangeReason reason)
 {
     if (mode == MirPowerMode::mir_power_mode_on)
     {
@@ -121,7 +131,7 @@ void ScreenStateHandler::set_screen_power_mode_l(MirPowerMode mode, int reason)
     }
 }
 
-void ScreenStateHandler::configure_display_l(MirPowerMode mode, int reason)
+void ScreenStateHandler::configure_display_l(MirPowerMode mode, PowerStateChangeReason reason)
 {
     if (current_power_mode == mode)
         return;
@@ -153,7 +163,7 @@ void ScreenStateHandler::configure_display_l(MirPowerMode mode, int reason)
 
     current_power_mode = mode;
     powerd_mediator->set_sys_state_for(mode);
-    dbus_screen->emit_power_state_change(mode, static_cast<DBusScreen::Reason>(reason));
+    dbus_screen->emit_power_state_change(mode, reason);
 }
 
 void ScreenStateHandler::cancel_timers_l()
@@ -182,7 +192,7 @@ void ScreenStateHandler::enable_inactivity_timers_l(bool enable)
 void ScreenStateHandler::power_off_alarm_notification()
 {
     std::lock_guard<std::mutex> lock{guard};
-    configure_display_l(MirPowerMode::mir_power_mode_off, DBusScreen::Reason::inactivity);
+    configure_display_l(MirPowerMode::mir_power_mode_off, PowerStateChangeReason::inactivity);
 }
 
 void ScreenStateHandler::dimmer_alarm_notification()
