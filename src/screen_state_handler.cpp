@@ -98,8 +98,8 @@ void ScreenStateHandler::keep_display_on(bool on)
     restart_timers = !on;
     enable_inactivity_timers_l(!on);
 
-    if (on && current_power_mode == MirPowerMode::mir_power_mode_on)
-        powerd_mediator->set_normal_backlight();
+    if (on)
+        set_screen_power_mode_l(MirPowerMode::mir_power_mode_on, PowerStateChangeReason::unknown);
 }
 
 void ScreenStateHandler::set_brightness(int brightness)
