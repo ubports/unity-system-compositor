@@ -468,12 +468,12 @@ public:
 
     int inactivity_display_off_timeout()
     {
-       return the_options()->get("inactivity-display-off-timeout", 15);
+       return the_options()->get("inactivity-display-off-timeout", 60);
     }
 
     int inactivity_display_dim_timeout()
     {
-       return the_options()->get("inactivity-display-dim-timeout", 10);
+       return the_options()->get("inactivity-display-dim-timeout", 45);
     }
 
     int shutdown_timeout()
