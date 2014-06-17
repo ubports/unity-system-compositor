@@ -69,6 +69,7 @@ void ScreenStateHandler::set_timeouts(std::chrono::milliseconds the_power_off_ti
     std::lock_guard<std::mutex> lock{guard};
     power_off_timeout = the_power_off_timeout;
     dimming_timeout = the_dimming_timeout;
+    reset_timers_l();
 }
 
 void ScreenStateHandler::enable_inactivity_timers(bool enable)
