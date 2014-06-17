@@ -49,6 +49,7 @@ public:
     void set_brightness(int brightness);
 
 private:
+    void apply_brightness(int brightness);
     void release_sys_state();
     void acquire_sys_state();
 
@@ -58,6 +59,8 @@ private:
     int min_brightness_;
     int max_brightness_;
     bool auto_brightness_supported_;
+    bool auto_brightness_enabled;
+    bool auto_brightness_requested;
 
     QString sys_state_cookie;
     bool acquired_sys_state;

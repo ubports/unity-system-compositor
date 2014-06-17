@@ -68,6 +68,8 @@ PowerdMediator::PowerdMediator()
       min_brightness_{10},
       max_brightness_{102},
       auto_brightness_supported_{false},
+      auto_brightness_enabled{false},
+      auto_brightness_requested{false},
       acquired_sys_state{false},
       powerd_interface{new QDBusInterface("com.canonical.powerd",
                                           "/com/canonical/powerd",
@@ -103,17 +105,21 @@ PowerdMediator::~PowerdMediator() = default;
 
 void PowerdMediator::set_dim_backlight()
 {
-    set_brightness(dim_brightness);
+    auto_brightness_enabled = false;
+    apply_brightness(dim_brightness);
 }
 
 void PowerdMediator::set_normal_backlight()
 {
-    set_brightness(normal_brightness);
+    if (auto_brightness_requested)
+        enable_auto_brightness(true);
+    else
+        apply_brightness(normal_brightness);
 }
 
 void PowerdMediator::turn_off_backlight()
 {
-    set_brightness(0);
+    apply_brightness(0);
 }
 
 void PowerdMediator::change_backlight_values(int dim, int normal)
@@ -124,10 +130,21 @@ void PowerdMediator::change_backlight_values(int dim, int normal)
         dim_brightness = dim;
 }
 
-void PowerdMediator::enable_auto_brightness(bool flag)
+void PowerdMediator::enable_auto_brightness(bool enable)
 {
-    if (auto_brightness_supported_)
-        powerd_interface->call("userAutobrightnessEnable", flag);
+    if (auto_brightness_supported_ && enable && !auto_brightness_enabled)
+    {
+        powerd_interface->call("userAutobrightnessEnable", true);
+        auto_brightness_enabled = true;
+        auto_brightness_requested = true;
+        current_brightness = normal_brightness;
+    }
+    else if (auto_brightness_enabled && !enable)
+    {
+        auto_brightness_enabled = false;
+        auto_brightness_requested = false;
+        apply_brightness(normal_brightness);
+    }
 }
 
 bool PowerdMediator::auto_brightness_supported()
@@ -147,7 +164,16 @@ int PowerdMediator::max_brightness()
 
 void PowerdMediator::set_brightness(int brightness)
 {
-    if (current_brightness == brightness) return;
+    normal_brightness = brightness;
+
+    if (!auto_brightness_enabled)
+        apply_brightness(brightness);
+}
+
+void PowerdMediator::apply_brightness(int brightness)
+{
+    if (current_brightness == brightness)
+        return;
 
     powerd_interface->call("setUserBrightness", brightness);
     current_brightness = brightness;
