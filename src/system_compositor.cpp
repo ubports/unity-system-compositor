@@ -27,8 +27,8 @@
 #include <mir/frontend/shell.h>
 #include <mir/scene/surface.h>
 #include <mir/scene/surface_coordinator.h>
-#include <mir/server_status_listener.h>
 #include <mir/scene/session.h>
+#include <mir/server_status_listener.h>
 #include <mir/shell/focus_controller.h>
 #include <mir/input/cursor_listener.h>
 
@@ -101,6 +101,9 @@ public:
     std::shared_ptr<msc::Surface> default_surface() const override {return self->default_surface();}
     void set_lifecycle_state(MirLifecycleState state) override {self->set_lifecycle_state(state);}
 
+    void start_prompt_session() override { self->start_prompt_session(); }
+    void stop_prompt_session() override { self->stop_prompt_session(); }
+
 private:
     std::shared_ptr<msc::Session> const self;
     SystemCompositorShell *shell;
@@ -168,6 +171,9 @@ public:
 
     // mg::Renderable methods
     std::unique_ptr<mg::Renderable> compositor_snapshot(void const* compositor_id) const override { return self->compositor_snapshot(compositor_id); }
+
+    void set_cursor_image(std::shared_ptr<mg::CursorImage> const& image) override { self->set_cursor_image(image); }
+    std::shared_ptr<mg::CursorImage> cursor_image() override { return self->cursor_image(); }
 
 private:
     std::shared_ptr<msc::Surface> const self;
@@ -274,6 +280,32 @@ public:
             next_session->show();
 
         std::cerr << std::endl;
+    }
+
+    std::shared_ptr<mf::PromptSession> start_prompt_session_for(
+        std::shared_ptr<mf::Session> const& session,
+        msc::PromptSessionCreationParameters const& params) override
+    {
+        return self->start_prompt_session_for(session, params);
+    }
+
+    void add_prompt_provider_process_for(
+        std::shared_ptr<mf::PromptSession> const& prompt_session,
+        pid_t process_id) override
+    {
+        self->add_prompt_provider_process_for(prompt_session, process_id);
+    }
+
+    void add_prompt_provider_for(
+        std::shared_ptr<mf::PromptSession> const& prompt_session,
+        std::shared_ptr<mf::Session> const& session) override
+    {
+        self->add_prompt_provider_for(prompt_session, session);
+    }
+
+    void stop_prompt_session(std::shared_ptr<mf::PromptSession> const& prompt_session) override
+    {
+        self->stop_prompt_session(prompt_session);
     }
 
 private:
