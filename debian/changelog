@@ -1,3 +1,16 @@
+unity-system-compositor (0.0.3+14.10.20140618.1-0ubuntu1) utopic; urgency=low
+
+  [ Alberto Aguirre ]
+  * Updated for Mir 0.3.0 release.
+
+  [ Cemil Azizoglu ]
+  * Updated for Mir 0.3.0 release.
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 18 Jun 2014 19:26:10 +0000
+
 unity-system-compositor (0.0.3+14.10.20140605-0ubuntu1) utopic; urgency=low
 
   [ Alberto Aguirre ]
