@@ -34,6 +34,8 @@ public:
     void pause();
     void resume();
     pid_t get_spinner_pid() const;
+    void ensure_spinner();
+    void kill_spinner();
 
 private:
     std::shared_ptr<SystemCompositorServerConfiguration> config;
@@ -46,7 +48,6 @@ private:
     void set_next_session(std::string client_name);
     void main();
     void qt_main(int argc, char **argv);
-    void launch_spinner();
 };
 
 #endif /* SYSTEM_COMPOSITOR_H_ */

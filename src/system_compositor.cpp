@@ -222,6 +222,7 @@ public:
         auto spinner = sessions[spinner_name];
         auto next = sessions[next_name];
         auto active = sessions[active_name];
+        bool need_spinner = false;
 
         if (spinner)
             spinner->hide();
@@ -238,9 +239,11 @@ public:
             std::cerr << "Setting next focus to spinner";
             spinner->raise(surface_coordinator);
             next_session = spinner;
+            need_spinner = true;
         }
         else
         {
+            need_spinner = !next_name.empty();
             std::cerr << "Setting no next focus";
             next_session.reset();
         }
@@ -266,9 +269,11 @@ public:
             focus_controller->set_focus_to(spinner); // raises and focuses
             active_session = spinner;
             next_session.reset();
+            need_spinner = true;
         }
         else
         {
+            need_spinner = need_spinner || !active_name.empty();
             std::cerr << "; no active focus";
             active_session.reset();
             next_session.reset();
@@ -278,6 +283,11 @@ public:
             active_session->show();
         if (next_session)
             next_session->show();
+
+        if (need_spinner)
+            compositor->ensure_spinner();
+        else
+            compositor->kill_spinner();
 
         std::cerr << std::endl;
     }
@@ -764,9 +774,9 @@ void SystemCompositor::main()
     io_service.run();
 }
 
-void SystemCompositor::launch_spinner()
+void SystemCompositor::ensure_spinner()
 {
-    if (config->spinner().empty())
+    if (config->spinner().empty() || spinner_process.state() != QProcess::NotRunning)
         return;
 
     // Launch spinner process to provide default background when a session isn't ready
@@ -776,10 +786,15 @@ void SystemCompositor::launch_spinner()
     spinner_process.start(config->spinner().c_str());
 }
 
+void SystemCompositor::kill_spinner()
+{
+    spinner_process.close();
+}
+
 void SystemCompositor::qt_main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
     DBusScreen dbus_screen(config, config->power_off_delay());
-    launch_spinner();
+    ensure_spinner();
     app.exec();
 }
