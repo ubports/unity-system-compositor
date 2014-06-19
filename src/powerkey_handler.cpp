@@ -33,14 +33,9 @@ PowerKeyHandler::PowerKeyHandler(mir::time::Timer& timer,
       screen_state_handler{&screen_state_handler},
       power_key_ignore_timeout{power_key_ignore_timeout},
       shutdown_timeout{shutdown_timeout},
-      shutdown_alarm{timer.notify_in(shutdown_timeout,
-          []{ system("shutdown -P now"); })},
-      long_press_alarm{timer.notify_in(power_key_ignore_timeout,
-          [this]{ long_press_detected = true; })}
+      shutdown_alarm{timer.create_alarm([]{ system("shutdown -P now"); })},
+      long_press_alarm{timer.create_alarm([this]{ long_press_detected = true; })}
 {
-    /* TODO: change to using create_alarm once the api is added */
-    long_press_alarm->cancel();
-    shutdown_alarm->cancel();
 }
 
 PowerKeyHandler::~PowerKeyHandler() = default;
