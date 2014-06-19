@@ -36,6 +36,7 @@ Package: unity-system-compositor
 Architecture: any
 Depends: ${misc:Depends},
          ${shlibs:Depends},
+Recommends: powerd,
 Description: System compositor for Ubuntu
  System compositor used by the Mir display server in Ubuntu. If the Unity
  System Compositor can't start, LightDM will fallback to plain Xorg display
