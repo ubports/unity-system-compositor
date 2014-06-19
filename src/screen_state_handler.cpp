@@ -149,12 +149,10 @@ void ScreenStateHandler::configure_display_l(MirPowerMode mode, PowerStateChange
 
     compositor->stop();
     display->configure(*displayConfig.get());
-    //TODO: once the new swap unblock solution lands in mir
-    //only start compositor on power on state
-    compositor->start();
 
     if (mode == MirPowerMode::mir_power_mode_on)
     {
+        compositor->start();
         powerd_mediator->set_normal_backlight();
     }
     else
