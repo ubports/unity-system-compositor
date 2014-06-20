@@ -1,3 +1,11 @@
+unity-system-compositor (0.0.3+14.10.20140619-0ubuntu1) utopic; urgency=low
+
+  [ Michael Terry ]
+  * Kill the boot animation spinner when not needed, saving resources
+    (LP: #1331550)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 19 Jun 2014 22:23:50 +0000
+
 unity-system-compositor (0.0.3+14.10.20140618.1-0ubuntu1) utopic; urgency=low
 
   [ Alberto Aguirre ]
