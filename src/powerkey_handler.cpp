@@ -16,6 +16,7 @@
 
 #include "powerkey_handler.h"
 #include "screen_state_handler.h"
+#include "power_state_change_reason.h"
 
 #include <mir/time/timer.h>
 
@@ -33,7 +34,7 @@ PowerKeyHandler::PowerKeyHandler(mir::time::Timer& timer,
       screen_state_handler{&screen_state_handler},
       power_key_ignore_timeout{power_key_ignore_timeout},
       shutdown_timeout{shutdown_timeout},
-      shutdown_alarm{timer.create_alarm([]{ system("shutdown -P now"); })},
+      shutdown_alarm{timer.create_alarm([this]{ shutdown_alarm_notification(); })},
       long_press_alarm{timer.create_alarm([this]{ long_press_detected = true; })}
 {
 }
@@ -71,6 +72,13 @@ void PowerKeyHandler::power_key_up()
     long_press_alarm->cancel();
     if (!long_press_detected)
     {
-        screen_state_handler->toggle_screen_power_mode();
+        screen_state_handler->toggle_screen_power_mode(PowerStateChangeReason::power_key);
     }
+}
+
+void PowerKeyHandler::shutdown_alarm_notification()
+{
+    screen_state_handler->set_screen_power_mode(
+        MirPowerMode::mir_power_mode_off, PowerStateChangeReason::power_key);
+    system("shutdown -P now");
 }

@@ -78,13 +78,13 @@ void ScreenStateHandler::enable_inactivity_timers(bool enable)
     enable_inactivity_timers_l(enable);
 }
 
-void ScreenStateHandler::toggle_screen_power_mode()
+void ScreenStateHandler::toggle_screen_power_mode(PowerStateChangeReason reason)
 {
     std::lock_guard<std::mutex> lock{guard};
     MirPowerMode new_mode = (current_power_mode == MirPowerMode::mir_power_mode_on) ?
             MirPowerMode::mir_power_mode_off : MirPowerMode::mir_power_mode_on;
 
-    set_screen_power_mode_l(new_mode, PowerStateChangeReason::power_key);
+    set_screen_power_mode_l(new_mode, reason);
 }
 
 void ScreenStateHandler::set_screen_power_mode(MirPowerMode mode, PowerStateChangeReason reason)

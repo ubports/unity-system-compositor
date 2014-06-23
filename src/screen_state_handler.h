@@ -53,7 +53,7 @@ public:
                       std::chrono::milliseconds dimmer_timeout);
 
     void enable_inactivity_timers(bool enable);
-    void toggle_screen_power_mode();
+    void toggle_screen_power_mode(PowerStateChangeReason reason);
 
     void set_screen_power_mode(MirPowerMode mode, PowerStateChangeReason reason) override;
     void keep_display_on(bool on) override;

@@ -51,6 +51,7 @@ public:
 private:
     void power_key_up();
     void power_key_down();
+    void shutdown_alarm_notification();
 
     std::mutex guard;
     std::atomic<bool> long_press_detected;
