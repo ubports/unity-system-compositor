@@ -20,16 +20,21 @@
 #include <mir_toolkit/common.h>
 
 #include <QString>
+#include <QObject>
+
 #include <memory>
 #include <mutex>
 
 class QDBusInterface;
+class QDBusServiceWatcher;
+
 /*
  * A Proxy to powerd. Note this class is not thread-safe,
  * synchronization should be done externally.
  */
-class PowerdMediator
+class PowerdMediator : public QObject
 {
+    Q_OBJECT
 public:
     PowerdMediator();
     ~PowerdMediator();
@@ -48,6 +53,9 @@ public:
 
     void set_brightness(int brightness);
 
+private Q_SLOTS:
+    void powerd_registered();
+
 private:
     enum BacklightState
     {
@@ -59,6 +67,7 @@ private:
     void change_backlight_state(BacklightState state);
     void release_sys_state();
     void acquire_sys_state();
+    void init_brightness_params();
 
     int dim_brightness;
     int normal_brightness;
@@ -73,5 +82,6 @@ private:
     bool acquired_sys_state;
 
     std::unique_ptr<QDBusInterface> powerd_interface;
+    std::unique_ptr<QDBusServiceWatcher> service_watcher;
 };
 #endif

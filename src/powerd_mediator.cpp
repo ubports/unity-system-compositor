@@ -21,6 +21,7 @@
 #include <QDBusReply>
 #include <QDBusMetaType>
 #include <QDBusArgument>
+#include <QDBusServiceWatcher>
 
 #include <iostream>
 
@@ -72,32 +73,22 @@ PowerdMediator::PowerdMediator()
       backlight_state{BacklightState::normal},
       acquired_sys_state{false},
       powerd_interface{new QDBusInterface("com.canonical.powerd",
-                                          "/com/canonical/powerd",
-                                          "com.canonical.powerd",
-                                          QDBusConnection::systemBus())}
+          "/com/canonical/powerd", "com.canonical.powerd", QDBusConnection::systemBus())},
+      service_watcher{new QDBusServiceWatcher("com.canonical.powerd",
+          QDBusConnection::systemBus(), QDBusServiceWatcher::WatchForRegistration)}
 {
+    qDBusRegisterMetaType<BrightnessParams>();
+
     if (!powerd_interface->isValid())
     {
-        std::cerr << "Interface to powerd is invalid - last error: ";
-        std::cerr << powerd_interface->lastError().message().toStdString();
-        std::cerr << std::endl;
-    }
-
-    qDBusRegisterMetaType<BrightnessParams>();
-    QDBusReply<BrightnessParams> reply = powerd_interface->call("getBrightnessParams");
-    if (reply.isValid())
-    {
-        auto const& params = reply.value();
-        dim_brightness = params.dim_brightness;
-        normal_brightness = params.default_brightness;
-        min_brightness_ = params.min_brightness;
-        max_brightness_ = params.max_brightness;
-        auto_brightness_supported_ = params.auto_brightness_supported;
+        //Powerd interface is not available right now, wait for it to become available
+        connect(service_watcher.get(),
+                SIGNAL(serviceRegistered(QString const&)),
+                this, SLOT(powerd_registered()));
     }
     else
     {
-        std::cerr << "getBrightnessParams call failed with: ";
-        std::cerr << reply.error().message().toStdString() << std::endl;
+        init_brightness_params();
     }
 }
 
@@ -151,6 +142,11 @@ int PowerdMediator::min_brightness()
 int PowerdMediator::max_brightness()
 {
     return max_brightness_;
+}
+
+void PowerdMediator::powerd_registered()
+{
+    init_brightness_params();
 }
 
 void PowerdMediator::set_brightness(int brightness)
@@ -218,5 +214,25 @@ void PowerdMediator::acquire_sys_state()
             sys_state_cookie = reply.value();
             acquired_sys_state = true;
         }
+    }
+}
+
+void PowerdMediator::init_brightness_params()
+{
+    QDBusReply<BrightnessParams> reply = powerd_interface->call("getBrightnessParams");
+    if (reply.isValid())
+    {
+        auto const& params = reply.value();
+        dim_brightness = params.dim_brightness;
+        normal_brightness = params.default_brightness;
+        min_brightness_ = params.min_brightness;
+        max_brightness_ = params.max_brightness;
+        auto_brightness_supported_ = params.auto_brightness_supported;
+        std::cerr << "initialized brightness parameters" << std::endl;
+    }
+    else
+    {
+        std::cerr << "getBrightnessParams call failed with: ";
+        std::cerr << reply.error().message().toStdString() << std::endl;
     }
 }
