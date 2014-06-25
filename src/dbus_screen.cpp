@@ -28,7 +28,7 @@
 #include <QDBusServiceWatcher>
 #include <QDebug>
 
-bool is_invalid_reason(int raw_reason)
+bool is_valid_reason(int raw_reason)
 {
     auto reason = static_cast<PowerStateChangeReason>(raw_reason);
     switch (reason)
@@ -37,9 +37,9 @@ bool is_invalid_reason(int raw_reason)
     case PowerStateChangeReason::inactivity:
     case PowerStateChangeReason::power_key:
     case PowerStateChangeReason::proximity:
-        return false;
+        return true;
     }
-    return true;
+    return false;
 }
 
 
@@ -69,7 +69,7 @@ DBusScreen::~DBusScreen() = default;
 
 bool DBusScreen::setScreenPowerMode(const QString &mode, int reason)
 {
-    if (is_invalid_reason(reason))
+    if (!is_valid_reason(reason))
         return false;
 
     MirPowerMode newPowerMode;
