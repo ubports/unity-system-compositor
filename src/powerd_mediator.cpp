@@ -79,17 +79,15 @@ PowerdMediator::PowerdMediator()
 {
     qDBusRegisterMetaType<BrightnessParams>();
 
-    if (!powerd_interface->isValid())
-    {
-        //Powerd interface is not available right now, wait for it to become available
-        connect(service_watcher.get(),
-                SIGNAL(serviceRegistered(QString const&)),
-                this, SLOT(powerd_registered()));
-    }
-    else
+    if (powerd_interface->isValid())
     {
         init_brightness_params();
     }
+    //Powerd interface may not be available right now or it may restart in the future
+    //watch for changes so brightness params get initialized to the most recent values.
+    connect(service_watcher.get(),
+            SIGNAL(serviceRegistered(QString const&)),
+            this, SLOT(powerd_registered()));
 }
 
 PowerdMediator::~PowerdMediator() = default;
