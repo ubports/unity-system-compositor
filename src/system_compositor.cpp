@@ -16,8 +16,15 @@
  * Authored by: Robert Ancell <robert.ancell@canonical.com>
  */
 
-#include "dbus_screen.h"
+
 #include "system_compositor.h"
+#include "screen_state_handler.h"
+#include "powerkey_handler.h"
+
+// Qt headers will introduce a #define of "signals"
+// but some mir headers use "signals" as a variable name in
+// method declarations
+#undef signals
 
 #include <mir/run_mir.h>
 #include <mir/abnormal_exit.h>
@@ -31,6 +38,8 @@
 #include <mir/server_status_listener.h>
 #include <mir/shell/focus_controller.h>
 #include <mir/input/cursor_listener.h>
+#include <mir/input/composite_event_filter.h>
+#include <mir/main_loop.h>
 
 #include <cerrno>
 #include <iostream>
@@ -499,11 +508,26 @@ public:
         return the_options()->is_set("version");
     }
 
-    int power_off_delay()
+    int inactivity_display_off_timeout()
     {
-        return the_options()->get("power-off-delay", 0);
+       return the_options()->get("inactivity-display-off-timeout", 60);
     }
-    
+
+    int inactivity_display_dim_timeout()
+    {
+       return the_options()->get("inactivity-display-dim-timeout", 45);
+    }
+
+    int shutdown_timeout()
+    {
+       return the_options()->get("shutdown-timeout", 5000);
+    }
+
+    int power_key_ignore_timeout()
+    {
+       return the_options()->get("power-key-ignore-timeout", 1500);
+    }
+
     bool enable_hardware_cursor()
     {
         return the_options()->get("enable-hardware-cursor", false);
@@ -538,7 +562,7 @@ public:
             {
             }
         };
-        
+
         // This is a workaround for u8 desktop preview in 14.04 for the lack of client cursor API.
         // We need to disable the cursor for XMir but leave it on for the desktop preview.
         // Luckily as it stands they run inside seperate instances of USC. ~racarr
@@ -633,8 +657,11 @@ public:
             ("version", "Show version of Unity System Compositor")
             ("spinner", po::value<std::string>(), "Path to spinner executable")
             ("public-socket", po::value<bool>(), "Make the socket file publicly writable")
-            ("power-off-delay", po::value<int>(), "Delay in milliseconds before powering off screen [int]")
-            ("enable-hardware-cursor", po::value<bool>(), "Enable the hardware cursor (disabled by default)");
+            ("enable-hardware-cursor", po::value<bool>(), "Enable the hardware cursor (disabled by default)")
+            ("inactivity-display-off-timeout", po::value<int>(), "The time in seconds before the screen is turned off when there are no active sessions")
+            ("inactivity-display-dim-timeout", po::value<int>(), "The time in seconds before the screen is dimmed when there are no active sessions")
+            ("shutdown-timeout", po::value<int>(), "The time in milli-seconds the power key must be held to initiate a clean system shutdown")
+            ("power-key-ignore-timeout", po::value<int>(), "The time in milli-seconds the power key must be held to ignore - must be less than shutdown-timeout");
     }
 
     void parse_config_file(
@@ -794,7 +821,25 @@ void SystemCompositor::kill_spinner()
 void SystemCompositor::qt_main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
-    DBusScreen dbus_screen(config, config->power_off_delay());
+
+    std::chrono::seconds inactivity_display_off_timeout{config->inactivity_display_off_timeout()};
+    std::chrono::seconds inactivity_display_dim_timeout{config->inactivity_display_dim_timeout()};
+    std::chrono::milliseconds power_key_ignore_timeout{config->power_key_ignore_timeout()};
+    std::chrono::milliseconds shutdown_timeout{config->shutdown_timeout()};
+
+    screen_state_handler = std::make_shared<ScreenStateHandler>(config,
+        std::chrono::duration_cast<std::chrono::milliseconds>(inactivity_display_off_timeout),
+        std::chrono::duration_cast<std::chrono::milliseconds>(inactivity_display_dim_timeout));
+
+    power_key_handler = std::make_shared<PowerKeyHandler>(*(config->the_main_loop()),
+        power_key_ignore_timeout,
+        shutdown_timeout,
+        *screen_state_handler);
+
+    auto composite_filter = config->the_composite_event_filter();
+    composite_filter->append(screen_state_handler);
+    composite_filter->append(power_key_handler);
+
     ensure_spinner();
     app.exec();
 }
