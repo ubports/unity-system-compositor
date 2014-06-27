@@ -26,6 +26,8 @@ namespace mir { namespace scene { class Session; } }
 
 class SystemCompositorShell;
 class SystemCompositorServerConfiguration;
+class ScreenStateHandler;
+class PowerKeyHandler;
 
 class SystemCompositor : public DMMessageHandler
 {
@@ -42,6 +44,8 @@ private:
     std::shared_ptr<SystemCompositorShell> shell;
     boost::asio::io_service io_service;
     std::shared_ptr<DMConnection> dm_connection;
+    std::shared_ptr<ScreenStateHandler> screen_state_handler;
+    std::shared_ptr<PowerKeyHandler> power_key_handler;
     QProcess spinner_process;
 
     void set_active_session(std::string client_name);
