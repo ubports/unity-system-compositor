@@ -148,9 +148,17 @@ void ScreenStateHandler::configure_display_l(MirPowerMode mode, PowerStateChange
     );
 
     compositor->stop();
+
+    bool const power_on = mode == MirPowerMode::mir_power_mode_on;
+    if (power_on)
+    {
+        //Some devices do not turn screen on properly from suspend mode
+        powerd_mediator->disable_suspend();
+    }
+
     display->configure(*displayConfig.get());
 
-    if (mode == MirPowerMode::mir_power_mode_on)
+    if (power_on)
     {
         compositor->start();
         powerd_mediator->set_normal_backlight();
@@ -161,8 +169,11 @@ void ScreenStateHandler::configure_display_l(MirPowerMode mode, PowerStateChange
     }
 
     current_power_mode = mode;
-    powerd_mediator->set_sys_state_for(mode);
+
     dbus_screen->emit_power_state_change(mode, reason);
+
+    if (!power_on)
+        powerd_mediator->allow_suspend();
 }
 
 void ScreenStateHandler::cancel_timers_l()

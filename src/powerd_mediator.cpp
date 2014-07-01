@@ -187,22 +187,14 @@ void PowerdMediator::change_backlight_state(BacklightState new_state)
     backlight_state = new_state;
 }
 
-void PowerdMediator::set_sys_state_for(MirPowerMode mode)
-{
-    if (mode == MirPowerMode::mir_power_mode_off)
-        release_sys_state();
-    else
-        acquire_sys_state();
-}
-
-void PowerdMediator::release_sys_state()
+void PowerdMediator::allow_suspend()
 {
     if (acquired_sys_state)
         powerd_interface->call("clearSysState", sys_state_cookie);
     acquired_sys_state = false;
 }
 
-void PowerdMediator::acquire_sys_state()
+void PowerdMediator::disable_suspend()
 {
     if (!acquired_sys_state)
     {
