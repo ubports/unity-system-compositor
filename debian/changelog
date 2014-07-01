@@ -1,3 +1,11 @@
+unity-system-compositor (0.0.4+14.10.20140701-0ubuntu1) utopic; urgency=low
+
+  [ Alberto Aguirre ]
+  * Request disabling suspend before turning backlight/display on (LP:
+    #1336411) (LP: #1336411)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 01 Jul 2014 23:21:23 +0000
+
 unity-system-compositor (0.0.4+14.10.20140625-0ubuntu1) utopic; urgency=medium
 
   [ Alberto Aguirre ]
