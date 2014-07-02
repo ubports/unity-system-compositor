@@ -28,7 +28,9 @@
 
 #include <mir/run_mir.h>
 #include <mir/abnormal_exit.h>
+#include <mir/compositor/compositor_id.h>
 #include <mir/compositor/scene.h>
+#include <mir/compositor/scene_element.h>
 #include <mir/default_server_configuration.h>
 #include <mir/options/default_configuration.h>
 #include <mir/frontend/shell.h>
@@ -173,6 +175,8 @@ public:
     void set_reception_mode(mi::InputReceptionMode mode) override { self->set_reception_mode(mode); }
     void add_observer(std::shared_ptr<msc::SurfaceObserver> const& observer) override {self->add_observer(observer);}
     void remove_observer(std::weak_ptr<msc::SurfaceObserver> const& observer) override {self->remove_observer(observer);}
+    void consume(MirEvent const& event) override {self->consume(event);}
+    void set_orientation(MirOrientation orientation) override {self->set_orientation(orientation);}
 
     // mi::Surface methods
     bool input_area_contains(geom::Point const& point) const override {return self->input_area_contains(point);}
@@ -182,7 +186,7 @@ public:
     std::unique_ptr<mg::Renderable> compositor_snapshot(void const* compositor_id) const override { return self->compositor_snapshot(compositor_id); }
 
     void set_cursor_image(std::shared_ptr<mg::CursorImage> const& image) override { self->set_cursor_image(image); }
-    std::shared_ptr<mg::CursorImage> cursor_image() override { return self->cursor_image(); }
+    std::shared_ptr<mg::CursorImage> cursor_image() const override { return self->cursor_image(); }
 
 private:
     std::shared_ptr<msc::Surface> const self;
@@ -398,6 +402,25 @@ private:
     bool active_ever_used;
 };
 
+class SurfaceSceneElement : public mc::SceneElement
+{
+public:
+    SurfaceSceneElement(std::shared_ptr<mg::Renderable> renderable)
+        : renderable_{renderable}
+    {
+    }
+
+    std::shared_ptr<mg::Renderable> renderable() const override
+    {
+        return renderable_;
+    }
+
+    void rendered_in(mc::CompositorID) override {}
+    void occluded_in(mc::CompositorID) override {}
+
+private:
+    std::shared_ptr<mg::Renderable> const renderable_;
+};
 
 class SystemCompositorScene : public mc::Scene
 {
@@ -410,33 +433,45 @@ public:
         shell = the_shell;
     }
 
-    mg::RenderableList renderable_list_for(CompositorID id) const override
+    mc::SceneElementSequence scene_elements_for(mc::CompositorID id) override
     {
         if (shell == nullptr)
-            return self->renderable_list_for(id);
+            return self->scene_elements_for(id);
 
-        mg::RenderableList list;
+        mc::SceneElementSequence elements;
         std::shared_ptr<SystemCompositorSession> session;
 
         session = shell->get_next_session();
         if (session)
         {
-            for (auto const& surface : session->get_surfaces())
-                list.emplace_back(surface->compositor_snapshot(id));
+            for (auto const& surface : session->get_surfaces()) {
+                // An open question is whether this memory allocation overhead (as this method is
+                // called for every rendered frame) is perceivable/significant at all to warrant
+                // an optimization here.
+                auto element = std::make_shared<SurfaceSceneElement>(surface->compositor_snapshot(id));
+                elements.emplace_back(element);
+            }
         }
 
         session = shell->get_active_session();
         if (session)
         {
-            for (auto const& surface : session->get_surfaces())
-                list.emplace_back(surface->compositor_snapshot(id));
+            for (auto const& surface : session->get_surfaces()) {
+                // see comment previous comment
+                auto element = std::make_shared<SurfaceSceneElement>(surface->compositor_snapshot(id));
+                elements.emplace_back(element);
+            }
         }
 
-        return list;
+        return elements;
     }
 
     void add_observer(std::shared_ptr<msc::Observer> const& observer) override { self->add_observer(observer); }
     void remove_observer(std::weak_ptr<msc::Observer> const& observer) override { self->remove_observer(observer); }
+
+    void register_compositor(mc::CompositorID id) override { self->register_compositor(id); }
+    void unregister_compositor(mc::CompositorID id) override { self->unregister_compositor(id); }
+
 
 private:
     std::shared_ptr<mc::Scene> const self;
