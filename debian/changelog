@@ -1,3 +1,16 @@
+unity-system-compositor (0.0.4+14.10.20140702-0ubuntu1) utopic; urgency=low
+
+  [ Daniel d'Andrada ]
+  * Bump Mir dependencies for 0.4.0 release.
+
+  [ Cemil Azizoglu ]
+  * Bump Mir dependencies for 0.4.0 release.
+
+  [ Alberto Aguirre ]
+  * Bump Mir dependencies for 0.4.0 release.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 02 Jul 2014 02:08:24 +0000
+
 unity-system-compositor (0.0.4+14.10.20140701-0ubuntu1) utopic; urgency=low
 
   [ Alberto Aguirre ]
