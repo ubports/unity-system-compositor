@@ -42,7 +42,8 @@ public:
     void set_dim_backlight();
     void set_normal_backlight();
     void turn_off_backlight();
-    void set_sys_state_for(MirPowerMode mode);
+    void allow_suspend();
+    void disable_suspend();
 
     void change_backlight_values(int dim_brightness, int normal_brightness);
     void enable_auto_brightness(bool flag);
@@ -65,8 +66,6 @@ private:
         automatic
     };
     void change_backlight_state(BacklightState state);
-    void release_sys_state();
-    void acquire_sys_state();
     void init_brightness_params();
 
     int dim_brightness;
