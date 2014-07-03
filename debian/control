@@ -57,8 +57,8 @@ Depends: lightdm (>= 1.9.4),
          unity-system-compositor,
          xserver-xorg-xmir,
          ${misc:Depends},
-Replaces: unity-system-compositor (<< 0.0.4),
-Breaks: unity-system-compositor (<< 0.0.4),
+Replaces: unity-system-compositor (<< 0.0.2),
+Breaks: unity-system-compositor (<< 0.0.2),
 Description: System compositor for Ubuntu Desktop
  Settings package which installs everything Ubuntu Desktop needs to use Mir
  (via XMir).
