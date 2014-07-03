@@ -697,12 +697,12 @@ public:
             ("version", "Show version of Unity System Compositor")
             ("spinner", po::value<std::string>(), "Path to spinner executable")
             ("public-socket", po::value<bool>(), "Make the socket file publicly writable")
-            ("enable-hardware-cursor", po::bool_switch()->default_value(false), "Enable the hardware cursor (disabled by default)")
+            ("enable-hardware-cursor", po::value<bool>(), "Enable the hardware cursor (disabled by default)")
             ("inactivity-display-off-timeout", po::value<int>(), "The time in seconds before the screen is turned off when there are no active sessions")
             ("inactivity-display-dim-timeout", po::value<int>(), "The time in seconds before the screen is dimmed when there are no active sessions")
             ("shutdown-timeout", po::value<int>(), "The time in milli-seconds the power key must be held to initiate a clean system shutdown")
             ("power-key-ignore-timeout", po::value<int>(), "The time in milli-seconds the power key must be held to ignore - must be less than shutdown-timeout")
-            ("disable-inactivity-policy", po::bool_switch()->default_value(false), "Disables handling user inactivity and power key");
+            ("disable-inactivity-policy", po::value<bool>(), "Disables handling user inactivity and power key");
     }
 
     void parse_config_file(
