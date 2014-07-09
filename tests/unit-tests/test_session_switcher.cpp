@@ -139,10 +139,16 @@ private:
 
 struct StubSpinner : usc::Spinner
 {
-    void ensure_running() { is_running = true; }
-    void kill() { is_running = false; }
-    pid_t pid() { return 666; }
-    bool is_running = false;
+    void ensure_running() override { is_running_ = true; }
+    void kill() override { is_running_ = false; }
+    pid_t pid() override { return pid_; }
+
+    void set_pid(pid_t new_pid) { pid_ = new_pid; }
+    bool is_running() { return is_running_; }
+
+private:
+    bool is_running_ = false;
+    pid_t pid_ = 666;
 };
 
 struct ASessionSwitcher : testing::Test
@@ -160,8 +166,8 @@ struct ASessionSwitcher : testing::Test
         auto const boot_active = create_stub_session(boot_active_name);
         auto const boot_next = create_stub_session(boot_next_name);
 
-        switcher.add(boot_active, 0);
-        switcher.add(boot_next, 0);
+        switcher.add(boot_active, active_pid);
+        switcher.add(boot_next, next_pid);
 
         switcher.set_next_session(boot_next_name);
         switcher.set_active_session(boot_active_name);
@@ -177,6 +183,10 @@ struct ASessionSwitcher : testing::Test
     std::string const active_name{"active"};
     std::string const next_name{"next"};
     std::string const spinner_name{"spinner"};
+    pid_t const invalid_pid{0};
+    pid_t const active_pid{1000};
+    pid_t const next_pid{1001};
+    pid_t const other_pid{1002};
 };
 
 }
@@ -185,8 +195,8 @@ TEST_F(ASessionSwitcher, does_not_display_any_session_if_active_and_next_not_set
 {
     using namespace testing;
 
-    switcher.add(create_stub_session("s1"), 0);
-    switcher.add(create_stub_session("s2"), 0);
+    switcher.add(create_stub_session("s1"), invalid_pid);
+    switcher.add(create_stub_session("s2"), invalid_pid);
 
     EXPECT_THAT(fake_scene.displayed_sessions(), IsEmpty());
 }
@@ -197,7 +207,7 @@ TEST_F(ASessionSwitcher, does_not_display_not_ready_active_session)
 
     auto const active = create_stub_session(active_name);
 
-    switcher.add(active, 0);
+    switcher.add(active, active_pid);
     switcher.set_active_session(active_name);
 
     EXPECT_THAT(fake_scene.displayed_sessions(), IsEmpty());
@@ -209,23 +219,23 @@ TEST_F(ASessionSwitcher, does_not_display_not_ready_next_session)
 
     auto const next = create_stub_session(next_name);
 
-    switcher.add(next, 0);
+    switcher.add(next, next_pid);
     switcher.set_next_session(next_name);
 
     EXPECT_THAT(fake_scene.displayed_sessions(), IsEmpty());
 }
 
-TEST_F(ASessionSwitcher, displays_ready_next_session)
+TEST_F(ASessionSwitcher, does_not_display_ready_next_session_without_ready_active_session)
 {
     using namespace testing;
 
     auto const next = create_stub_session(next_name);
 
-    switcher.add(next, 0);
+    switcher.add(next, next_pid);
     switcher.set_next_session(next_name);
     switcher.mark_ready(next->corresponding_scene_session());
 
-    EXPECT_THAT(fake_scene.displayed_sessions(), ElementsAre(next_name));
+    EXPECT_THAT(fake_scene.displayed_sessions(), IsEmpty());
 }
 
 TEST_F(ASessionSwitcher,
@@ -236,8 +246,8 @@ TEST_F(ASessionSwitcher,
     auto const active = create_stub_session(active_name);
     auto const next = create_stub_session(next_name);
 
-    switcher.add(active, 0);
-    switcher.add(next, 0);
+    switcher.add(active, active_pid);
+    switcher.add(next, next_pid);
 
     switcher.set_active_session(active_name);
     switcher.set_next_session(next_name);
@@ -254,7 +264,7 @@ TEST_F(ASessionSwitcher,
     auto const active = create_stub_session(active_name);
     auto const spinner = create_stub_session(spinner_name);
 
-    switcher.add(active, 0);
+    switcher.add(active, active_pid);
     switcher.add(spinner, stub_spinner->pid());
 
     switcher.set_active_session(active_name);
@@ -273,8 +283,8 @@ TEST_F(ASessionSwitcher, displays_the_active_session_after_boot_if_it_is_ready)
     auto const active = create_stub_session(active_name);
     auto const next = create_stub_session(next_name);
 
-    switcher.add(active, 0);
-    switcher.add(next, 0);
+    switcher.add(active, active_pid);
+    switcher.add(next, next_pid);
 
     switcher.set_next_session(next_name);
     switcher.set_active_session(active_name);
@@ -291,8 +301,8 @@ TEST_F(ASessionSwitcher, displays_active_over_next_if_both_are_ready)
     auto const active = create_stub_session(active_name);
     auto const next = create_stub_session(next_name);
 
-    switcher.add(active, 0);
-    switcher.add(next, 0);
+    switcher.add(active, active_pid);
+    switcher.add(next, next_pid);
 
     switcher.set_next_session(next_name);
     switcher.set_active_session(active_name);
@@ -310,7 +320,7 @@ TEST_F(ASessionSwitcher, displays_only_active_if_next_equals_active)
 
     auto const active = create_stub_session(active_name);
 
-    switcher.add(active, 0);
+    switcher.add(active, active_pid);
 
     switcher.set_next_session(active_name);
     switcher.set_active_session(active_name);
@@ -328,9 +338,9 @@ TEST_F(ASessionSwitcher, displays_only_active_and_next_sessions)
     auto const next = create_stub_session(next_name);
     auto const other = create_stub_session("other");
 
-    switcher.add(active, 0);
-    switcher.add(next, 0);
-    switcher.add(other, 0);
+    switcher.add(active, active_pid);
+    switcher.add(next, next_pid);
+    switcher.add(other, other_pid);
 
     switcher.set_next_session(next_name);
     switcher.set_active_session(active_name);
@@ -349,7 +359,7 @@ TEST_F(ASessionSwitcher, displays_spinner_if_active_is_not_ready)
     auto const active = create_stub_session(active_name);
     auto const spinner = create_stub_session(spinner_name);
 
-    switcher.add(active, 0);
+    switcher.add(active, active_pid);
     switcher.add(spinner, stub_spinner->pid());
 
     switcher.set_active_session(active_name);
@@ -358,20 +368,19 @@ TEST_F(ASessionSwitcher, displays_spinner_if_active_is_not_ready)
                 ElementsAre(spinner_name));
 }
 
-TEST_F(ASessionSwitcher, displays_spinner_if_next_is_not_ready)
+TEST_F(ASessionSwitcher, does_not_display_spinner_if_next_is_not_ready)
 {
     using namespace testing;
 
     auto const next = create_stub_session(next_name);
     auto const spinner = create_stub_session(spinner_name);
 
-    switcher.add(next, 0);
+    switcher.add(next, next_pid);
     switcher.add(spinner, stub_spinner->pid());
 
     switcher.set_next_session(next_name);
 
-    EXPECT_THAT(fake_scene.displayed_sessions(),
-                ElementsAre(spinner_name));
+    EXPECT_THAT(fake_scene.displayed_sessions(), IsEmpty());
 }
 
 TEST_F(ASessionSwitcher, displays_only_spinner_when_active_is_not_ready_but_next_is_ready)
@@ -382,8 +391,8 @@ TEST_F(ASessionSwitcher, displays_only_spinner_when_active_is_not_ready_but_next
     auto const next = create_stub_session(next_name);
     auto const spinner = create_stub_session(spinner_name);
 
-    switcher.add(active, 0);
-    switcher.add(next, 0);
+    switcher.add(active, active_pid);
+    switcher.add(next, next_pid);
     switcher.add(spinner, stub_spinner->pid());
 
     switcher.set_active_session(active_name);
@@ -403,8 +412,8 @@ TEST_F(ASessionSwitcher,
     auto const next = create_stub_session(next_name);
     auto const spinner = create_stub_session(spinner_name);
 
-    switcher.add(active, 0);
-    switcher.add(next, 0);
+    switcher.add(active, active_pid);
+    switcher.add(next, next_pid);
     switcher.add(spinner, stub_spinner->pid());
 
     switcher.set_active_session(active_name);
@@ -426,8 +435,8 @@ TEST_F(ASessionSwitcher,
     auto const next = create_stub_session(next_name);
     auto const spinner = create_stub_session(spinner_name);
 
-    switcher.add(active, 0);
-    switcher.add(next, 0);
+    switcher.add(active, active_pid);
+    switcher.add(next, next_pid);
     switcher.add(spinner, stub_spinner->pid());
 
     switcher.set_active_session(active_name);
@@ -443,23 +452,18 @@ TEST_F(ASessionSwitcher, starts_and_stops_spinner_as_needed)
     using namespace testing;
 
     auto const active = create_stub_session(active_name);
-    auto const next = create_stub_session(next_name);
 
-    switcher.add(active, 0);
-    switcher.add(next, 0);
-
+    switcher.add(active, active_pid);
     switcher.set_active_session(active_name);
 
-    EXPECT_TRUE(stub_spinner->is_running);
+    EXPECT_TRUE(stub_spinner->is_running());
 
-    switcher.set_next_session(next_name);
     switcher.mark_ready(active->corresponding_scene_session());
-    switcher.mark_ready(next->corresponding_scene_session());
 
-    EXPECT_FALSE(stub_spinner->is_running);
+    EXPECT_FALSE(stub_spinner->is_running());
 }
 
-TEST_F(ASessionSwitcher, displays_next_when_active_is_removed)
+TEST_F(ASessionSwitcher, does_not_display_next_when_active_is_removed)
 {
     using namespace testing;
 
@@ -475,11 +479,10 @@ TEST_F(ASessionSwitcher, displays_next_when_active_is_removed)
     switcher.remove(boot_active_name);
     switcher.set_active_session(no_session_name);
 
-    EXPECT_THAT(fake_scene.displayed_sessions(),
-                ElementsAre(boot_next_name));
+    EXPECT_THAT(fake_scene.displayed_sessions(), IsEmpty());
 }
 
-TEST_F(ASessionSwitcher, displays_active_when_next_is_removed)
+TEST_F(ASessionSwitcher, displays_only_active_not_spinner_when_next_is_removed)
 {
     using namespace testing;
 
@@ -545,7 +548,7 @@ TEST_F(ASessionSwitcher,
     auto const active = create_stub_session(active_name);
     auto spinner = create_stub_session(spinner_name);
 
-    switcher.add(active, 0);
+    switcher.add(active, active_pid);
     switcher.add(spinner, stub_spinner->pid());
 
     switcher.set_active_session(active_name);
@@ -565,7 +568,7 @@ TEST_F(ASessionSwitcher, can_handle_spinner_resurrection_under_different_name)
     auto const active = create_stub_session(active_name);
     auto spinner = create_stub_session(spinner_name);
 
-    switcher.add(active, 0);
+    switcher.add(active, active_pid);
     switcher.add(spinner, stub_spinner->pid());
 
     switcher.set_active_session(active_name);
@@ -582,6 +585,31 @@ TEST_F(ASessionSwitcher, can_handle_spinner_resurrection_under_different_name)
     EXPECT_THAT(fake_scene.displayed_sessions(), ElementsAre(new_spinner_name));
 }
 
+TEST_F(ASessionSwitcher, can_handle_spinner_resurrection_under_different_pid)
+{
+    using namespace testing;
+
+    auto const active = create_stub_session(active_name);
+    auto spinner = create_stub_session(spinner_name);
+
+    switcher.add(active, active_pid);
+    switcher.add(spinner, stub_spinner->pid());
+    switcher.set_active_session(active_name);
+
+    EXPECT_THAT(fake_scene.displayed_sessions(), ElementsAre(spinner_name));
+
+    spinner.reset();
+    switcher.remove(spinner_name);
+
+    pid_t const new_pid{1234};
+    stub_spinner->set_pid(new_pid);
+
+    spinner = create_stub_session(spinner_name);
+    switcher.add(spinner, stub_spinner->pid());
+
+    EXPECT_THAT(fake_scene.displayed_sessions(), ElementsAre(spinner_name));
+}
+
 TEST_F(ASessionSwitcher, is_not_confused_by_other_session_with_name_of_dead_spinner)
 {
     using namespace testing;
@@ -589,16 +617,40 @@ TEST_F(ASessionSwitcher, is_not_confused_by_other_session_with_name_of_dead_spin
     auto const active = create_stub_session(active_name);
     auto spinner = create_stub_session(spinner_name);
 
-    switcher.add(active, 0);
+    switcher.add(active, active_pid);
     switcher.add(spinner, stub_spinner->pid());
 
     switcher.set_active_session(active_name);
 
     spinner.reset();
     switcher.remove(spinner_name);
+    stub_spinner->set_pid(invalid_pid);
 
     auto const other = create_stub_session(spinner_name);
-    switcher.add(other, 0);
+    switcher.add(other, other_pid);
+
+    EXPECT_THAT(fake_scene.displayed_sessions(), IsEmpty());
+}
+
+TEST_F(ASessionSwitcher, is_not_confused_by_other_session_with_pid_of_dead_spinner)
+{
+    using namespace testing;
+
+    auto const active = create_stub_session(active_name);
+    auto spinner = create_stub_session(spinner_name);
+
+    switcher.add(active, active_pid);
+    switcher.add(spinner, stub_spinner->pid());
+
+    switcher.set_active_session(active_name);
+
+    auto const old_spinner_pid = stub_spinner->pid();
+    stub_spinner->set_pid(invalid_pid);
+    spinner.reset();
+    switcher.remove(spinner_name);
+
+    auto const other = create_stub_session(spinner_name);
+    switcher.add(other, old_spinner_pid);
 
     EXPECT_THAT(fake_scene.displayed_sessions(), IsEmpty());
 }

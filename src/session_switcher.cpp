@@ -86,10 +86,12 @@ void usc::SessionSwitcher::update_displayed_sessions()
         is_session_ready_for_display(next_name) ||
         !is_session_expected_to_become_ready(next_name) ||
         !booting;
+    bool show_active = false;
 
     if (allowed_to_display_active && is_session_ready_for_display(active_name))
     {
         show_session(active_name, ShowMode::as_active);
+        show_active = true;
         booting = false;
     }
     else if (is_session_expected_to_become_ready(active_name))
@@ -98,7 +100,9 @@ void usc::SessionSwitcher::update_displayed_sessions()
         show_spinner_mode = ShowMode::as_active;
     }
 
-    if (!show_spinner)
+    bool const allowed_to_display_next = !show_spinner && show_active;
+
+    if (allowed_to_display_next)
     {
         if (is_session_ready_for_display(next_name))
         {
