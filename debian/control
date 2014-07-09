@@ -5,6 +5,7 @@ Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 Build-Depends: cmake,
                cmake-data,
                debhelper (>= 9),
+               google-mock,
                libandroid-properties-dev [i386 amd64 armhf],
                libboost-chrono-dev,
                libboost-date-time-dev,

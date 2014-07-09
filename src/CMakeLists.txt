@@ -15,18 +15,17 @@
 # Authored by: Robert Ancell <robert.ancell@canonical.com>
 
 set(USC_SRCS
-  main.cpp
+  asio_dm_connection.cpp
   dbus_screen.cpp
-  dbus_screen.h
+  external_spinner.cpp
   powerd_mediator.cpp
-  dm_connection.cpp
-  dm_connection.h
-  system_compositor.cpp
-  system_compositor.h
-  screen_state_handler.cpp
-  screen_state_handler.h
   powerkey_handler.cpp
-  powerkey_handler.h
+  screen_state_handler.cpp
+  server_configuration.cpp
+  session_coordinator.cpp
+  session_switcher.cpp
+  surface_coordinator.cpp
+  system_compositor.cpp
 )
 
 qt5_generate_dbus_interface(dbus_screen.h com.canonical.Unity.Screen.xml)
@@ -36,9 +35,14 @@ qt5_add_dbus_adaptor(USC_SRCS
                      dbus_screen_adaptor DBusScreenAdaptor)
 
 # Compile system compositor
+add_library(
+  usc STATIC
+  ${USC_SRCS}
+)
+
 add_executable(
   unity-system-compositor
-  ${USC_SRCS}
+  main.cpp
 )
 
 include_directories(
@@ -52,15 +56,20 @@ add_definitions(
   -DDEFAULT_SPINNER="${CMAKE_INSTALL_FULL_BINDIR}/unity-system-compositor-spinner"
 )
 
-# Link against libmirserver
+qt5_use_modules(usc Core DBus)
+
 link_directories(${MIRSERVER_LIBRARY_DIRS})
-target_link_libraries(unity-system-compositor
+
+target_link_libraries(usc
   ${MIRSERVER_LDFLAGS}
   pthread
   ${Boost_LIBRARIES}
   ${GLESv2_LIBRARIES}
 )
-qt5_use_modules(unity-system-compositor Core DBus)
+
+target_link_libraries(unity-system-compositor
+  usc
+)
 
 # Install into bin directory
 install(TARGETS unity-system-compositor

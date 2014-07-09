@@ -16,34 +16,33 @@
  * Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
-#ifndef USC_DM_CONNECTION_H_
-#define USC_DM_CONNECTION_H_
+#ifndef USC_EXTERNAL_SPINNER_H_
+#define USC_EXTERNAL_SPINNER_H_
 
+#include "spinner.h"
+
+#include <QProcess>
 #include <string>
 
 namespace usc
 {
 
-class DMMessageHandler
+class ExternalSpinner : public Spinner
 {
 public:
-    virtual void set_active_session(std::string const& client_name) = 0;
-    virtual void set_next_session(std::string const& client_name) = 0;
-};
+    ExternalSpinner(std::string const& executable,
+                    std::string const& mir_socket);
 
-class DMConnection
-{
-public:
-    virtual ~DMConnection() = default;
+    void ensure_running() override;
+    void kill() override;
+    pid_t pid() override;
 
-    virtual void start() = 0;
-
-protected:
-    DMConnection() = default;
-    DMConnection(DMConnection const&) = delete;
-    DMConnection& operator=(DMConnection const&) = delete;
+private:
+    std::string const executable;
+    std::string const mir_socket;
+    QProcess process;
 };
 
 }
 
-#endif /* USC_DM_CONNECTION_H_ */
+#endif
