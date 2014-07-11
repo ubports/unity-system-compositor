@@ -106,7 +106,10 @@ void usc::SystemCompositor::run()
         ~ScopeGuard()
         {
             if (qt_thread.joinable())
+            {
+                QCoreApplication::quit();
                 qt_thread.join();
+            }
         }
 
         std::thread qt_thread;
