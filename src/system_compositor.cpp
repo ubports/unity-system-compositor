@@ -169,6 +169,11 @@ void usc::SystemCompositor::qt_main()
         composite_filter->append(power_key_handler);
     }
 
-    spinner->ensure_running();
     app.exec();
+
+    // Destroy components that depend on Qt event handling inside the Qt thread,
+    // to silence warnings during shutdown
+
+    // ScreenStateHandler uses the Qt DBus infrastructure
+    screen_state_handler.reset();
 }

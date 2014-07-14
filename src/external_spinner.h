@@ -32,6 +32,7 @@ class ExternalSpinner : public Spinner
 public:
     ExternalSpinner(std::string const& executable,
                     std::string const& mir_socket);
+    ~ExternalSpinner();
 
     void ensure_running() override;
     void kill() override;

@@ -26,6 +26,11 @@ usc::ExternalSpinner::ExternalSpinner(
 {
 }
 
+usc::ExternalSpinner::~ExternalSpinner()
+{
+    kill();
+}
+
 void usc::ExternalSpinner::ensure_running()
 {
     if (executable.empty() || process.state() != QProcess::NotRunning)
