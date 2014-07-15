@@ -1,4 +1,4 @@
 #!/bin/sh
 
 sleep .1
-exec /usr/sbin/unity-system-compositor $@
+exec /usr/sbin/unity-system-compositor --disable-inactivity-policy=true $@
