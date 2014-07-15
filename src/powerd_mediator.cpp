@@ -76,7 +76,7 @@ PowerdMediator::PowerdMediator()
           "/com/canonical/powerd", "com.canonical.powerd", QDBusConnection::systemBus())},
       service_watcher{new QDBusServiceWatcher("com.canonical.powerd",
           QDBusConnection::systemBus(), QDBusServiceWatcher::WatchForRegistration)},
-      powerd_state{acquired_sys_state}
+      system_state{unknown}
 {
     qDBusRegisterMetaType<BrightnessParams>();
 
@@ -99,24 +99,6 @@ PowerdMediator::PowerdMediator()
 }
 
 PowerdMediator::~PowerdMediator() = default;
-
-void PowerdMediator::powerd_state_changed(int state)
-{
-    std::unique_lock<std::mutex> lock(m);
-    
-    powerd_state = state;
-    lock.unlock();
-    state_change.notify_one();
-}
-
-void PowerdMediator::wait_for_state(int state)
-{
-    std::unique_lock<std::mutex> lock(m);
-
-    state_change.wait(lock, [this, state]{ return (powerd_state == state); });
-    
-    return;
-}
 
 void PowerdMediator::set_dim_backlight()
 {
@@ -228,6 +210,7 @@ void PowerdMediator::disable_suspend()
         if (reply.isValid())
         {
             sys_state_cookie = reply.value();
+            wait_for_state(active);
             acquired_sys_state = true;
         }
     }
@@ -251,4 +234,20 @@ void PowerdMediator::init_brightness_params()
         std::cerr << "getBrightnessParams call failed with: ";
         std::cerr << reply.error().message().toStdString() << std::endl;
     }
+}
+
+void PowerdMediator::powerd_state_changed(int state)
+{
+    std::unique_lock<std::mutex> lock(system_state_mutex);
+
+    system_state = state == 0 ? suspended : active;
+
+    lock.unlock();
+    state_change.notify_one();
+}
+
+void PowerdMediator::wait_for_state(SystemState state)
+{
+    std::unique_lock<std::mutex> lock(system_state_mutex);
+    state_change.wait(lock, [this, state]{ return (system_state == state); });
 }

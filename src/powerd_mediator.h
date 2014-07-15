@@ -40,8 +40,6 @@ public:
     PowerdMediator();
     ~PowerdMediator();
 
-    void wait_for_state(int state);
-
     void set_dim_backlight();
     void set_normal_backlight();
     void turn_off_backlight();
@@ -69,8 +67,16 @@ private:
         normal,
         automatic
     };
+
+    enum SystemState
+    {
+        unknown = -1,
+        suspended = 0,
+        active,
+    };
     void change_backlight_state(BacklightState state);
     void init_brightness_params();
+    void wait_for_state(SystemState state);
 
     int dim_brightness;
     int normal_brightness;
@@ -87,9 +93,9 @@ private:
     std::unique_ptr<QDBusInterface> powerd_interface;
     std::unique_ptr<QDBusServiceWatcher> service_watcher;
 
-    int powerd_state;
-    
-    std::mutex m;
+    SystemState system_state;
+
+    std::mutex system_state_mutex;
     std::condition_variable state_change;
 };
 #endif
