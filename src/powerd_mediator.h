@@ -24,6 +24,7 @@
 
 #include <memory>
 #include <mutex>
+#include <condition_variable>
 
 class QDBusInterface;
 class QDBusServiceWatcher;
@@ -38,6 +39,8 @@ class PowerdMediator : public QObject
 public:
     PowerdMediator();
     ~PowerdMediator();
+
+    void wait_for_state(int state);
 
     void set_dim_backlight();
     void set_normal_backlight();
@@ -56,6 +59,7 @@ public:
 
 private Q_SLOTS:
     void powerd_registered();
+    void powerd_state_changed(int state);
 
 private:
     enum BacklightState
@@ -82,5 +86,10 @@ private:
 
     std::unique_ptr<QDBusInterface> powerd_interface;
     std::unique_ptr<QDBusServiceWatcher> service_watcher;
+
+    int powerd_state;
+    
+    std::mutex m;
+    std::condition_variable state_change;
 };
 #endif

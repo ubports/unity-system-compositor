@@ -75,7 +75,8 @@ PowerdMediator::PowerdMediator()
       powerd_interface{new QDBusInterface("com.canonical.powerd",
           "/com/canonical/powerd", "com.canonical.powerd", QDBusConnection::systemBus())},
       service_watcher{new QDBusServiceWatcher("com.canonical.powerd",
-          QDBusConnection::systemBus(), QDBusServiceWatcher::WatchForRegistration)}
+          QDBusConnection::systemBus(), QDBusServiceWatcher::WatchForRegistration)},
+      powerd_state{acquired_sys_state}
 {
     qDBusRegisterMetaType<BrightnessParams>();
 
@@ -88,9 +89,34 @@ PowerdMediator::PowerdMediator()
     connect(service_watcher.get(),
             SIGNAL(serviceRegistered(QString const&)),
             this, SLOT(powerd_registered()));
+
+    powerd_interface->connection().connect("com.canonical.powerd",
+                                           "/com/canonical/powerd",
+                                           "com.canonical.powerd",
+                                           "SysPowerStateChange",
+                                           this,
+                                           SLOT(powerd_state_changed(int)));
 }
 
 PowerdMediator::~PowerdMediator() = default;
+
+void PowerdMediator::powerd_state_changed(int state)
+{
+    std::unique_lock<std::mutex> lock(m);
+    
+    powerd_state = state;
+    lock.unlock();
+    state_change.notify_one();
+}
+
+void PowerdMediator::wait_for_state(int state)
+{
+    std::unique_lock<std::mutex> lock(m);
+
+    state_change.wait(lock, [this, state]{ return (powerd_state == state); });
+    
+    return;
+}
 
 void PowerdMediator::set_dim_backlight()
 {
