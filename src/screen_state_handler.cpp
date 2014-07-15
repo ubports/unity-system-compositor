@@ -58,7 +58,8 @@ bool ScreenStateHandler::handle(MirEvent const& event)
     {
         std::lock_guard<std::mutex> lock{guard};
         reset_timers_l();
-        powerd_mediator->set_normal_backlight();
+        if (current_power_mode == MirPowerMode::mir_power_mode_on)
+            powerd_mediator->set_normal_backlight();
     }
     return false;
 }
@@ -146,7 +147,7 @@ void ScreenStateHandler::configure_display_l(MirPowerMode mode, PowerStateChange
             displayConfigOutput.power_mode = mode;
         }
     );
-    
+
     compositor->stop();
 
     bool const power_on = mode == MirPowerMode::mir_power_mode_on;
@@ -160,7 +161,6 @@ void ScreenStateHandler::configure_display_l(MirPowerMode mode, PowerStateChange
 
     if (power_on)
     {
-        powerd_mediator->wait_for_state(power_on);
         compositor->start();
         powerd_mediator->set_normal_backlight();
     }
@@ -173,10 +173,8 @@ void ScreenStateHandler::configure_display_l(MirPowerMode mode, PowerStateChange
 
     dbus_screen->emit_power_state_change(mode, reason);
 
-    if (!power_on) {
+    if (!power_on)
         powerd_mediator->allow_suspend();
-        powerd_mediator->wait_for_state(power_on);
-    }
 }
 
 void ScreenStateHandler::cancel_timers_l()
