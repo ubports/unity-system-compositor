@@ -312,13 +312,6 @@ public:
         return self->start_prompt_session_for(session, params);
     }
 
-    void add_prompt_provider_process_for(
-        std::shared_ptr<mf::PromptSession> const& prompt_session,
-        pid_t process_id) override
-    {
-        self->add_prompt_provider_process_for(prompt_session, process_id);
-    }
-
     void add_prompt_provider_for(
         std::shared_ptr<mf::PromptSession> const& prompt_session,
         std::shared_ptr<mf::Session> const& session) override
