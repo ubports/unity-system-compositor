@@ -21,6 +21,7 @@
 
 #include <atomic>
 #include <memory>
+#include <thread>
 #include <iostream>
 
 #include <QDBusMessage>
@@ -88,7 +89,10 @@ bool DBusScreen::setScreenPowerMode(const QString &mode, int reason)
         return false;
     }
 
-    observer->set_screen_power_mode(newPowerMode, static_cast<PowerStateChangeReason>(reason));
+    //This call may block - avoid blocking this dbus handling thread
+    std::thread{[this, newPowerMode, reason]{
+        observer->set_screen_power_mode(newPowerMode, static_cast<PowerStateChangeReason>(reason));
+    }}.detach();
 
     return true;
 }
@@ -115,7 +119,9 @@ int DBusScreen::keepDisplayOn()
     static std::atomic<uint32_t> request_id{0};
 
     int id = request_id.fetch_add(1);
-    observer->keep_display_on(true);
+
+    //This call may block - avoid blocking this dbus handling thread
+    std::thread{[this]{observer->keep_display_on(true);}}.detach();
 
     auto const& caller = message().service();
     auto& caller_requests = display_requests[caller.toStdString()];
