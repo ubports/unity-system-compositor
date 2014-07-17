@@ -1,3 +1,18 @@
+unity-system-compositor (0.0.4+14.10.20140716-0ubuntu1) utopic; urgency=low
+
+  [ Alberto Aguirre ]
+  * Avoid blocking QT DBus thread (LP: #1342745) (LP: #1342745)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 16 Jul 2014 14:44:13 +0000
+
+unity-system-compositor (0.0.4+14.10.20140715-0ubuntu1) utopic; urgency=low
+
+  [ Alberto Aguirre ]
+  * Block turning on backlight or display until powerd signals we are
+    completely out of suspend mode.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 15 Jul 2014 21:06:05 +0000
+
 unity-system-compositor (0.0.4+14.10.20140703.1-0ubuntu1) utopic; urgency=low
 
   [ Alberto Aguirre ]

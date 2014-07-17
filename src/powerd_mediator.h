@@ -24,6 +24,7 @@
 
 #include <memory>
 #include <mutex>
+#include <condition_variable>
 
 class QDBusInterface;
 class QDBusServiceWatcher;
@@ -56,6 +57,7 @@ public:
 
 private Q_SLOTS:
     void powerd_registered();
+    void powerd_state_changed(int state);
 
 private:
     enum BacklightState
@@ -65,8 +67,16 @@ private:
         normal,
         automatic
     };
+
+    enum SystemState
+    {
+        unknown = -1,
+        suspended = 0,
+        active,
+    };
     void change_backlight_state(BacklightState state);
     void init_brightness_params();
+    void wait_for_state(SystemState state);
 
     int dim_brightness;
     int normal_brightness;
@@ -82,5 +92,10 @@ private:
 
     std::unique_ptr<QDBusInterface> powerd_interface;
     std::unique_ptr<QDBusServiceWatcher> service_watcher;
+
+    SystemState system_state;
+
+    std::mutex system_state_mutex;
+    std::condition_variable state_change;
 };
 #endif
