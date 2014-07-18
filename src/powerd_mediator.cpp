@@ -75,7 +75,8 @@ PowerdMediator::PowerdMediator()
       powerd_interface{new QDBusInterface("com.canonical.powerd",
           "/com/canonical/powerd", "com.canonical.powerd", QDBusConnection::systemBus())},
       service_watcher{new QDBusServiceWatcher("com.canonical.powerd",
-          QDBusConnection::systemBus(), QDBusServiceWatcher::WatchForRegistration)}
+          QDBusConnection::systemBus(), QDBusServiceWatcher::WatchForRegistration)},
+      system_state{unknown}
 {
     qDBusRegisterMetaType<BrightnessParams>();
 
@@ -88,6 +89,13 @@ PowerdMediator::PowerdMediator()
     connect(service_watcher.get(),
             SIGNAL(serviceRegistered(QString const&)),
             this, SLOT(powerd_registered()));
+
+    powerd_interface->connection().connect("com.canonical.powerd",
+                                           "/com/canonical/powerd",
+                                           "com.canonical.powerd",
+                                           "SysPowerStateChange",
+                                           this,
+                                           SLOT(powerd_state_changed(int)));
 }
 
 PowerdMediator::~PowerdMediator() = default;
@@ -202,6 +210,7 @@ void PowerdMediator::disable_suspend()
         if (reply.isValid())
         {
             sys_state_cookie = reply.value();
+            wait_for_state(active);
             acquired_sys_state = true;
         }
     }
@@ -225,4 +234,20 @@ void PowerdMediator::init_brightness_params()
         std::cerr << "getBrightnessParams call failed with: ";
         std::cerr << reply.error().message().toStdString() << std::endl;
     }
+}
+
+void PowerdMediator::powerd_state_changed(int state)
+{
+    std::unique_lock<std::mutex> lock(system_state_mutex);
+
+    system_state = state == 0 ? suspended : active;
+
+    lock.unlock();
+    state_change.notify_one();
+}
+
+void PowerdMediator::wait_for_state(SystemState state)
+{
+    std::unique_lock<std::mutex> lock(system_state_mutex);
+    state_change.wait(lock, [this, state]{ return (system_state == state); });
 }

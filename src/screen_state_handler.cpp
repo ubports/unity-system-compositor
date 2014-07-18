@@ -58,7 +58,8 @@ bool ScreenStateHandler::handle(MirEvent const& event)
     {
         std::lock_guard<std::mutex> lock{guard};
         reset_timers_l();
-        powerd_mediator->set_normal_backlight();
+        if (current_power_mode == MirPowerMode::mir_power_mode_on)
+            powerd_mediator->set_normal_backlight();
     }
     return false;
 }
