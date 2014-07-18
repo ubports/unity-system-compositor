@@ -16,34 +16,32 @@
  * Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
-#ifndef USC_DM_CONNECTION_H_
-#define USC_DM_CONNECTION_H_
+#ifndef USC_SURFACE_COORDINATOR_H_
+#define USC_SURFACE_COORDINATOR_H_
 
-#include <string>
+#include <mir/shell/surface_coordinator_wrapper.h>
+
+#include <memory>
 
 namespace usc
 {
+class SessionSwitcher;
 
-class DMMessageHandler
+class SurfaceCoordinator : public mir::shell::SurfaceCoordinatorWrapper
 {
 public:
-    virtual void set_active_session(std::string const& client_name) = 0;
-    virtual void set_next_session(std::string const& client_name) = 0;
-};
+    SurfaceCoordinator(
+        std::shared_ptr<mir::scene::SurfaceCoordinator> const& wrapped,
+        std::shared_ptr<SessionSwitcher> const& session_switcher);
 
-class DMConnection
-{
-public:
-    virtual ~DMConnection() = default;
+private:
+    std::shared_ptr<mir::scene::Surface> add_surface(
+        mir::scene::SurfaceCreationParameters const& params,
+        mir::scene::Session* session) override;
 
-    virtual void start() = 0;
-
-protected:
-    DMConnection() = default;
-    DMConnection(DMConnection const&) = delete;
-    DMConnection& operator=(DMConnection const&) = delete;
+    std::shared_ptr<SessionSwitcher> const session_switcher;
 };
 
 }
 
-#endif /* USC_DM_CONNECTION_H_ */
+#endif

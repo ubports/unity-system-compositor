@@ -16,34 +16,29 @@
  * Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
-#ifndef USC_DM_CONNECTION_H_
-#define USC_DM_CONNECTION_H_
+#ifndef USC_SPINNER_H_
+#define USC_SPINNER_H_
 
-#include <string>
+#include <sys/types.h>
 
 namespace usc
 {
 
-class DMMessageHandler
+class Spinner
 {
 public:
-    virtual void set_active_session(std::string const& client_name) = 0;
-    virtual void set_next_session(std::string const& client_name) = 0;
-};
+    virtual ~Spinner() = default;
 
-class DMConnection
-{
-public:
-    virtual ~DMConnection() = default;
-
-    virtual void start() = 0;
+    virtual void ensure_running() = 0;
+    virtual void kill() = 0;
+    virtual pid_t pid() = 0;
 
 protected:
-    DMConnection() = default;
-    DMConnection(DMConnection const&) = delete;
-    DMConnection& operator=(DMConnection const&) = delete;
+    Spinner() = default;
+    Spinner(Spinner const&) = delete;
+    Spinner& operator=(Spinner const&) = delete;
 };
 
 }
 
-#endif /* USC_DM_CONNECTION_H_ */
+#endif
