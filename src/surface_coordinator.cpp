@@ -22,33 +22,43 @@
 #include <mir/scene/null_surface_observer.h>
 #include <mir/scene/surface.h>
 
-#include <thread>
-
 namespace ms = mir::scene;
 namespace msh = mir::shell;
 
 namespace
 {
 
-struct OnFramePosted : ms::NullSurfaceObserver
+struct SessionReadyObserver : ms::NullSurfaceObserver,
+                              std::enable_shared_from_this<SessionReadyObserver>
 {
-    OnFramePosted(std::function<void()> const& action)
-        : action{action}
+    SessionReadyObserver(
+        std::shared_ptr<usc::SessionSwitcher> const& switcher,
+        std::shared_ptr<ms::Surface> const& surface,
+        ms::Session const* session)
+        : switcher{switcher},
+          surface{surface},
+          session{session}
     {
     }
 
     void frame_posted(int) override
     {
-        if (posted == 0)
+        ++num_frames_posted;
+        if (num_frames_posted == num_frames_for_session_ready)
         {
-            /* TODO: Fix this workaround for SurfaceObserver recursive deadlock */
-            std::thread{action}.detach();
-            ++posted;
+            switcher->mark_ready(session);
+            surface->remove_observer(shared_from_this());
         }
     }
 
-    int posted = 0;
-    std::function<void()> const action;
+    std::shared_ptr<usc::SessionSwitcher> const switcher;
+    std::shared_ptr<ms::Surface> const surface;
+    ms::Session const* const session;
+    // We need to wait for the second frame before marking the session
+    // as ready. The first frame posted from sessions is a blank frame.
+    // TODO: Solve this issue at its root and remove this workaround
+    int const num_frames_for_session_ready{2};
+    int num_frames_posted{0};
 };
 
 }
@@ -67,9 +77,10 @@ std::shared_ptr<ms::Surface> usc::SurfaceCoordinator::add_surface(
 {
     auto const surface = msh::SurfaceCoordinatorWrapper::add_surface(params, session);
 
-    surface->add_observer(
-        std::make_shared<OnFramePosted>(
-            [this, session] { session_switcher->mark_ready(session); }));
+    auto const session_ready_observer = std::make_shared<SessionReadyObserver>(
+        session_switcher, surface, session);
+
+    surface->add_observer(session_ready_observer);
 
     return surface;
 }
