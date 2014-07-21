@@ -76,6 +76,7 @@ private:
     };
     void change_backlight_state(BacklightState state);
     void init_brightness_params();
+    bool disable_suspend_request();
     void wait_for_state(SystemState state);
 
     int dim_brightness;
