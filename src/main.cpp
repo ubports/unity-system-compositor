@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013 Canonical Ltd.
+ * Copyright © 2013-2014 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -14,17 +14,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * Authored by: Robert Ancell <robert.ancell@canonical.com>
+ *              Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
 #include "system_compositor.h"
+#include "server_configuration.h"
+
 #include <mir/report_exception.h>
 #include <iostream>
 
 int main(int argc, char *argv[])
 try
 {
-    SystemCompositor system_compositor;
-    system_compositor.run(argc, argv);
+    auto const config = std::make_shared<usc::ServerConfiguration>(argc, argv);
+
+    usc::SystemCompositor system_compositor{config};
+    system_compositor.run();
 
     return 0;
 }

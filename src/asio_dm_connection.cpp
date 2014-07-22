@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013 Canonical Ltd.
+ * Copyright © 2013-2014 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -14,37 +14,62 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * Authored by: Robert Ancell <robert.ancell@canonical.com>
+ *              Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
-#include "dm_connection.h"
+#include "asio_dm_connection.h"
 
-#include <boost/signals2.hpp>
 #include <iostream>
+#include <thread>
 
 namespace ba = boost::asio;
 namespace bs = boost::system;
 
-void DMConnection::start()
+usc::AsioDMConnection::AsioDMConnection(
+    int from_dm_fd, int to_dm_fd,
+    std::shared_ptr<DMMessageHandler> const& dm_message_handler)
+    : from_dm_pipe{io_service, from_dm_fd},
+      to_dm_pipe{io_service, to_dm_fd},
+      dm_message_handler{dm_message_handler}
 {
-    std::cerr << "dm_connection_start" << std::endl;
-    read_header();
 }
 
-void DMConnection::send_ready()
+usc::AsioDMConnection::~AsioDMConnection()
+{
+    io_service.stop();
+    if (io_thread.joinable())
+        io_thread.join();
+}
+
+void usc::AsioDMConnection::start()
+{
+    std::cerr << "dm_connection_start" << std::endl;
+
+    send_ready();
+    read_header();
+
+    io_thread = std::thread{
+        [this]
+        {
+            io_service.run();
+        }};
+}
+
+void usc::AsioDMConnection::send_ready()
 {
     send(USCMessageID::ready, "");
 }
 
-void DMConnection::read_header()
+void usc::AsioDMConnection::read_header()
 {
     ba::async_read(from_dm_pipe,
                    ba::buffer(message_header_bytes),
-                   boost::bind(&DMConnection::on_read_header,
-                               this,
-                               ba::placeholders::error));
+                   std::bind(&AsioDMConnection::on_read_header,
+                             this,
+                             std::placeholders::_1));
 }
 
-void DMConnection::on_read_header(const bs::error_code& ec)
+void usc::AsioDMConnection::on_read_header(bs::error_code const& ec)
 {
     if (!ec)
     {
@@ -52,15 +77,15 @@ void DMConnection::on_read_header(const bs::error_code& ec)
         ba::async_read(from_dm_pipe,
                        message_payload_buffer,
                        ba::transfer_exactly(payload_length),
-                       boost::bind(&DMConnection::on_read_payload,
-                                   this,
-                                   ba::placeholders::error));
+                       std::bind(&AsioDMConnection::on_read_payload,
+                                 this,
+                                 std::placeholders::_1));
     }
     else
         std::cerr << "Failed to read header" << std::endl;
 }
 
-void DMConnection::on_read_payload(const bs::error_code& ec)
+void usc::AsioDMConnection::on_read_payload(const bs::error_code& ec)
 {
     if (!ec)
     {
@@ -86,8 +111,7 @@ void DMConnection::on_read_payload(const bs::error_code& ec)
             ss << &message_payload_buffer;
             auto client_name = ss.str();
             std::cerr << "set_active_session '" << client_name << "'" << std::endl;
-            if (handler)
-                handler->set_active_session(client_name);
+            dm_message_handler->set_active_session(client_name);
             break;
         }
         case USCMessageID::set_next_session:
@@ -96,8 +120,7 @@ void DMConnection::on_read_payload(const bs::error_code& ec)
             ss << &message_payload_buffer;
             auto client_name = ss.str();
             std::cerr << "set_next_session '" << client_name << "'" << std::endl;
-            if (handler)
-                handler->set_next_session(client_name);
+            dm_message_handler->set_next_session(client_name);
             break;
         }
         default:
@@ -111,7 +134,7 @@ void DMConnection::on_read_payload(const bs::error_code& ec)
     read_header();
 }
 
-void DMConnection::send(USCMessageID id, std::string const& body)
+void usc::AsioDMConnection::send(USCMessageID id, std::string const& body)
 {
     const size_t size = body.size();
     const uint16_t _id = (uint16_t) id;

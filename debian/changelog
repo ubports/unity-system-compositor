@@ -1,3 +1,21 @@
+unity-system-compositor (0.0.4+14.10.20140718-0ubuntu1) utopic; urgency=low
+
+  [ Alexandros Frantzis ]
+  * First steps of refactoring to improve code comprehensibility and
+    testability (LP: #1339843)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 18 Jul 2014 10:18:51 +0000
+
+unity-system-compositor (0.0.4+14.10.20140717-0ubuntu1) utopic; urgency=low
+
+  [ Cemil Azizoglu ]
+  * Mir display server 0.5.0 release.
+
+  [ Robert Carr ]
+  * Mir display server 0.5.0 release.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 17 Jul 2014 07:50:36 +0000
+
 unity-system-compositor (0.0.4+14.10.20140716-0ubuntu1) utopic; urgency=low
 
   [ Alberto Aguirre ]
