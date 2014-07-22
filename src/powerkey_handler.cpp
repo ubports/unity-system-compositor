@@ -35,7 +35,7 @@ PowerKeyHandler::PowerKeyHandler(mir::time::Timer& timer,
       power_key_ignore_timeout{power_key_ignore_timeout},
       shutdown_timeout{shutdown_timeout},
       shutdown_alarm{timer.create_alarm([this]{ shutdown_alarm_notification(); })},
-      long_press_alarm{timer.create_alarm([this]{ long_press_detected = true; })}
+      long_press_alarm{timer.create_alarm([this]{ long_press_notification(); })}
 {
 }
 
@@ -81,4 +81,11 @@ void PowerKeyHandler::shutdown_alarm_notification()
     screen_state_handler->set_screen_power_mode(
         MirPowerMode::mir_power_mode_off, PowerStateChangeReason::power_key);
     system("shutdown -P now");
+}
+
+void PowerKeyHandler::long_press_notification()
+{
+    screen_state_handler->set_screen_power_mode(
+        MirPowerMode::mir_power_mode_on, PowerStateChangeReason::power_key);
+    long_press_detected = true;
 }
