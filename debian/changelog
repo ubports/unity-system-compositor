@@ -1,3 +1,13 @@
+unity-system-compositor (0.0.4+14.10.20140722-0ubuntu1) utopic; urgency=low
+
+  [ Alberto Aguirre ]
+  * Attempt to sync up sys state when powerd is already up (LP:
+    #1343919) (LP: #1343919)
+  * Turn screen on when long press alarm fires (LP: #1344101) (LP:
+    #1344101)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 22 Jul 2014 18:49:32 +0000
+
 unity-system-compositor (0.0.4+14.10.20140718-0ubuntu1) utopic; urgency=low
 
   [ Alexandros Frantzis ]
