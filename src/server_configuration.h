@@ -60,7 +60,7 @@ public:
 
     int power_key_ignore_timeout()
     {
-       return the_options()->get("power-key-ignore-timeout", 1500);
+       return the_options()->get("power-key-ignore-timeout", 2000);
     }
 
     bool enable_hardware_cursor()

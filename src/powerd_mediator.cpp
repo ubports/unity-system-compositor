@@ -80,10 +80,6 @@ PowerdMediator::PowerdMediator()
 {
     qDBusRegisterMetaType<BrightnessParams>();
 
-    if (powerd_interface->isValid())
-    {
-        init_brightness_params();
-    }
     //Powerd interface may not be available right now or it may restart in the future
     //watch for changes so brightness params get initialized to the most recent values.
     connect(service_watcher.get(),
@@ -96,6 +92,19 @@ PowerdMediator::PowerdMediator()
                                            "SysPowerStateChange",
                                            this,
                                            SLOT(powerd_state_changed(int)));
+
+    if (powerd_interface->isValid())
+    {
+        init_brightness_params();
+        //If powerd is already up it may already be in the active state
+        //and the SysPowerStateChange signal could have already been broadcasted
+        //before we got a chance to register a listener for it.
+        //We will assume that if the active request succeeds that the system state
+        //will become active at some point in the future - this is only a workaround
+        //for the lack of a system state query api in powerd
+        if (disable_suspend_request())
+            system_state = active;
+    }
 }
 
 PowerdMediator::~PowerdMediator() = default;
@@ -204,16 +213,23 @@ void PowerdMediator::allow_suspend()
 
 void PowerdMediator::disable_suspend()
 {
+    if (disable_suspend_request())
+        wait_for_state(active);
+}
+
+bool PowerdMediator::disable_suspend_request()
+{
     if (!acquired_sys_state)
     {
         QDBusReply<QString> reply = powerd_interface->call("requestSysState", "com.canonical.Unity.Screen", 1);
         if (reply.isValid())
         {
             sys_state_cookie = reply.value();
-            wait_for_state(active);
             acquired_sys_state = true;
+            return true;
         }
     }
+    return false;
 }
 
 void PowerdMediator::init_brightness_params()
