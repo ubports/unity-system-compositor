@@ -20,6 +20,7 @@
 #include "session_switcher.h"
 
 #include <mir/scene/session.h>
+#include <mir/frontend/session.h>
 
 #include <iostream>
 
@@ -61,7 +62,7 @@ public:
         focus_controller.set_focus_to(scene_session);
     }
 
-    bool corresponds_to(mir::scene::Session const* s) override
+    bool corresponds_to(mir::frontend::Session const* s) override
     {
         return scene_session.get() == s;
     }
@@ -113,5 +114,5 @@ void usc::SessionCoordinator::close_session(
 
     msh::SessionCoordinatorWrapper::close_session(session);
 
-    session_switcher->remove(session->name());
+    session_switcher->remove(session);
 }
