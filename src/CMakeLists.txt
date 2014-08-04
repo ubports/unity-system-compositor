@@ -61,7 +61,7 @@ qt5_use_modules(usc Core DBus)
 link_directories(${MIRSERVER_LIBRARY_DIRS})
 
 target_link_libraries(usc
-  ${MIRSERVER_LDFLAGS}
+  ${MIRSERVER_LDFLAGS} ${MIRSERVER_LIBRARIES}
   pthread
   ${Boost_LIBRARIES}
   ${GLESv2_LIBRARIES}
