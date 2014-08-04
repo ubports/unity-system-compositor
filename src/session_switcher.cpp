@@ -19,6 +19,8 @@
 #include "session_switcher.h"
 #include "spinner.h"
 
+#include <mir/frontend/session.h>
+
 usc::SessionSwitcher::SessionSwitcher(std::shared_ptr<Spinner> const& spinner)
     : spinner_process{spinner},
       booting{true}
@@ -36,14 +38,28 @@ void usc::SessionSwitcher::add(std::shared_ptr<Session> const& session, pid_t pi
     update_displayed_sessions();
 }
 
-void usc::SessionSwitcher::remove(std::string const& name)
+void usc::SessionSwitcher::remove(std::shared_ptr<mir::frontend::Session> const& session)
 {
     std::lock_guard<std::mutex> lock{mutex};
+
+    auto const& name = session->name();
+
+    auto const iter = sessions.find(name);
+    if (iter == sessions.end())
+        return;
+
+    if (iter->second.session == nullptr)
+        return;
+
+    if (!iter->second.session->corresponds_to(session.get()))
+        return;
 
     if (name == spinner_name)
         spinner_name = "";
 
-    sessions.erase(name);
+    iter->second.session->hide();
+
+    sessions.erase(iter);
     update_displayed_sessions();
 }
 
@@ -63,13 +79,13 @@ void usc::SessionSwitcher::set_next_session(std::string const& name)
     update_displayed_sessions();
 }
 
-void usc::SessionSwitcher::mark_ready(mir::scene::Session const* scene_session)
+void usc::SessionSwitcher::mark_ready(mir::frontend::Session const* session)
 {
     std::lock_guard<std::mutex> lock{mutex};
 
     for (auto& pair : sessions)
     {
-        if (pair.second.session && pair.second.session->corresponds_to(scene_session))
+        if (pair.second.session && pair.second.session->corresponds_to(session))
             pair.second.ready = true;
     }
 

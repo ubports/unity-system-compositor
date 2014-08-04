@@ -21,6 +21,7 @@
 
 #include <mir/scene/null_surface_observer.h>
 #include <mir/scene/surface.h>
+#include <mir/scene/session.h>
 
 namespace ms = mir::scene;
 namespace msh = mir::shell;
