@@ -19,6 +19,8 @@
 #include "src/session_switcher.h"
 #include "src/spinner.h"
 
+#include "mir/frontend/session.h"
+
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
@@ -34,7 +36,7 @@ class FakeScene
 public:
     void add(usc::Session* session)
     {
-        sessions.emplace_back(session, true);
+        sessions.emplace_back(session, false);
     }
 
     void remove(usc::Session* session)
@@ -87,12 +89,31 @@ private:
     }
 };
 
+class StubMirSession : public mir::frontend::Session
+{
+public:
+    StubMirSession(std::string const& name)
+        : name_{name}
+    {}
+
+    mir::frontend::SurfaceId create_surface(mir::scene::SurfaceCreationParameters const&) override { return mir::frontend::SurfaceId{0}; }
+    void destroy_surface(mir::frontend::SurfaceId) override {}
+    std::shared_ptr<mir::frontend::Surface> get_surface(mir::frontend::SurfaceId surface) const override { return nullptr; }
+
+    std::string name() const override { return name_; }
+    void hide() override {}
+    void show() override {}
+
+private:
+    std::string const name_;
+};
+
 class StubSession : public usc::Session
 {
 public:
     StubSession(FakeScene& fake_scene, std::string const& name)
-        : fake_scene(fake_scene),
-          name_{name}
+        : mir_stub_session{std::make_shared<StubMirSession>(name)},
+          fake_scene(fake_scene)
     {
         fake_scene.add(this);
     }
@@ -104,7 +125,7 @@ public:
 
     std::string name() override
     {
-        return name_;
+        return mir_stub_session->name();
     }
 
     void show() override
@@ -122,19 +143,19 @@ public:
         fake_scene.raise(this);
     }
 
-    bool corresponds_to(mir::scene::Session const* s) override
+    bool corresponds_to(mir::frontend::Session const* s) override
     {
-        return s == corresponding_scene_session();
+        return s == mir_stub_session.get();
     }
 
-    mir::scene::Session const* corresponding_scene_session()
+    std::shared_ptr<mir::frontend::Session> corresponding_session()
     {
-        return reinterpret_cast<mir::scene::Session const*>(this);
+        return mir_stub_session;
     }
 
 private:
+    std::shared_ptr<StubMirSession> const mir_stub_session;
     FakeScene& fake_scene;
-    std::string const name_;
 };
 
 struct StubSpinner : usc::Spinner
@@ -158,7 +179,7 @@ struct ASessionSwitcher : testing::Test
         return std::make_shared<StubSession>(fake_scene, name);
     }
 
-    std::tuple<std::string,std::string> boot()
+    std::tuple<std::shared_ptr<StubSession>,std::shared_ptr<StubSession>> boot()
     {
         std::string const boot_active_name{"boot_active"};
         std::string const boot_next_name{"boot_next"};
@@ -171,10 +192,10 @@ struct ASessionSwitcher : testing::Test
 
         switcher.set_next_session(boot_next_name);
         switcher.set_active_session(boot_active_name);
-        switcher.mark_ready(boot_active->corresponding_scene_session());
-        switcher.mark_ready(boot_next->corresponding_scene_session());
+        switcher.mark_ready(boot_active->corresponding_session().get());
+        switcher.mark_ready(boot_next->corresponding_session().get());
 
-        return std::make_tuple(boot_active_name, boot_next_name);
+        return std::make_tuple(boot_active, boot_next);
     }
 
     FakeScene fake_scene;
@@ -233,7 +254,7 @@ TEST_F(ASessionSwitcher, does_not_display_ready_next_session_without_ready_activ
 
     switcher.add(next, next_pid);
     switcher.set_next_session(next_name);
-    switcher.mark_ready(next->corresponding_scene_session());
+    switcher.mark_ready(next->corresponding_session().get());
 
     EXPECT_THAT(fake_scene.displayed_sessions(), IsEmpty());
 }
@@ -251,7 +272,7 @@ TEST_F(ASessionSwitcher,
 
     switcher.set_active_session(active_name);
     switcher.set_next_session(next_name);
-    switcher.mark_ready(active->corresponding_scene_session());
+    switcher.mark_ready(active->corresponding_session().get());
 
     EXPECT_THAT(fake_scene.displayed_sessions(), IsEmpty());
 }
@@ -268,7 +289,7 @@ TEST_F(ASessionSwitcher,
     switcher.add(spinner, stub_spinner->pid());
 
     switcher.set_active_session(active_name);
-    switcher.mark_ready(active->corresponding_scene_session());
+    switcher.mark_ready(active->corresponding_session().get());
 
     EXPECT_THAT(fake_scene.displayed_sessions(),
                 ElementsAre(active_name));
@@ -288,7 +309,7 @@ TEST_F(ASessionSwitcher, displays_the_active_session_after_boot_if_it_is_ready)
 
     switcher.set_next_session(next_name);
     switcher.set_active_session(active_name);
-    switcher.mark_ready(active->corresponding_scene_session());
+    switcher.mark_ready(active->corresponding_session().get());
 
     EXPECT_THAT(fake_scene.displayed_sessions(),
                 ElementsAre(active_name));
@@ -306,8 +327,8 @@ TEST_F(ASessionSwitcher, displays_active_over_next_if_both_are_ready)
 
     switcher.set_next_session(next_name);
     switcher.set_active_session(active_name);
-    switcher.mark_ready(active->corresponding_scene_session());
-    switcher.mark_ready(next->corresponding_scene_session());
+    switcher.mark_ready(active->corresponding_session().get());
+    switcher.mark_ready(next->corresponding_session().get());
 
     EXPECT_THAT(fake_scene.displayed_sessions(),
                 ElementsAre(next_name, active_name));
@@ -324,7 +345,7 @@ TEST_F(ASessionSwitcher, displays_only_active_if_next_equals_active)
 
     switcher.set_next_session(active_name);
     switcher.set_active_session(active_name);
-    switcher.mark_ready(active->corresponding_scene_session());
+    switcher.mark_ready(active->corresponding_session().get());
 
     EXPECT_THAT(fake_scene.displayed_sessions(),
                 ElementsAre(active_name));
@@ -344,9 +365,9 @@ TEST_F(ASessionSwitcher, displays_only_active_and_next_sessions)
 
     switcher.set_next_session(next_name);
     switcher.set_active_session(active_name);
-    switcher.mark_ready(active->corresponding_scene_session());
-    switcher.mark_ready(next->corresponding_scene_session());
-    switcher.mark_ready(other->corresponding_scene_session());
+    switcher.mark_ready(active->corresponding_session().get());
+    switcher.mark_ready(next->corresponding_session().get());
+    switcher.mark_ready(other->corresponding_session().get());
 
     EXPECT_THAT(fake_scene.displayed_sessions(),
                 ElementsAre(next_name, active_name));
@@ -397,7 +418,7 @@ TEST_F(ASessionSwitcher, displays_only_spinner_when_active_is_not_ready_but_next
 
     switcher.set_active_session(active_name);
     switcher.set_next_session(next_name);
-    switcher.mark_ready(next->corresponding_scene_session());
+    switcher.mark_ready(next->corresponding_session().get());
 
     EXPECT_THAT(fake_scene.displayed_sessions(),
                 ElementsAre(spinner_name));
@@ -418,7 +439,7 @@ TEST_F(ASessionSwitcher,
 
     switcher.set_active_session(active_name);
     switcher.set_next_session(next_name);
-    switcher.mark_ready(active->corresponding_scene_session());
+    switcher.mark_ready(active->corresponding_session().get());
 
     EXPECT_THAT(fake_scene.displayed_sessions(),
                 ElementsAre(spinner_name));
@@ -441,7 +462,7 @@ TEST_F(ASessionSwitcher,
 
     switcher.set_active_session(active_name);
     switcher.set_next_session(next_name);
-    switcher.mark_ready(active->corresponding_scene_session());
+    switcher.mark_ready(active->corresponding_session().get());
 
     EXPECT_THAT(fake_scene.displayed_sessions(),
                 ElementsAre(spinner_name, active_name));
@@ -458,7 +479,7 @@ TEST_F(ASessionSwitcher, starts_and_stops_spinner_as_needed)
 
     EXPECT_TRUE(stub_spinner->is_running());
 
-    switcher.mark_ready(active->corresponding_scene_session());
+    switcher.mark_ready(active->corresponding_session().get());
 
     EXPECT_FALSE(stub_spinner->is_running());
 }
@@ -469,14 +490,14 @@ TEST_F(ASessionSwitcher, does_not_display_next_when_active_is_removed)
 
     std::string const no_session_name;
 
-    std::string boot_active_name;
-    std::string boot_next_name;
-    std::tie(boot_active_name, boot_next_name) = boot();
+    std::shared_ptr<StubSession> boot_active;
+    std::shared_ptr<StubSession> boot_next;
+    std::tie(boot_active, boot_next) = boot();
 
     auto const spinner = create_stub_session(spinner_name);
     switcher.add(spinner, stub_spinner->pid());
 
-    switcher.remove(boot_active_name);
+    switcher.remove(boot_active->corresponding_session());
     switcher.set_active_session(no_session_name);
 
     EXPECT_THAT(fake_scene.displayed_sessions(), IsEmpty());
@@ -488,18 +509,18 @@ TEST_F(ASessionSwitcher, displays_only_active_not_spinner_when_next_is_removed)
 
     std::string const no_session_name;
 
-    std::string boot_active_name;
-    std::string boot_next_name;
-    std::tie(boot_active_name, boot_next_name) = boot();
+    std::shared_ptr<StubSession> boot_active;
+    std::shared_ptr<StubSession> boot_next;
+    std::tie(boot_active, boot_next) = boot();
 
     auto const spinner = create_stub_session(spinner_name);
     switcher.add(spinner, stub_spinner->pid());
 
-    switcher.remove(boot_next_name);
+    switcher.remove(boot_next->corresponding_session());
     switcher.set_next_session(no_session_name);
 
     EXPECT_THAT(fake_scene.displayed_sessions(),
-                ElementsAre(boot_active_name));
+                ElementsAre(boot_active->name()));
 }
 
 TEST_F(ASessionSwitcher, displays_spinner_when_active_is_removed_unexpectedly)
@@ -508,14 +529,14 @@ TEST_F(ASessionSwitcher, displays_spinner_when_active_is_removed_unexpectedly)
 
     std::string const no_session_name;
 
-    std::string boot_active_name;
-    std::string boot_next_name;
-    std::tie(boot_active_name, boot_next_name) = boot();
+    std::shared_ptr<StubSession> boot_active;
+    std::shared_ptr<StubSession> boot_next;
+    std::tie(boot_active, boot_next) = boot();
 
     auto const spinner = create_stub_session(spinner_name);
     switcher.add(spinner, stub_spinner->pid());
 
-    switcher.remove(boot_active_name);
+    switcher.remove(boot_active->corresponding_session());
 
     EXPECT_THAT(fake_scene.displayed_sessions(),
                 ElementsAre(spinner_name));
@@ -527,17 +548,17 @@ TEST_F(ASessionSwitcher, displays_spinner_under_active_if_next_is_removed_unexpe
 
     std::string const no_session_name;
 
-    std::string boot_active_name;
-    std::string boot_next_name;
-    std::tie(boot_active_name, boot_next_name) = boot();
+    std::shared_ptr<StubSession> boot_active;
+    std::shared_ptr<StubSession> boot_next;
+    std::tie(boot_active, boot_next) = boot();
 
     auto const spinner = create_stub_session(spinner_name);
     switcher.add(spinner, stub_spinner->pid());
 
-    switcher.remove(boot_next_name);
+    switcher.remove(boot_next->corresponding_session());
 
     EXPECT_THAT(fake_scene.displayed_sessions(),
-                ElementsAre(spinner_name, boot_active_name));
+                ElementsAre(spinner_name, boot_active->name()));
 }
 
 TEST_F(ASessionSwitcher,
@@ -555,8 +576,8 @@ TEST_F(ASessionSwitcher,
 
     EXPECT_THAT(fake_scene.displayed_sessions(), ElementsAre(spinner_name));
 
+    switcher.remove(spinner->corresponding_session());
     spinner.reset();
-    switcher.remove(spinner_name);
 
     EXPECT_THAT(fake_scene.displayed_sessions(), IsEmpty());
 }
@@ -575,8 +596,8 @@ TEST_F(ASessionSwitcher, can_handle_spinner_resurrection_under_different_name)
 
     EXPECT_THAT(fake_scene.displayed_sessions(), ElementsAre(spinner_name));
 
+    switcher.remove(spinner->corresponding_session());
     spinner.reset();
-    switcher.remove(spinner_name);
 
     std::string const new_spinner_name{"new_spinner_name"};
     spinner = create_stub_session(new_spinner_name);
@@ -598,8 +619,8 @@ TEST_F(ASessionSwitcher, can_handle_spinner_resurrection_under_different_pid)
 
     EXPECT_THAT(fake_scene.displayed_sessions(), ElementsAre(spinner_name));
 
+    switcher.remove(spinner->corresponding_session());
     spinner.reset();
-    switcher.remove(spinner_name);
 
     pid_t const new_pid{1234};
     stub_spinner->set_pid(new_pid);
@@ -622,8 +643,9 @@ TEST_F(ASessionSwitcher, is_not_confused_by_other_session_with_name_of_dead_spin
 
     switcher.set_active_session(active_name);
 
+    switcher.remove(spinner->corresponding_session());
     spinner.reset();
-    switcher.remove(spinner_name);
+
     stub_spinner->set_pid(invalid_pid);
 
     auto const other = create_stub_session(spinner_name);
@@ -646,11 +668,50 @@ TEST_F(ASessionSwitcher, is_not_confused_by_other_session_with_pid_of_dead_spinn
 
     auto const old_spinner_pid = stub_spinner->pid();
     stub_spinner->set_pid(invalid_pid);
+
+    switcher.remove(spinner->corresponding_session());
     spinner.reset();
-    switcher.remove(spinner_name);
 
     auto const other = create_stub_session(spinner_name);
     switcher.add(other, old_spinner_pid);
 
     EXPECT_THAT(fake_scene.displayed_sessions(), IsEmpty());
+}
+
+TEST_F(ASessionSwitcher, replaces_tracked_session_if_same_session_name_is_used)
+{
+    using namespace testing;
+
+    auto const active = create_stub_session(active_name);
+    auto const other = create_stub_session(active_name);
+    pid_t const other_pid{2000};
+
+    EXPECT_THAT(fake_scene.displayed_sessions(), IsEmpty());
+
+    switcher.add(active, active_pid);
+    switcher.set_active_session(active_name);
+    switcher.mark_ready(active->corresponding_session().get());
+    EXPECT_THAT(fake_scene.displayed_sessions(), ElementsAre(active_name));
+
+    switcher.add(other, other_pid);
+
+    EXPECT_THAT(fake_scene.displayed_sessions(), ElementsAre(active_name));
+}
+
+TEST_F(ASessionSwitcher, ignores_removal_of_untracked_session)
+{
+    using namespace testing;
+
+    auto const active = create_stub_session(active_name);
+
+    EXPECT_THAT(fake_scene.displayed_sessions(), IsEmpty());
+
+    switcher.add(active, active_pid);
+    switcher.set_active_session(active_name);
+    switcher.mark_ready(active->corresponding_session().get());
+    EXPECT_THAT(fake_scene.displayed_sessions(), ElementsAre(active_name));
+
+    auto const other = create_stub_session(active_name);
+    switcher.remove(other->corresponding_session());
+    EXPECT_THAT(fake_scene.displayed_sessions(), ElementsAre(active_name));
 }

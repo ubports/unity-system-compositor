@@ -25,7 +25,7 @@
 #include <memory>
 #include <mutex>
 
-namespace mir { namespace scene { class Session; }};
+namespace mir { namespace frontend { class Session; }};
 namespace usc
 {
 class Spinner;
@@ -39,7 +39,7 @@ public:
     virtual void show() = 0;
     virtual void hide() = 0;
     virtual void raise_and_focus() = 0;
-    virtual bool corresponds_to(mir::scene::Session const*) = 0;
+    virtual bool corresponds_to(mir::frontend::Session const*) = 0;
 
 protected:
     Session() = default;
@@ -53,8 +53,8 @@ public:
     SessionSwitcher(std::shared_ptr<Spinner> const& spinner);
 
     void add(std::shared_ptr<Session> const& session, pid_t pid);
-    void remove(std::string const& name);
-    void mark_ready(mir::scene::Session const*);
+    void remove(std::shared_ptr<mir::frontend::Session> const& session);
+    void mark_ready(mir::frontend::Session const* session);
 
     /* From DMMessageHandler */
     void set_active_session(std::string const& name) override;
