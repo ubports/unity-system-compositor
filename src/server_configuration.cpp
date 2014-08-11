@@ -30,6 +30,7 @@
 #include <mir/scene/session.h>
 
 #include <boost/program_options.hpp>
+#include <iostream>
 
 namespace msh = mir::shell;
 namespace ms = mir::scene;
@@ -40,12 +41,20 @@ namespace po = boost::program_options;
 
 namespace
 {
+// FIXME For reasons that are not currently clear lightdm sometimes passes "--vt" on android
+void ignore_unknown_arguments(int argc, char const* const* argv)
+{
+    std::cout << "Warning: ignoring unrecognised arguments:";
+    for (auto arg = argv; arg != argv+argc; ++arg)
+        std::cout << " " << *arg;
+    std::cout << std::endl;
+}
 
 class ConfigurationOptions : public mo::DefaultConfiguration
 {
 public:
     ConfigurationOptions(int argc, char const* argv[]) :
-        DefaultConfiguration(argc, argv)
+        DefaultConfiguration(argc, argv, &ignore_unknown_arguments)
     {
         add_options()
             ("from-dm-fd", po::value<int>(),  "File descriptor of read end of pipe from display manager [int]")
