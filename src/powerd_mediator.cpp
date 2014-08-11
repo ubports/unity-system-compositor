@@ -71,7 +71,8 @@ PowerdMediator::PowerdMediator()
       auto_brightness_supported_{false},
       auto_brightness_requested{false},
       backlight_state{BacklightState::normal},
-      acquired_sys_state{false},
+      requested_suspend_blocker{false},
+      pending_suspend_blocker{true},
       powerd_interface{new QDBusInterface("com.canonical.powerd",
           "/com/canonical/powerd", "com.canonical.powerd", QDBusConnection::systemBus())},
       service_watcher{new QDBusServiceWatcher("com.canonical.powerd",
@@ -96,14 +97,16 @@ PowerdMediator::PowerdMediator()
     if (powerd_interface->isValid())
     {
         init_brightness_params();
-        //If powerd is already up it may already be in the active state
-        //and the SysPowerStateChange signal could have already been broadcasted
-        //before we got a chance to register a listener for it.
-        //We will assume that if the active request succeeds that the system state
-        //will become active at some point in the future - this is only a workaround
-        //for the lack of a system state query api in powerd
-        if (disable_suspend_request())
+        if (request_suspend_blocker())
+        {
+            //If powerd is already up it may already be in the active state
+            //and the SysPowerStateChange signal could have already been broadcasted
+            //before we got a chance to register a listener for it.
+            //We will assume that if the active request succeeds that the system state
+            //will become active at some point in the future - this is only a workaround
+            //for the lack of a system state query api in powerd
             system_state = active;
+        }
     }
 }
 
@@ -162,6 +165,15 @@ int PowerdMediator::max_brightness()
 void PowerdMediator::powerd_registered()
 {
     init_brightness_params();
+
+    if (requested_suspend_blocker || pending_suspend_blocker)
+    {
+        pending_suspend_blocker = true;
+        request_suspend_blocker();
+    }
+
+    //Powerd may have restarted, re-apply backlight settings
+    change_backlight_state(backlight_state, true);
 }
 
 void PowerdMediator::set_brightness(int brightness)
@@ -172,9 +184,9 @@ void PowerdMediator::set_brightness(int brightness)
         powerd_interface->call("setUserBrightness", brightness);
 }
 
-void PowerdMediator::change_backlight_state(BacklightState new_state)
+void PowerdMediator::change_backlight_state(BacklightState new_state, bool force_change)
 {
-    if (backlight_state == new_state)
+    if (backlight_state == new_state && !force_change)
         return;
 
     if (new_state == BacklightState::automatic)
@@ -206,26 +218,32 @@ void PowerdMediator::change_backlight_state(BacklightState new_state)
 
 void PowerdMediator::allow_suspend()
 {
-    if (acquired_sys_state)
+    if (requested_suspend_blocker)
+    {
         powerd_interface->call("clearSysState", sys_state_cookie);
-    acquired_sys_state = false;
+        requested_suspend_blocker = false;
+    }
+    pending_suspend_blocker = false;
 }
 
 void PowerdMediator::disable_suspend()
 {
-    if (disable_suspend_request())
+    if (request_suspend_blocker())
         wait_for_state(active);
+    else
+        pending_suspend_blocker = true;
 }
 
-bool PowerdMediator::disable_suspend_request()
+bool PowerdMediator::request_suspend_blocker()
 {
-    if (!acquired_sys_state)
+    if (!requested_suspend_blocker || pending_suspend_blocker)
     {
         QDBusReply<QString> reply = powerd_interface->call("requestSysState", "com.canonical.Unity.Screen", 1);
         if (reply.isValid())
         {
             sys_state_cookie = reply.value();
-            acquired_sys_state = true;
+            requested_suspend_blocker = true;
+            pending_suspend_blocker = false;
             return true;
         }
     }
