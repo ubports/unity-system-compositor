@@ -46,8 +46,6 @@ ScreenStateHandler::ScreenStateHandler(std::shared_ptr<mir::DefaultServerConfigu
               std::bind(&ScreenStateHandler::power_off_alarm_notification, this))},
       dimmer_alarm{config->the_main_loop()->create_alarm(
               std::bind(&ScreenStateHandler::dimmer_alarm_notification, this))},
-      power_off_alarm_enabled{power_off_timeout.count() > 0},
-      dimmer_alarm_enabled{dimming_timeout.count() > 0},
       dbus_screen{new DBusScreen(*this)}
 {
     reset_timers_l();
@@ -117,25 +115,11 @@ void ScreenStateHandler::set_inactivity_timeouts(int raw_poweroff_timeout, int r
     std::chrono::seconds the_power_off_timeout{raw_poweroff_timeout};
     std::chrono::seconds the_dimming_timeout{raw_dimmer_timeout};
 
-    if (raw_poweroff_timeout > 0)
-    {
-        power_off_alarm_enabled = true;
+    if (raw_poweroff_timeout >= 0)
         power_off_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(the_power_off_timeout);
-    }
-    else if (raw_poweroff_timeout == 0)
-    {
-        power_off_alarm_enabled = false;
-    }
 
-    if (raw_dimmer_timeout > 0)
-    {
-        dimmer_alarm_enabled = true;
+    if (raw_dimmer_timeout >= 0)
         dimming_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(the_dimming_timeout);
-    }
-    else if (raw_dimmer_timeout == 0)
-    {
-        dimmer_alarm_enabled = false;
-    }
 
     reset_timers_l();
 }
@@ -211,10 +195,10 @@ void ScreenStateHandler::reset_timers_l()
 {
     if (restart_timers && current_power_mode != MirPowerMode::mir_power_mode_off)
     {
-        if (power_off_alarm_enabled)
+        if (power_off_timeout.count() > 0)
             power_off_alarm->reschedule_in(power_off_timeout);
 
-        if (dimmer_alarm_enabled)
+        if (dimming_timeout.count() > 0)
             dimmer_alarm->reschedule_in(dimming_timeout);
     }
 }
