@@ -88,9 +88,8 @@ private:
     bool auto_brightness_requested;
     BacklightState backlight_state;
 
-    QString sys_state_cookie;
-    bool requested_suspend_blocker;
-    bool pending_suspend_blocker;
+    QString suspend_block_cookie;
+    bool pending_suspend_blocker_request;
 
     std::unique_ptr<QDBusInterface> powerd_interface;
     std::unique_ptr<QDBusServiceWatcher> service_watcher;

@@ -71,8 +71,7 @@ PowerdMediator::PowerdMediator()
       auto_brightness_supported_{false},
       auto_brightness_requested{false},
       backlight_state{BacklightState::normal},
-      requested_suspend_blocker{false},
-      pending_suspend_blocker{true},
+      pending_suspend_blocker_request{true},
       powerd_interface{new QDBusInterface("com.canonical.powerd",
           "/com/canonical/powerd", "com.canonical.powerd", QDBusConnection::systemBus())},
       service_watcher{new QDBusServiceWatcher("com.canonical.powerd",
@@ -99,12 +98,14 @@ PowerdMediator::PowerdMediator()
         init_brightness_params();
         if (request_suspend_blocker())
         {
-            //If powerd is already up it may already be in the active state
-            //and the SysPowerStateChange signal could have already been broadcasted
-            //before we got a chance to register a listener for it.
-            //We will assume that if the active request succeeds that the system state
-            //will become active at some point in the future - this is only a workaround
-            //for the lack of a system state query api in powerd
+            /*
+             * If powerd is already up it may already be in the active state
+             * and the SysPowerStateChange signal could have already been broadcasted
+             * before we got a chance to register a listener for it.
+             * We will assume that if the active request succeeds that the system state
+             * will become active at some point in the future - this is only a workaround
+             * for the lack of a system state query api in powerd
+             */
             system_state = active;
         }
     }
@@ -166,9 +167,18 @@ void PowerdMediator::powerd_registered()
 {
     init_brightness_params();
 
-    if (requested_suspend_blocker || pending_suspend_blocker)
+    /* A suspend block request needs to be issued here on the following scenarios:
+     * 1. powerd has restarted and PowerdMediator had already issued a request
+     *    to the previous powerd instance
+     * 2. When booting up the screen is assumed to be on and consequently we need to also issue
+     *    a system suspend block request.
+     * 3. If powerd interface is not available yet, but the screen had been turned on
+     *    then now is the time to issue the request
+     */
+    if (!suspend_block_cookie.isEmpty() || pending_suspend_blocker_request)
     {
-        pending_suspend_blocker = true;
+        //Clear the previous cookie as powerd has restarted anyway
+        suspend_block_cookie.clear();
         request_suspend_blocker();
     }
 
@@ -218,33 +228,35 @@ void PowerdMediator::change_backlight_state(BacklightState new_state, bool force
 
 void PowerdMediator::allow_suspend()
 {
-    if (requested_suspend_blocker)
+    if (!suspend_block_cookie.isEmpty())
     {
-        powerd_interface->call("clearSysState", sys_state_cookie);
-        requested_suspend_blocker = false;
+        powerd_interface->call("clearSysState", suspend_block_cookie);
+        suspend_block_cookie.clear();
     }
-    pending_suspend_blocker = false;
+    pending_suspend_blocker_request = false;
 }
 
 void PowerdMediator::disable_suspend()
 {
     if (request_suspend_blocker())
         wait_for_state(active);
-    else
-        pending_suspend_blocker = true;
 }
 
 bool PowerdMediator::request_suspend_blocker()
 {
-    if (!requested_suspend_blocker || pending_suspend_blocker)
+    if (suspend_block_cookie.isEmpty())
     {
         QDBusReply<QString> reply = powerd_interface->call("requestSysState", "com.canonical.Unity.Screen", 1);
         if (reply.isValid())
         {
-            sys_state_cookie = reply.value();
-            requested_suspend_blocker = true;
-            pending_suspend_blocker = false;
+            suspend_block_cookie = reply.value();
+            pending_suspend_blocker_request = false;
             return true;
+        }
+        else
+        {
+            //Powerd may not yet be available, so save the pending request
+            pending_suspend_blocker_request = true;
         }
     }
     return false;
