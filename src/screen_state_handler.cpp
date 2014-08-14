@@ -121,6 +121,7 @@ void ScreenStateHandler::set_inactivity_timeouts(int raw_poweroff_timeout, int r
     if (raw_dimmer_timeout >= 0)
         dimming_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(the_dimming_timeout);
 
+    cancel_timers_l();
     reset_timers_l();
 }
 
