@@ -34,20 +34,21 @@ namespace mc = mir::compositor;
 namespace mg = mir::graphics;
 
 ScreenStateHandler::ScreenStateHandler(std::shared_ptr<mir::DefaultServerConfiguration> const& config,
-                                       std::chrono::milliseconds power_off_timeout,
+                                       std::chrono::milliseconds poweroff_timeout,
                                        std::chrono::milliseconds dimmer_timeout)
     : current_power_mode{MirPowerMode::mir_power_mode_on},
       restart_timers{true},
-      power_off_timeout{power_off_timeout},
+      power_off_timeout{poweroff_timeout},
       dimming_timeout{dimmer_timeout},
       powerd_mediator{new PowerdMediator()},
       config{config},
-      power_off_alarm{config->the_main_loop()->notify_in(power_off_timeout,
-          std::bind(&ScreenStateHandler::power_off_alarm_notification, this))},
-      dimmer_alarm{config->the_main_loop()->notify_in(dimming_timeout,
-          std::bind(&ScreenStateHandler::dimmer_alarm_notification, this))},
+      power_off_alarm{config->the_main_loop()->create_alarm(
+              std::bind(&ScreenStateHandler::power_off_alarm_notification, this))},
+      dimmer_alarm{config->the_main_loop()->create_alarm(
+              std::bind(&ScreenStateHandler::dimmer_alarm_notification, this))},
       dbus_screen{new DBusScreen(*this)}
 {
+    reset_timers_l();
 }
 
 ScreenStateHandler::~ScreenStateHandler() = default;
@@ -62,15 +63,6 @@ bool ScreenStateHandler::handle(MirEvent const& event)
             powerd_mediator->set_normal_backlight();
     }
     return false;
-}
-
-void ScreenStateHandler::set_timeouts(std::chrono::milliseconds the_power_off_timeout,
-                                      std::chrono::milliseconds the_dimming_timeout)
-{
-    std::lock_guard<std::mutex> lock{guard};
-    power_off_timeout = the_power_off_timeout;
-    dimming_timeout = the_dimming_timeout;
-    reset_timers_l();
 }
 
 void ScreenStateHandler::enable_inactivity_timers(bool enable)
@@ -114,6 +106,23 @@ void ScreenStateHandler::enable_auto_brightness(bool enable)
 {
     std::lock_guard<std::mutex> lock{guard};
     powerd_mediator->enable_auto_brightness(enable);
+}
+
+void ScreenStateHandler::set_inactivity_timeouts(int raw_poweroff_timeout, int raw_dimmer_timeout)
+{
+    std::lock_guard<std::mutex> lock{guard};
+
+    std::chrono::seconds the_power_off_timeout{raw_poweroff_timeout};
+    std::chrono::seconds the_dimming_timeout{raw_dimmer_timeout};
+
+    if (raw_poweroff_timeout >= 0)
+        power_off_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(the_power_off_timeout);
+
+    if (raw_dimmer_timeout >= 0)
+        dimming_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(the_dimming_timeout);
+
+    cancel_timers_l();
+    reset_timers_l();
 }
 
 void ScreenStateHandler::set_screen_power_mode_l(MirPowerMode mode, PowerStateChangeReason reason)
@@ -187,8 +196,11 @@ void ScreenStateHandler::reset_timers_l()
 {
     if (restart_timers && current_power_mode != MirPowerMode::mir_power_mode_off)
     {
-        power_off_alarm->reschedule_in(power_off_timeout);
-        dimmer_alarm->reschedule_in(dimming_timeout);
+        if (power_off_timeout.count() > 0)
+            power_off_alarm->reschedule_in(power_off_timeout);
+
+        if (dimming_timeout.count() > 0)
+            dimmer_alarm->reschedule_in(dimming_timeout);
     }
 }
 

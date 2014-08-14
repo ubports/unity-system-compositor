@@ -172,3 +172,8 @@ void DBusScreen::userAutobrightnessEnable(bool enable)
 {
     observer->enable_auto_brightness(enable);
 }
+
+void DBusScreen::setInactivityTimeouts(int poweroff_timeout, int dimmer_timeout)
+{
+    observer->set_inactivity_timeouts(poweroff_timeout, dimmer_timeout);
+}

@@ -53,6 +53,8 @@ public Q_SLOTS:
     void setUserBrightness(int brightness);
     void userAutobrightnessEnable(bool enable);
 
+    void setInactivityTimeouts(int poweroff_timeout, int dimmer_timeout);
+
 private Q_SLOTS:
     void remove_display_on_requestor(QString const& requestor);
 
