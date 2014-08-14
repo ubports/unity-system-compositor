@@ -83,6 +83,8 @@ private:
 
     std::unique_ptr<mir::time::Alarm> power_off_alarm;
     std::unique_ptr<mir::time::Alarm> dimmer_alarm;
+    bool power_off_alarm_enabled;
+    bool dimmer_alarm_enabled;
 
     std::unique_ptr<DBusScreen> dbus_screen;
 };
