@@ -49,9 +49,6 @@ public:
     //from EventFilter
     bool handle(MirEvent const& event) override;
 
-    void set_timeouts(std::chrono::milliseconds power_off_timeout,
-                      std::chrono::milliseconds dimmer_timeout);
-
     void enable_inactivity_timers(bool enable);
     void toggle_screen_power_mode(PowerStateChangeReason reason);
 
@@ -59,6 +56,7 @@ public:
     void keep_display_on(bool on) override;
     void set_brightness(int brightness) override;
     void enable_auto_brightness(bool enable) override;
+    void set_inactivity_timeouts(int power_off_timeout, int dimmer_timeout) override;
 
 private:
     void set_screen_power_mode_l(MirPowerMode mode, PowerStateChangeReason reason);

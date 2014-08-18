@@ -74,9 +74,9 @@ private:
         suspended = 0,
         active,
     };
-    void change_backlight_state(BacklightState state);
+    void change_backlight_state(BacklightState state, bool force_change = false);
     void init_brightness_params();
-    bool disable_suspend_request();
+    bool request_suspend_blocker();
     void wait_for_state(SystemState state);
 
     int dim_brightness;
@@ -88,8 +88,8 @@ private:
     bool auto_brightness_requested;
     BacklightState backlight_state;
 
-    QString sys_state_cookie;
-    bool acquired_sys_state;
+    QString suspend_block_cookie;
+    bool pending_suspend_blocker_request;
 
     std::unique_ptr<QDBusInterface> powerd_interface;
     std::unique_ptr<QDBusServiceWatcher> service_watcher;

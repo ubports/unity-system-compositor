@@ -61,7 +61,7 @@ qt5_use_modules(usc Core DBus)
 link_directories(${MIRSERVER_LIBRARY_DIRS})
 
 target_link_libraries(usc
-  ${MIRSERVER_LDFLAGS} ${MIRSERVER_LIBRARIES}
+  ${MIRSERVER_STATIC_LDFLAGS}  # Meaning usc is STATIC, _not_ libmirserver.
   pthread
   ${Boost_LIBRARIES}
   ${GLESv2_LIBRARIES}
