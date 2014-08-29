@@ -1,3 +1,20 @@
+unity-system-compositor (0.0.5+14.10.20140829-0ubuntu1) utopic; urgency=low
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+  [ Cemil Azizoglu ]
+  * Rebuild for the Mir 0.7.0 release. (LP: #1355005)
+
+  [ Daniel van Vugt ]
+  * When building static library "usc.a" make sure you use
+    MIRSERVER_STATIC_LDFLAGS or else the Requires.private information
+    from mirserver.pc won't be used, leading to linkage failure (LP:
+    #1355609) (LP: #1355609)
+  * Rebuild for the Mir 0.7.0 release. (LP: #1355005)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 29 Aug 2014 18:04:48 +0000
+
 unity-system-compositor (0.0.5+14.10.20140814-0ubuntu1) utopic; urgency=medium
 
   [ Alberto Aguirre ]
