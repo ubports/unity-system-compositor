@@ -54,6 +54,8 @@ public Q_SLOTS:
     void userAutobrightnessEnable(bool enable);
 
     void setInactivityTimeouts(int poweroff_timeout, int dimmer_timeout);
+    
+    void setTouchVisualizationEnabled(bool enabled);
 
 private Q_SLOTS:
     void remove_display_on_requestor(QString const& requestor);

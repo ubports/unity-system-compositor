@@ -223,3 +223,9 @@ void ScreenStateHandler::dimmer_alarm_notification()
     std::lock_guard<std::mutex> lock{guard};
     powerd_mediator->set_dim_backlight();
 }
+
+void ScreenStateHandler::set_touch_visualization_enabled(bool enabled)
+{
+    std::lock_guard<std::mutex> lock{guard};
+    (void) enabled;
+}
