@@ -1,3 +1,12 @@
+unity-system-compositor (0.0.5+14.10.20140910-0ubuntu1) utopic; urgency=low
+
+  [ Vojtech Bocek ]
+  * This fixes backlight problems on Nexus 5. Android does things in
+    this order, and the kernel drivers don't work correctly if the
+    brightness is set after the panel is powered down.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 10 Sep 2014 06:21:11 +0000
+
 unity-system-compositor (0.0.5+14.10.20140829-0ubuntu1) utopic; urgency=low
 
   [ Ubuntu daily release ]
