@@ -46,10 +46,9 @@ bool is_valid_reason(int raw_reason)
     return false;
 }
 
-enum WorkerThreadTaskType
+enum DBusHandlerTaskId
 {
-    generic = 0,
-    power_mode = 1
+    set_power_mode
 };
 }
 
@@ -103,7 +102,7 @@ bool DBusScreen::setScreenPowerMode(const QString &mode, int reason)
     //This call may block - avoid blocking this dbus handling thread
     worker_thread->queue_task([this, newPowerMode, reason]{
         observer->set_screen_power_mode(newPowerMode, static_cast<PowerStateChangeReason>(reason));
-    }, WorkerThreadTaskType::power_mode);
+    }, DBusHandlerTaskId::set_power_mode);
 
     return true;
 }
@@ -152,8 +151,8 @@ int DBusScreen::keepDisplayOn()
         //that received the dbus call
         observer->keep_display_on(true);
 
-        std::cerr << "keepDisplayOn request id:" << id;
-        std::cerr << " requested by \"" << caller.toStdString() << "\"" << std::endl;
+        std::cout << "keepDisplayOn request id:" << id;
+        std::cout << " requested by \"" << caller.toStdString() << "\"" << std::endl;
     });
     return id;
 }
@@ -167,8 +166,8 @@ void DBusScreen::removeDisplayOnRequest(int cookie)
     if (it == display_requests.end())
         return;
 
-    std::cerr << "removeDisplayOnRequest id:" << cookie;
-    std::cerr << " requested by \"" << requestor.toStdString() << "\"" << std::endl;
+    std::cout << "removeDisplayOnRequest id:" << cookie;
+    std::cout << " requested by \"" << requestor.toStdString() << "\"" << std::endl;
 
     auto caller_requests = it->second;
     caller_requests.erase(cookie);
@@ -184,8 +183,8 @@ void DBusScreen::remove_display_on_requestor(QString const& requestor)
 
 void DBusScreen::remove_requestor(QString const& requestor, std::lock_guard<std::mutex> const&)
 {
-    std::cerr << "remove_display_on_requestor \"" << requestor.toStdString() << "\"";
-    std::cerr << std::endl;
+    std::cout << "remove_display_on_requestor \"" << requestor.toStdString() << "\"";
+    std::cout << std::endl;
 
     display_requests.erase(requestor.toStdString());
     service_watcher->removeWatchedService(requestor);

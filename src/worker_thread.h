@@ -31,7 +31,15 @@ class WorkerThread
 public:
     WorkerThread(std::string name);
     ~WorkerThread();
+
+    /**
+     * Queues a task to be executed on the worker thread
+     */
     void queue_task(std::function<void()> task);
+
+    /**
+     * Queues and coalesces tasks that share the same id
+     */
     void queue_task(std::function<void()> task, int id);
 
 private:
