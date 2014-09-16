@@ -20,12 +20,15 @@
 #include <mir_toolkit/common.h>
 
 #include <memory>
+#include <mutex>
 #include <unordered_map>
 #include <unordered_set>
 
 #include <QObject>
 #include <QtCore>
 #include <QDBusContext>
+
+namespace usc {class WorkerThread;}
 
 class DBusScreenAdaptor;
 class DBusScreenObserver;
@@ -59,10 +62,14 @@ private Q_SLOTS:
     void remove_display_on_requestor(QString const& requestor);
 
 private:
+    void remove_requestor(QString const& requestor, std::lock_guard<std::mutex> const& lock);
+
+    std::mutex guard;
     std::unique_ptr<DBusScreenAdaptor> dbus_adaptor;
     std::unique_ptr<QDBusServiceWatcher> service_watcher;
     std::unordered_map<std::string, std::unordered_set<int>> display_requests;
     DBusScreenObserver* const observer;
+    std::unique_ptr<usc::WorkerThread> worker_thread;
 };
 
 #endif /* DBUS_SCREEN_H_ */
