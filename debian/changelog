@@ -1,3 +1,10 @@
+unity-system-compositor (0.0.5+14.10.20140917-0ubuntu1) utopic; urgency=low
+
+  [ Alberto Aguirre ]
+  * Add worker thread to handle incoming DBus requests.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 17 Sep 2014 19:56:45 +0000
+
 unity-system-compositor (0.0.5+14.10.20140910-0ubuntu1) utopic; urgency=low
 
   [ Vojtech Bocek ]
