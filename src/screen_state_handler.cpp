@@ -166,6 +166,10 @@ void ScreenStateHandler::configure_display_l(MirPowerMode mode, PowerStateChange
         //Some devices do not turn screen on properly from suspend mode
         powerd_mediator->disable_suspend();
     }
+    else
+    {
+        powerd_mediator->turn_off_backlight();
+    }
 
     display->configure(*displayConfig.get());
 
@@ -173,10 +177,6 @@ void ScreenStateHandler::configure_display_l(MirPowerMode mode, PowerStateChange
     {
         compositor->start();
         powerd_mediator->set_normal_backlight();
-    }
-    else
-    {
-        powerd_mediator->turn_off_backlight();
     }
 
     current_power_mode = mode;

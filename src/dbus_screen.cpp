@@ -18,6 +18,7 @@
 #include "dbus_screen_adaptor.h"
 #include "dbus_screen_observer.h"
 #include "power_state_change_reason.h"
+#include "worker_thread.h"
 
 #include <atomic>
 #include <memory>
@@ -29,6 +30,8 @@
 #include <QDBusServiceWatcher>
 #include <QDebug>
 
+namespace
+{
 bool is_valid_reason(int raw_reason)
 {
     auto reason = static_cast<PowerStateChangeReason>(raw_reason);
@@ -43,12 +46,19 @@ bool is_valid_reason(int raw_reason)
     return false;
 }
 
+enum DBusHandlerTaskId
+{
+    set_power_mode
+};
+}
+
 
 DBusScreen::DBusScreen(DBusScreenObserver& observer, QObject *parent)
     : QObject(parent),
       dbus_adaptor{new DBusScreenAdaptor(this)},
       service_watcher{new QDBusServiceWatcher()},
-      observer{&observer}
+      observer{&observer},
+      worker_thread{new usc::WorkerThread("USC/DBusHandler")}
 {
     QDBusConnection bus = QDBusConnection::systemBus();
     bus.registerObject("/com/canonical/Unity/Screen", this);
@@ -90,9 +100,9 @@ bool DBusScreen::setScreenPowerMode(const QString &mode, int reason)
     }
 
     //This call may block - avoid blocking this dbus handling thread
-    std::thread{[this, newPowerMode, reason]{
+    worker_thread->queue_task([this, newPowerMode, reason]{
         observer->set_screen_power_mode(newPowerMode, static_cast<PowerStateChangeReason>(reason));
-    }}.detach();
+    }, DBusHandlerTaskId::set_power_mode);
 
     return true;
 }
@@ -119,43 +129,62 @@ int DBusScreen::keepDisplayOn()
     static std::atomic<uint32_t> request_id{0};
 
     int id = request_id.fetch_add(1);
-
-    //This call may block - avoid blocking this dbus handling thread
-    std::thread{[this]{observer->keep_display_on(true);}}.detach();
-
     auto const& caller = message().service();
-    auto& caller_requests = display_requests[caller.toStdString()];
 
-    if (caller_requests.size() == 0)
-        service_watcher->addWatchedService(caller);
+    worker_thread->queue_task([this, id, caller]{
+        std::lock_guard<decltype(guard)> lock{guard};
 
-    caller_requests.insert(id);
-    std::cerr << "keepDisplayOn request id:" << id;
-    std::cerr << " requested by \"" << caller.toStdString() << "\"" << std::endl;
+        //Check that the owner of the request is still valid
+        auto system_bus_if = QDBusConnection::systemBus().interface();
+        QDBusReply<QString> reply = system_bus_if->serviceOwner(caller);
+        if (!reply.isValid())
+            return;
+
+        auto& caller_requests = display_requests[caller.toStdString()];
+
+        if (caller_requests.size() == 0)
+            service_watcher->addWatchedService(caller);
+
+        caller_requests.insert(id);
+
+        //This call may block so it needs to be executed outside the thread
+        //that received the dbus call
+        observer->keep_display_on(true);
+
+        std::cout << "keepDisplayOn request id:" << id;
+        std::cout << " requested by \"" << caller.toStdString() << "\"" << std::endl;
+    });
     return id;
 }
 
 void DBusScreen::removeDisplayOnRequest(int cookie)
 {
+    std::lock_guard<decltype(guard)> lock{guard};
     auto const& requestor = message().service();
 
     auto it = display_requests.find(requestor.toStdString());
     if (it == display_requests.end())
         return;
 
-    std::cerr << "removeDisplayOnRequest id:" << cookie;
-    std::cerr << " requested by \"" << requestor.toStdString() << "\"" << std::endl;
+    std::cout << "removeDisplayOnRequest id:" << cookie;
+    std::cout << " requested by \"" << requestor.toStdString() << "\"" << std::endl;
 
     auto caller_requests = it->second;
     caller_requests.erase(cookie);
     if (caller_requests.size() == 0)
-        remove_display_on_requestor(requestor);
+        remove_requestor(requestor, lock);
 }
 
 void DBusScreen::remove_display_on_requestor(QString const& requestor)
 {
-    std::cerr << "remove_display_on_requestor \"" << requestor.toStdString() << "\"";
-    std::cerr << std::endl;
+    std::lock_guard<decltype(guard)> lock{guard};
+    remove_requestor(requestor, lock);
+}
+
+void DBusScreen::remove_requestor(QString const& requestor, std::lock_guard<std::mutex> const&)
+{
+    std::cout << "remove_display_on_requestor \"" << requestor.toStdString() << "\"";
+    std::cout << std::endl;
 
     display_requests.erase(requestor.toStdString());
     service_watcher->removeWatchedService(requestor);

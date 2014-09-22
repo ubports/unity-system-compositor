@@ -26,6 +26,7 @@ set(USC_SRCS
   session_switcher.cpp
   surface_coordinator.cpp
   system_compositor.cpp
+  worker_thread.cpp
 )
 
 qt5_generate_dbus_interface(dbus_screen.h com.canonical.Unity.Screen.xml)
