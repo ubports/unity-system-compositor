@@ -169,7 +169,7 @@ void DBusScreen::removeDisplayOnRequest(int cookie)
     std::cout << "removeDisplayOnRequest id:" << cookie;
     std::cout << " requested by \"" << requestor.toStdString() << "\"" << std::endl;
 
-    auto caller_requests = it->second;
+    auto& caller_requests = it->second;
     caller_requests.erase(cookie);
     if (caller_requests.size() == 0)
         remove_requestor(requestor, lock);
