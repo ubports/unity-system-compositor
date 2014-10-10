@@ -206,3 +206,8 @@ void DBusScreen::setInactivityTimeouts(int poweroff_timeout, int dimmer_timeout)
 {
     observer->set_inactivity_timeouts(poweroff_timeout, dimmer_timeout);
 }
+
+void DBusScreen::setTouchVisualizationEnabled(bool enabled)
+{
+    observer->set_touch_visualization_enabled(enabled);
+}

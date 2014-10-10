@@ -57,6 +57,8 @@ public:
     void set_brightness(int brightness) override;
     void enable_auto_brightness(bool enable) override;
     void set_inactivity_timeouts(int power_off_timeout, int dimmer_timeout) override;
+    
+    void set_touch_visualization_enabled(bool enabled) override;
 
 private:
     void set_screen_power_mode_l(MirPowerMode mode, PowerStateChangeReason reason);

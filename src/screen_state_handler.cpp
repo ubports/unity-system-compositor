@@ -22,6 +22,7 @@
 #include <mir/default_server_configuration.h>
 #include <mir/graphics/display.h>
 #include <mir/graphics/display_configuration.h>
+#include <mir/input/touch_visualizer.h>
 
 #include <cstdio>
 #include "dbus_screen.h"
@@ -222,4 +223,15 @@ void ScreenStateHandler::dimmer_alarm_notification()
 {
     std::lock_guard<std::mutex> lock{guard};
     powerd_mediator->set_dim_backlight();
+}
+
+void ScreenStateHandler::set_touch_visualization_enabled(bool enabled)
+{
+    std::lock_guard<std::mutex> lock{guard};
+    
+    auto visualizer = config->the_touch_visualizer();
+    if (enabled)
+        visualizer->enable();
+    else
+        visualizer->disable();
 }
