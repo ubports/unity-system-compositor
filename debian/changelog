@@ -1,3 +1,14 @@
+unity-system-compositor (0.0.5+14.10.20141010.1-0ubuntu1) utopic; urgency=low
+
+  [ Charles Kerr ]
+  * Fix a typo that caused removeDisplayOnRequest to not correctly
+    remove cookies. (LP: #1365557)
+
+  [ Alexandros Frantzis ]
+  * debian: Make u-s-c abort on fatal errors when run from lightdm
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 10 Oct 2014 22:43:53 +0000
+
 unity-system-compositor (0.0.5+14.10.20141010-0ubuntu1) utopic; urgency=low
 
   [ Robert Carr ]
