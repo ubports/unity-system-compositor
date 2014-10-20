@@ -1,3 +1,14 @@
+unity-system-compositor (0.0.5+14.10.20141020~rtm-0ubuntu1) 14.09; urgency=low
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+  [ Ricardo Mendoza ]
+  * When exiting usc, check if backlight is on and turn it off. (LP:
+    #1364865)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 20 Oct 2014 16:34:54 +0000
+
 unity-system-compositor (0.0.5+14.10.20141010.1-0ubuntu1) utopic; urgency=low
 
   [ Charles Kerr ]
