@@ -111,7 +111,11 @@ PowerdMediator::PowerdMediator()
     }
 }
 
-PowerdMediator::~PowerdMediator() = default;
+PowerdMediator::~PowerdMediator()
+{
+    if (current_brightness > 0)
+        turn_off_backlight();
+}
 
 void PowerdMediator::set_dim_backlight()
 {
