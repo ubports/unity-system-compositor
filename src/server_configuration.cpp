@@ -111,7 +111,7 @@ usc::ServerConfiguration::the_server_status_listener()
 {
     struct ServerStatusListener : public mir::ServerStatusListener
     {
-        ServerStatusListener(
+        explicit ServerStatusListener(
             std::shared_ptr<msh::FocusController> const& focus_controller)
             : focus_controller{focus_controller}
         {

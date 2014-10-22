@@ -35,7 +35,7 @@ namespace usc
 class Worker
 {
 public:
-    Worker(std::string name)
+    explicit Worker(std::string name)
         : name{name.substr(0, 15)}, exiting{false}
     {
     }

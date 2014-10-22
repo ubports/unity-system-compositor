@@ -32,7 +32,7 @@ class DMConnection;
 class ServerConfiguration : public mir::DefaultServerConfiguration
 {
 public:
-    ServerConfiguration(int argc, char** argv);
+    explicit ServerConfiguration(int argc, char** argv);
 
     virtual std::shared_ptr<Spinner> the_spinner();
     virtual std::shared_ptr<DMMessageHandler> the_dm_message_handler();

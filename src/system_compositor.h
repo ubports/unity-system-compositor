@@ -35,7 +35,7 @@ class Spinner;
 class SystemCompositor
 {
 public:
-    SystemCompositor(std::shared_ptr<ServerConfiguration> const& config);
+    explicit SystemCompositor(std::shared_ptr<ServerConfiguration> const& config);
     void run();
 
 private:
