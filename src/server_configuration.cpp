@@ -23,21 +23,17 @@
 #include "asio_dm_connection.h"
 #include "session_switcher.h"
 
-#include <mir/options/default_configuration.h>
 #include <mir/input/cursor_listener.h>
 #include <mir/server_status_listener.h>
 #include <mir/shell/focus_controller.h>
 #include <mir/scene/session.h>
 
-#include <boost/program_options.hpp>
 #include <iostream>
 
 namespace msh = mir::shell;
 namespace ms = mir::scene;
 namespace mf = mir::frontend;
 namespace mi = mir::input;
-namespace mo = mir::options;
-namespace po = boost::program_options;
 
 namespace
 {
@@ -49,22 +45,6 @@ void ignore_unknown_arguments(int argc, char const* const* argv)
         std::cout << " " << *arg;
     std::cout << std::endl;
 }
-
-class ConfigurationOptions : public mo::DefaultConfiguration
-{
-public:
-    ConfigurationOptions(int argc, char const* argv[]) :
-        DefaultConfiguration(argc, argv, &ignore_unknown_arguments)
-    {
-    }
-
-    void parse_config_file(
-        boost::program_options::options_description& options_description,
-        mo::ProgramOption& options) const override
-    {
-        options.parse_file(options_description, "unity-system-compositor.conf");
-    }
-};
 
 struct NullCursorListener : public mi::CursorListener
 {
