@@ -56,19 +56,6 @@ public:
     ConfigurationOptions(int argc, char const* argv[]) :
         DefaultConfiguration(argc, argv, &ignore_unknown_arguments)
     {
-        add_options()
-            ("from-dm-fd", po::value<int>(),  "File descriptor of read end of pipe from display manager [int]")
-            ("to-dm-fd", po::value<int>(),  "File descriptor of write end of pipe to display manager [int]")
-            ("blacklist", po::value<std::string>(), "Video blacklist regex to use")
-            ("version", "Show version of Unity System Compositor")
-            ("spinner", po::value<std::string>(), "Path to spinner executable")
-            ("public-socket", po::value<bool>(), "Make the socket file publicly writable")
-            ("enable-hardware-cursor", po::value<bool>(), "Enable the hardware cursor (disabled by default)")
-            ("inactivity-display-off-timeout", po::value<int>(), "The time in seconds before the screen is turned off when there are no active sessions")
-            ("inactivity-display-dim-timeout", po::value<int>(), "The time in seconds before the screen is dimmed when there are no active sessions")
-            ("shutdown-timeout", po::value<int>(), "The time in milli-seconds the power key must be held to initiate a clean system shutdown")
-            ("power-key-ignore-timeout", po::value<int>(), "The time in milli-seconds the power key must be held to ignore - must be less than shutdown-timeout")
-            ("disable-inactivity-policy", po::value<bool>(), "Disables handling user inactivity and power key");
     }
 
     void parse_config_file(
@@ -79,91 +66,102 @@ public:
     }
 };
 
+struct NullCursorListener : public mi::CursorListener
+{
+    void cursor_moved_to(float, float) override
+    {
+    }
+};
+
+struct ServerStatusListener : public mir::ServerStatusListener
+{
+    ServerStatusListener(
+        std::shared_ptr<msh::FocusController> const& focus_controller)
+        : focus_controller{focus_controller}
+    {
+    }
+
+    void paused() override
+    {
+        std::cerr << "pause" << std::endl;
+
+        if (auto active_session = weak_active_session().lock())
+            active_session->set_lifecycle_state(mir_lifecycle_state_will_suspend);
+    }
+
+    void resumed() override
+    {
+        std::cerr << "resume" << std::endl;
+
+        if (auto active_session = weak_active_session().lock())
+            active_session->set_lifecycle_state(mir_lifecycle_state_resumed);
+    }
+
+    void started() override
+    {
+    }
+
+    std::weak_ptr<ms::Session> weak_active_session()
+    {
+        return focus_controller->focussed_application();
+    }
+
+    std::shared_ptr<msh::FocusController> const focus_controller;
+};
 }
 
 usc::ServerConfiguration::ServerConfiguration(int argc, char** argv)
-    : mir::DefaultServerConfiguration(
-        std::make_shared<ConfigurationOptions>(argc, const_cast<char const **>(argv)))
 {
-}
+    add_configuration_option("from-dm-fd", "File descriptor of read end of pipe from display manager [int]", mir::OptionType::integer);
+    add_configuration_option("to-dm-fd",   "File descriptor of write end of pipe to display manager [int]",  mir::OptionType::integer);
+    add_configuration_option("blacklist", "Video blacklist regex to use",  mir::OptionType::string);
+    add_configuration_option("version", "Show version of Unity System Compositor",  mir::OptionType::null);
+    add_configuration_option("spinner", "Path to spinner executable",  mir::OptionType::string);
+    add_configuration_option("public-socket", "Make the socket file publicly writable",  mir::OptionType::boolean);
+    add_configuration_option("enable-hardware-cursor", "Enable the hardware cursor (disabled by default)",  mir::OptionType::boolean);
+    add_configuration_option("inactivity-display-off-timeout", "The time in seconds before the screen is turned off when there are no active sessions",  mir::OptionType::integer);
+    add_configuration_option("inactivity-display-dim-timeout", "The time in seconds before the screen is dimmed when there are no active sessions",  mir::OptionType::integer);
+    add_configuration_option("shutdown-timeout", "The time in milli-seconds the power key must be held to initiate a clean system shutdown",  mir::OptionType::integer);
+    add_configuration_option("power-key-ignore-timeout", "The time in milli-seconds the power key must be held to ignore - must be less than shutdown-timeout",  mir::OptionType::integer);
+    add_configuration_option("disable-inactivity-policy", "Disables handling user inactivity and power key",  mir::OptionType::boolean);
 
-std::shared_ptr<mi::CursorListener>
-usc::ServerConfiguration::the_cursor_listener()
-{
-    struct NullCursorListener : public mi::CursorListener
-    {
-        void cursor_moved_to(float, float) override
+    set_command_line(argc, const_cast<char const **>(argv));
+
+    set_command_line_handler(&ignore_unknown_arguments);
+
+    wrap_cursor_listener([this](std::shared_ptr<mir::input::CursorListener> const& default_)
+        -> std::shared_ptr<mir::input::CursorListener>
         {
-        }
-    };
+            // This is a workaround for u8 desktop preview in 14.04 for the lack of client cursor API.
+            // We need to disable the cursor for XMir but leave it on for the desktop preview.
+            // Luckily as it stands they run inside seperate instances of USC. ~racarr
+            if (enable_hardware_cursor())
+                return default_;
+            else
+                return std::make_shared<NullCursorListener>();
+        });
 
-    // This is a workaround for u8 desktop preview in 14.04 for the lack of client cursor API.
-    // We need to disable the cursor for XMir but leave it on for the desktop preview.
-    // Luckily as it stands they run inside seperate instances of USC. ~racarr
-    if (enable_hardware_cursor())
-        return mir::DefaultServerConfiguration::the_cursor_listener();
-    else
-        return std::make_shared<NullCursorListener>();
-}
-
-std::shared_ptr<mir::ServerStatusListener>
-usc::ServerConfiguration::the_server_status_listener()
-{
-    struct ServerStatusListener : public mir::ServerStatusListener
-    {
-        ServerStatusListener(
-            std::shared_ptr<msh::FocusController> const& focus_controller)
-            : focus_controller{focus_controller}
+    override_the_server_status_listener([this]()
+        -> std::shared_ptr<mir::ServerStatusListener>
         {
-        }
+            return std::make_shared<ServerStatusListener>(the_focus_controller());
+        });
 
-        void paused() override
+    wrap_session_coordinator([this](std::shared_ptr<ms::SessionCoordinator> const& wrapped)
+        -> std::shared_ptr<ms::SessionCoordinator>
         {
-            std::cerr << "pause" << std::endl;
+            return std::make_shared<SessionCoordinator>(
+                wrapped,
+                the_session_switcher());
+        });
 
-            if (auto active_session = weak_active_session().lock())
-                active_session->set_lifecycle_state(mir_lifecycle_state_will_suspend);
-        }
-
-        void resumed() override
+    wrap_surface_coordinator([this](std::shared_ptr<ms::SurfaceCoordinator> const& wrapped)
+        -> std::shared_ptr<mir::scene::SurfaceCoordinator>
         {
-            std::cerr << "resume" << std::endl;
-
-            if (auto active_session = weak_active_session().lock())
-                active_session->set_lifecycle_state(mir_lifecycle_state_resumed);
-        }
-
-        void started() override
-        {
-        }
-
-        std::weak_ptr<ms::Session> weak_active_session()
-        {
-            return focus_controller->focussed_application();
-        }
-
-        std::shared_ptr<msh::FocusController> const focus_controller;
-    };
-
-    return std::make_shared<ServerStatusListener>(the_focus_controller());
-}
-
-std::shared_ptr<mir::scene::SessionCoordinator>
-usc::ServerConfiguration::wrap_session_coordinator(
-    std::shared_ptr<ms::SessionCoordinator> const& wrapped)
-{
-    return std::make_shared<SessionCoordinator>(
-        wrapped,
-        the_session_switcher());
-}
-
-std::shared_ptr<mir::scene::SurfaceCoordinator>
-usc::ServerConfiguration::wrap_surface_coordinator(
-    std::shared_ptr<ms::SurfaceCoordinator> const& wrapped)
-{
-    return std::make_shared<SurfaceCoordinator>(
-        wrapped,
-        the_session_switcher());
+            return std::make_shared<SurfaceCoordinator>(
+                wrapped,
+                the_session_switcher());
+        });
 }
 
 std::shared_ptr<usc::Spinner> usc::ServerConfiguration::the_spinner()
