@@ -87,20 +87,12 @@ bool check_blacklist(
 
 usc::SystemCompositor::SystemCompositor(
     std::shared_ptr<ServerConfiguration> const& config)
-    : config{config},
-      dm_connection{config->the_dm_connection()},
-      spinner{config->the_spinner()}
+    : config{config}
 {
 }
 
 void usc::SystemCompositor::run()
 {
-    if (config->show_version())
-    {
-        std::cerr << "unity-system-compositor " << USC_VERSION << std::endl;
-        return;
-    }
-
     struct ScopeGuard
     {
         ~ScopeGuard()
@@ -127,22 +119,31 @@ void usc::SystemCompositor::run()
             if (!check_blacklist(config->blacklist(), vendor, renderer, version))
                 throw mir::AbnormalExit ("Video driver is blacklisted, exiting");
 
-            main();
+            std::shared_ptr<DMConnection> const dm_connection{config->the_dm_connection()};
+
+            // Make socket world-writable, since users need to talk to us.  No worries
+            // about race condition, since we are adding permissions, not restricting
+            // them.
+            if (config->public_socket() && chmod(config->get_socket_file().c_str(), 0777) == -1)
+                std::cerr << "Unable to chmod socket file " << config->get_socket_file() << ": " << strerror(errno) << std::endl;
+
+            dm_connection->start();
+
             guard.qt_thread = std::thread(&SystemCompositor::qt_main, this);
         });
 
+    // FRIG: we can't access the options until we build something.
+    config->the_session_listener();
+
+    std::shared_ptr<Spinner> const spinner{config->the_spinner()};
+
+    if (config->show_version())
+    {
+        std::cerr << "unity-system-compositor " << USC_VERSION << std::endl;
+        return;
+    }
+
     config->run();
-}
-
-void usc::SystemCompositor::main()
-{
-    // Make socket world-writable, since users need to talk to us.  No worries
-    // about race condition, since we are adding permissions, not restricting
-    // them.
-    if (config->public_socket() && chmod(config->get_socket_file().c_str(), 0777) == -1)
-        std::cerr << "Unable to chmod socket file " << config->get_socket_file() << ": " << strerror(errno) << std::endl;
-
-    dm_connection->start();
 }
 
 void usc::SystemCompositor::qt_main()
