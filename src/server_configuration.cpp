@@ -142,6 +142,10 @@ usc::ServerConfiguration::ServerConfiguration(int argc, char** argv)
                 wrapped,
                 the_session_switcher());
         });
+
+    set_config_filename("unity-system-compositor.conf");
+
+    apply_settings();
 }
 
 std::shared_ptr<usc::Spinner> usc::ServerConfiguration::the_spinner()
