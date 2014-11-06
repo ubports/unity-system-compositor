@@ -16,7 +16,7 @@
  * Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
-#include "server_configuration.h"
+#include "server.h"
 #include "external_spinner.h"
 #include "session_coordinator.h"
 #include "surface_coordinator.h"
@@ -90,7 +90,7 @@ struct ServerStatusListener : public mir::ServerStatusListener
 };
 }
 
-usc::ServerConfiguration::ServerConfiguration(int argc, char** argv)
+usc::Server::Server(int argc, char** argv)
 {
     add_configuration_option("from-dm-fd", "File descriptor of read end of pipe from display manager [int]", mir::OptionType::integer);
     add_configuration_option("to-dm-fd",   "File descriptor of write end of pipe to display manager [int]",  mir::OptionType::integer);
@@ -148,7 +148,7 @@ usc::ServerConfiguration::ServerConfiguration(int argc, char** argv)
     apply_settings();
 }
 
-std::shared_ptr<usc::Spinner> usc::ServerConfiguration::the_spinner()
+std::shared_ptr<usc::Spinner> usc::Server::the_spinner()
 {
     return spinner(
         [this]
@@ -159,7 +159,7 @@ std::shared_ptr<usc::Spinner> usc::ServerConfiguration::the_spinner()
         });
 }
 
-std::shared_ptr<usc::SessionSwitcher> usc::ServerConfiguration::the_session_switcher()
+std::shared_ptr<usc::SessionSwitcher> usc::Server::the_session_switcher()
 {
     return session_switcher(
         [this]
@@ -169,12 +169,12 @@ std::shared_ptr<usc::SessionSwitcher> usc::ServerConfiguration::the_session_swit
         });
 }
 
-std::shared_ptr<usc::DMMessageHandler> usc::ServerConfiguration::the_dm_message_handler()
+std::shared_ptr<usc::DMMessageHandler> usc::Server::the_dm_message_handler()
 {
     return the_session_switcher();
 }
 
-std::shared_ptr<usc::DMConnection> usc::ServerConfiguration::the_dm_connection()
+std::shared_ptr<usc::DMConnection> usc::Server::the_dm_connection()
 {
     return dm_connection(
         [this]

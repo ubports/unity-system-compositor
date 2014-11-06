@@ -28,13 +28,13 @@
 #include "dbus_screen_observer.h"
 #include "powerd_mediator.h"
 #include "power_state_change_reason.h"
-#include "server_configuration.h"
+#include "server.h"
 
 namespace mi = mir::input;
 namespace mc = mir::compositor;
 namespace mg = mir::graphics;
 
-ScreenStateHandler::ScreenStateHandler(std::shared_ptr<usc::ServerConfiguration> const& server,
+ScreenStateHandler::ScreenStateHandler(std::shared_ptr<usc::Server> const& server,
                                        std::chrono::milliseconds poweroff_timeout,
                                        std::chrono::milliseconds dimmer_timeout)
     : current_power_mode{MirPowerMode::mir_power_mode_on},

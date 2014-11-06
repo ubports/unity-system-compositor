@@ -19,7 +19,7 @@
 
 
 #include "system_compositor.h"
-#include "server_configuration.h"
+#include "server.h"
 #include "dm_connection.h"
 #include "spinner.h"
 #include "screen_state_handler.h"
@@ -86,7 +86,7 @@ bool check_blacklist(
 }
 
 usc::SystemCompositor::SystemCompositor(
-    std::shared_ptr<ServerConfiguration> const& server)
+    std::shared_ptr<Server> const& server)
     : server{server},
       spinner{server->the_spinner()}
 {

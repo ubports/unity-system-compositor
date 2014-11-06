@@ -16,8 +16,8 @@
  * Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
-#ifndef USC_SERVER_CONFIGURATION_H_
-#define USC_SERVER_CONFIGURATION_H_
+#ifndef USC_SERVER_H_
+#define USC_SERVER_H_
 
 #include <mir/server.h>
 #include <mir/cached_ptr.h>
@@ -30,10 +30,10 @@ class SessionSwitcher;
 class DMMessageHandler;
 class DMConnection;
 
-class ServerConfiguration : private mir::Server
+class Server : private mir::Server
 {
 public:
-    ServerConfiguration(int argc, char** argv);
+    Server(int argc, char** argv);
 
     using mir::Server::add_init_callback;
     using mir::Server::run;
@@ -46,10 +46,6 @@ public:
     virtual std::shared_ptr<Spinner> the_spinner();
     virtual std::shared_ptr<DMMessageHandler> the_dm_message_handler();
     virtual std::shared_ptr<DMConnection> the_dm_connection();
-
-    inline auto the_options()
-    -> decltype(mir::Server::get_options())
-    { return mir::Server::get_options(); }
 
     bool show_version()
     {
@@ -113,7 +109,11 @@ public:
         return the_options()->get("file", "/tmp/mir_socket");
     }
 
-protected:
+private:
+    inline auto the_options()
+    -> decltype(mir::Server::get_options())
+    { return mir::Server::get_options(); }
+
     virtual std::shared_ptr<SessionSwitcher> the_session_switcher();
 
     mir::CachedPtr<Spinner> spinner;

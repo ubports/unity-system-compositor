@@ -18,7 +18,7 @@
  */
 
 #include "system_compositor.h"
-#include "server_configuration.h"
+#include "server.h"
 
 #include <mir/report_exception.h>
 #include <iostream>
@@ -26,7 +26,7 @@
 int main(int argc, char *argv[])
 try
 {
-    auto const config = std::make_shared<usc::ServerConfiguration>(argc, argv);
+    auto const config = std::make_shared<usc::Server>(argc, argv);
 
     usc::SystemCompositor system_compositor{config};
     system_compositor.run();
