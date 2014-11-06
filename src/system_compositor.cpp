@@ -132,8 +132,8 @@ void usc::SystemCompositor::run()
             guard.qt_thread = std::thread(&SystemCompositor::qt_main, this);
         });
 
-    // FRIG: we can't access the options until we build something.
-    config->the_session_listener();
+    config->set_config_filename("unity-system-compositor.conf");
+    config->apply_settings();
 
     std::shared_ptr<Spinner> const spinner{config->the_spinner()};
 
