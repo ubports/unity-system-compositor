@@ -67,7 +67,7 @@ bool check_blacklist(
                   renderer ? renderer : "",
                   version ? version : "");
 
-        auto result = regexec (&re, driver_string, 0, NULL, 0);
+        auto result = regexec (&re, driver_string, 0, nullptr, 0);
         regfree (&re);
 
         if (result == 0)
