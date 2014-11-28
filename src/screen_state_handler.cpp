@@ -19,7 +19,7 @@
 #include <mir/main_loop.h>
 #include <mir/time/timer.h>
 #include <mir/compositor/compositor.h>
-#include <mir/default_server_configuration.h>
+#include <mir/server.h>
 #include <mir/graphics/display.h>
 #include <mir/graphics/display_configuration.h>
 #include <mir/input/touch_visualizer.h>
@@ -34,7 +34,7 @@ namespace mi = mir::input;
 namespace mc = mir::compositor;
 namespace mg = mir::graphics;
 
-ScreenStateHandler::ScreenStateHandler(std::shared_ptr<mir::DefaultServerConfiguration> const& config,
+ScreenStateHandler::ScreenStateHandler(std::shared_ptr<mir::Server> const& server,
                                        std::chrono::milliseconds poweroff_timeout,
                                        std::chrono::milliseconds dimmer_timeout)
     : current_power_mode{MirPowerMode::mir_power_mode_on},
@@ -42,10 +42,10 @@ ScreenStateHandler::ScreenStateHandler(std::shared_ptr<mir::DefaultServerConfigu
       power_off_timeout{poweroff_timeout},
       dimming_timeout{dimmer_timeout},
       powerd_mediator{new PowerdMediator()},
-      config{config},
-      power_off_alarm{config->the_main_loop()->create_alarm(
+      server{server},
+      power_off_alarm{server->the_main_loop()->create_alarm(
               std::bind(&ScreenStateHandler::power_off_alarm_notification, this))},
-      dimmer_alarm{config->the_main_loop()->create_alarm(
+      dimmer_alarm{server->the_main_loop()->create_alarm(
               std::bind(&ScreenStateHandler::dimmer_alarm_notification, this))},
       dbus_screen{new DBusScreen(*this)}
 {
@@ -148,9 +148,9 @@ void ScreenStateHandler::configure_display_l(MirPowerMode mode, PowerStateChange
     if (current_power_mode == mode)
         return;
 
-    std::shared_ptr<mg::Display> display = config->the_display();
+    std::shared_ptr<mg::Display> display = server->the_display();
     std::shared_ptr<mg::DisplayConfiguration> displayConfig = display->configuration();
-    std::shared_ptr<mc::Compositor> compositor = config->the_compositor();
+    std::shared_ptr<mc::Compositor> compositor = server->the_compositor();
 
     displayConfig->for_each_output(
         [&](const mg::UserDisplayConfigurationOutput displayConfigOutput) {
@@ -229,7 +229,7 @@ void ScreenStateHandler::set_touch_visualization_enabled(bool enabled)
 {
     std::lock_guard<std::mutex> lock{guard};
     
-    auto visualizer = config->the_touch_visualizer();
+    auto visualizer = server->the_touch_visualizer();
     if (enabled)
         visualizer->enable();
     else

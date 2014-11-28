@@ -115,7 +115,7 @@ void usc::SystemCompositor::run()
         std::thread qt_thread;
     } guard;
 
-    mir::run_mir(*config, [&](mir::DisplayServer&)
+    config->add_init_callback([&]
         {
             auto vendor = (char *) glGetString(GL_VENDOR);
             auto renderer = (char *) glGetString (GL_RENDERER);
@@ -130,6 +130,8 @@ void usc::SystemCompositor::run()
             main();
             guard.qt_thread = std::thread(&SystemCompositor::qt_main, this);
         });
+
+    config->run();
 }
 
 void usc::SystemCompositor::main()

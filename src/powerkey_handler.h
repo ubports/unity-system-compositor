@@ -26,7 +26,6 @@
 
 namespace mir
 {
-class DefaultServerConfiguration;
 namespace time
 {
 class Alarm;
