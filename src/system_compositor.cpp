@@ -126,7 +126,7 @@ void usc::SystemCompositor::run()
             if (!check_blacklist(server->blacklist(), vendor, renderer, version))
                 throw mir::AbnormalExit ("Video driver is blacklisted, exiting");
 
-            std::shared_ptr<DMConnection> const dm_connection{server->the_dm_connection()};
+            dm_connection = server->the_dm_connection();
 
             // Make socket world-writable, since users need to talk to us.  No worries
             // about race condition, since we are adding permissions, not restricting
