@@ -30,10 +30,18 @@ class SessionSwitcher;
 class DMMessageHandler;
 class DMConnection;
 
-class ServerConfiguration : public mir::Server
+class ServerConfiguration : private mir::Server
 {
 public:
     explicit ServerConfiguration(int argc, char** argv);
+
+    using mir::Server::add_init_callback;
+    using mir::Server::run;
+    using mir::Server::the_main_loop;
+    using mir::Server::the_composite_event_filter;
+    using mir::Server::the_display;
+    using mir::Server::the_compositor;
+    using mir::Server::the_touch_visualizer;
 
     virtual std::shared_ptr<Spinner> the_spinner();
     virtual std::shared_ptr<DMMessageHandler> the_dm_message_handler();

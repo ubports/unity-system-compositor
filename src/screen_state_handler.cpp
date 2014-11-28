@@ -19,7 +19,6 @@
 #include <mir/main_loop.h>
 #include <mir/time/timer.h>
 #include <mir/compositor/compositor.h>
-#include <mir/server.h>
 #include <mir/graphics/display.h>
 #include <mir/graphics/display_configuration.h>
 #include <mir/input/touch_visualizer.h>
@@ -29,12 +28,13 @@
 #include "dbus_screen_observer.h"
 #include "powerd_mediator.h"
 #include "power_state_change_reason.h"
+#include "server_configuration.h"
 
 namespace mi = mir::input;
 namespace mc = mir::compositor;
 namespace mg = mir::graphics;
 
-ScreenStateHandler::ScreenStateHandler(std::shared_ptr<mir::Server> const& server,
+ScreenStateHandler::ScreenStateHandler(std::shared_ptr<usc::ServerConfiguration> const& server,
                                        std::chrono::milliseconds poweroff_timeout,
                                        std::chrono::milliseconds dimmer_timeout)
     : current_power_mode{MirPowerMode::mir_power_mode_on},
