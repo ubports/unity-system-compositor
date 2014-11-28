@@ -28,20 +28,20 @@ class PowerKeyHandler;
 namespace usc
 {
 
-class ServerConfiguration;
+class Server;
 class DMConnection;
 class Spinner;
 
 class SystemCompositor
 {
 public:
-    explicit SystemCompositor(std::shared_ptr<ServerConfiguration> const& config);
+    explicit SystemCompositor(std::shared_ptr<Server> const& server);
     void run();
 
 private:
     void qt_main();
 
-    std::shared_ptr<ServerConfiguration> const server;
+    std::shared_ptr<Server> const server;
     std::shared_ptr<Spinner> const spinner;
     std::shared_ptr<ScreenStateHandler> screen_state_handler;
     std::shared_ptr<PowerKeyHandler> power_key_handler;
