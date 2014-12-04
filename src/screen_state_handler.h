@@ -27,10 +27,10 @@
 class DBusScreen;
 class PowerdMediator;
 enum class PowerStateChangeReason;
+namespace usc { class Server; }
 
 namespace mir
 {
-class DefaultServerConfiguration;
 namespace time
 {
 class Alarm;
@@ -41,7 +41,7 @@ class Timer;
 class ScreenStateHandler: public mir::input::EventFilter, public DBusScreenObserver
 {
 public:
-    ScreenStateHandler(std::shared_ptr<mir::DefaultServerConfiguration> const& config,
+    ScreenStateHandler(std::shared_ptr<usc::Server> const& server,
                        std::chrono::milliseconds power_off_timeout,
                        std::chrono::milliseconds dimmer_timeout);
     virtual ~ScreenStateHandler();
@@ -81,7 +81,7 @@ private:
     std::chrono::milliseconds dimming_timeout;
 
     std::unique_ptr<PowerdMediator> powerd_mediator;
-    std::shared_ptr<mir::DefaultServerConfiguration> config;
+    std::shared_ptr<usc::Server> server;
 
     std::unique_ptr<mir::time::Alarm> power_off_alarm;
     std::unique_ptr<mir::time::Alarm> dimmer_alarm;

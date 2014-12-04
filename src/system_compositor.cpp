@@ -19,7 +19,7 @@
 
 
 #include "system_compositor.h"
-#include "server_configuration.h"
+#include "server.h"
 #include "dm_connection.h"
 #include "spinner.h"
 #include "screen_state_handler.h"
@@ -86,16 +86,15 @@ bool check_blacklist(
 }
 
 usc::SystemCompositor::SystemCompositor(
-    std::shared_ptr<ServerConfiguration> const& config)
-    : config{config},
-      dm_connection{config->the_dm_connection()},
-      spinner{config->the_spinner()}
+    std::shared_ptr<Server> const& server)
+    : server{server},
+      spinner{server->the_spinner()}
 {
 }
 
 void usc::SystemCompositor::run()
 {
-    if (config->show_version())
+    if (server->show_version())
     {
         std::cerr << "unity-system-compositor " << USC_VERSION << std::endl;
         return;
@@ -115,7 +114,7 @@ void usc::SystemCompositor::run()
         std::thread qt_thread;
     } guard;
 
-    mir::run_mir(*config, [&](mir::DisplayServer&)
+    server->add_init_callback([&]
         {
             auto vendor = (char *) glGetString(GL_VENDOR);
             auto renderer = (char *) glGetString (GL_RENDERER);
@@ -124,23 +123,23 @@ void usc::SystemCompositor::run()
             std::cerr << "GL_RENDERER = " << renderer << std::endl;
             std::cerr << "GL_VERSION = " << version << std::endl;
 
-            if (!check_blacklist(config->blacklist(), vendor, renderer, version))
+            if (!check_blacklist(server->blacklist(), vendor, renderer, version))
                 throw mir::AbnormalExit ("Video driver is blacklisted, exiting");
 
-            main();
+            dm_connection = server->the_dm_connection();
+
+            // Make socket world-writable, since users need to talk to us.  No worries
+            // about race condition, since we are adding permissions, not restricting
+            // them.
+            if (server->public_socket() && chmod(server->get_socket_file().c_str(), 0777) == -1)
+                std::cerr << "Unable to chmod socket file " << server->get_socket_file() << ": " << strerror(errno) << std::endl;
+
+            dm_connection->start();
+
             guard.qt_thread = std::thread(&SystemCompositor::qt_main, this);
         });
-}
 
-void usc::SystemCompositor::main()
-{
-    // Make socket world-writable, since users need to talk to us.  No worries
-    // about race condition, since we are adding permissions, not restricting
-    // them.
-    if (config->public_socket() && chmod(config->get_socket_file().c_str(), 0777) == -1)
-        std::cerr << "Unable to chmod socket file " << config->get_socket_file() << ": " << strerror(errno) << std::endl;
-
-    dm_connection->start();
+    server->run();
 }
 
 void usc::SystemCompositor::qt_main()
@@ -148,23 +147,23 @@ void usc::SystemCompositor::qt_main()
     int argc{0};
     QCoreApplication app(argc, nullptr);
 
-    if (!config->disable_inactivity_policy())
+    if (!server->disable_inactivity_policy())
     {
-        std::chrono::seconds inactivity_display_off_timeout{config->inactivity_display_off_timeout()};
-        std::chrono::seconds inactivity_display_dim_timeout{config->inactivity_display_dim_timeout()};
-        std::chrono::milliseconds power_key_ignore_timeout{config->power_key_ignore_timeout()};
-        std::chrono::milliseconds shutdown_timeout{config->shutdown_timeout()};
+        std::chrono::seconds inactivity_display_off_timeout{server->inactivity_display_off_timeout()};
+        std::chrono::seconds inactivity_display_dim_timeout{server->inactivity_display_dim_timeout()};
+        std::chrono::milliseconds power_key_ignore_timeout{server->power_key_ignore_timeout()};
+        std::chrono::milliseconds shutdown_timeout{server->shutdown_timeout()};
 
-        screen_state_handler = std::make_shared<ScreenStateHandler>(config,
+        screen_state_handler = std::make_shared<ScreenStateHandler>(server,
             std::chrono::duration_cast<std::chrono::milliseconds>(inactivity_display_off_timeout),
             std::chrono::duration_cast<std::chrono::milliseconds>(inactivity_display_dim_timeout));
 
-        power_key_handler = std::make_shared<PowerKeyHandler>(*(config->the_main_loop()),
+        power_key_handler = std::make_shared<PowerKeyHandler>(*(server->the_main_loop()),
             power_key_ignore_timeout,
             shutdown_timeout,
             *screen_state_handler);
 
-        auto composite_filter = config->the_composite_event_filter();
+        auto composite_filter = server->the_composite_event_filter();
         composite_filter->append(screen_state_handler);
         composite_filter->append(power_key_handler);
     }
