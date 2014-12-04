@@ -1,3 +1,13 @@
+unity-system-compositor (0.0.5+15.04.20141204-0ubuntu1) vivid; urgency=low
+
+  [ CI bot ]
+  * Resync trunk
+
+  [ Alan Griffiths ]
+  * Migration of unity-system-compositor from the legacy Mir API
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 04 Dec 2014 22:35:00 +0000
+
 unity-system-compositor (0.0.5+15.04.20141124-0ubuntu1) vivid; urgency=low
 
   [ Alberto Aguirre ]
