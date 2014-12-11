@@ -44,15 +44,22 @@ PowerKeyHandler::~PowerKeyHandler() = default;
 bool PowerKeyHandler::handle(MirEvent const& event)
 {
     static const int32_t POWER_KEY_CODE = 26;
+    
+    if (mir_event_get_type(&event) != mir_event_type_input)
+        return false;
+    auto input_event = mir_event_get_input_event(&event);
+    if (mir_input_event_get_type(input_event) != mir_input_event_type_key)
+        return false;
+    auto kev = mir_input_event_get_key_input_event(input_event);
+    if (mir_key_input_event_get_key_code(kev) != POWER_KEY_CODE)
+        return false;
 
-    if (event.type == mir_event_type_key &&
-        event.key.key_code == POWER_KEY_CODE)
-    {
-        if (event.key.action == mir_key_action_down)
-            power_key_down();
-        else if (event.key.action == mir_key_action_up)
-            power_key_up();
-    }
+    auto action = mir_key_input_event_get_action(kev);
+    if (action == mir_key_input_event_action_down)
+        power_key_down();
+    else if (action == mir_key_input_event_action_up)
+        power_key_up();
+
     return false;
 }
 

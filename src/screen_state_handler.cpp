@@ -56,13 +56,16 @@ ScreenStateHandler::~ScreenStateHandler() = default;
 
 bool ScreenStateHandler::handle(MirEvent const& event)
 {
-    if (event.type == mir_event_type_motion)
-    {
-        std::lock_guard<std::mutex> lock{guard};
-        reset_timers_l();
-        if (current_power_mode == MirPowerMode::mir_power_mode_on)
-            powerd_mediator->set_normal_backlight();
-    }
+    if (mir_event_get_type(&event) != mir_event_type_input)
+        return false;
+    if (mir_input_event_get_type(mir_event_get_input_event(&event)) != mir_event_type_motion)
+        return false;
+
+    std::lock_guard<std::mutex> lock{guard};
+    reset_timers_l();
+    if (current_power_mode == MirPowerMode::mir_power_mode_on)
+        powerd_mediator->set_normal_backlight();
+
     return false;
 }
 
