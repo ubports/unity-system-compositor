@@ -1,3 +1,64 @@
+unity-system-compositor (0.0.5+15.04.20141204-0ubuntu1) vivid; urgency=low
+
+  [ CI bot ]
+  * Resync trunk
+
+  [ Alan Griffiths ]
+  * Migration of unity-system-compositor from the legacy Mir API
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 04 Dec 2014 22:35:00 +0000
+
+unity-system-compositor (0.0.5+15.04.20141124-0ubuntu1) vivid; urgency=low
+
+  [ Alberto Aguirre ]
+  * No-change rebuild against mir 0.9.0
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 24 Nov 2014 22:37:24 +0000
+
+unity-system-compositor (0.0.5+15.04.20141109-0ubuntu1) vivid; urgency=low
+
+  [ josharenson ]
+  * Use explicit keyword to avoid implicit conversions
+
+  [ Alan Griffiths ]
+  * Restore the tests that have been commented out
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Sun, 09 Nov 2014 00:32:49 +0000
+
+unity-system-compositor (0.0.5+14.10.20141020~rtm-0ubuntu1) 14.09; urgency=low
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+  [ Ricardo Mendoza ]
+  * When exiting usc, check if backlight is on and turn it off. (LP:
+    #1364865)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 20 Oct 2014 16:34:54 +0000
+
+unity-system-compositor (0.0.5+14.10.20141010.1-0ubuntu1) utopic; urgency=low
+
+  [ Charles Kerr ]
+  * Fix a typo that caused removeDisplayOnRequest to not correctly
+    remove cookies. (LP: #1365557)
+
+  [ Alexandros Frantzis ]
+  * debian: Make u-s-c abort on fatal errors when run from lightdm
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 10 Oct 2014 22:43:53 +0000
+
+unity-system-compositor (0.0.5+14.10.20141010-0ubuntu1) utopic; urgency=low
+
+  [ Robert Carr ]
+  * Add explicit G++ dependency
+  * Implement DBus interface for toggling touch visualization as
+    required by autopilot.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 10 Oct 2014 15:24:43 +0000
+
 unity-system-compositor (0.0.5+14.10.20140917-0ubuntu1) utopic; urgency=low
 
   [ Alberto Aguirre ]

@@ -50,7 +50,7 @@ protected:
 class SessionSwitcher : public DMMessageHandler
 {
 public:
-    SessionSwitcher(std::shared_ptr<Spinner> const& spinner);
+    explicit SessionSwitcher(std::shared_ptr<Spinner> const& spinner);
 
     void add(std::shared_ptr<Session> const& session, pid_t pid);
     void remove(std::shared_ptr<mir::frontend::Session> const& session);
@@ -75,7 +75,7 @@ private:
     struct SessionInfo
     {
         SessionInfo() = default;
-        SessionInfo(std::shared_ptr<Session> session)
+        explicit SessionInfo(std::shared_ptr<Session> session)
             : session{session}
         {
         }

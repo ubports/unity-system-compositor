@@ -29,7 +29,7 @@ class Worker;
 class WorkerThread
 {
 public:
-    WorkerThread(std::string name);
+    explicit WorkerThread(std::string name);
     ~WorkerThread();
 
     /**

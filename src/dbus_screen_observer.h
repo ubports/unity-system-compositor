@@ -29,6 +29,7 @@ public:
     virtual void set_brightness(int brightness) = 0;
     virtual void enable_auto_brightness(bool enable) = 0;
     virtual void set_inactivity_timeouts(int poweroff_timeout, int dimmer_timeout) = 0;
+    virtual void set_touch_visualization_enabled(bool enabled) = 0;
 
 protected:
     DBusScreenObserver() = default;

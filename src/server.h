@@ -16,10 +16,11 @@
  * Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
-#ifndef USC_SERVER_CONFIGURATION_H_
-#define USC_SERVER_CONFIGURATION_H_
+#ifndef USC_SERVER_H_
+#define USC_SERVER_H_
 
-#include <mir/default_server_configuration.h>
+#include <mir/server.h>
+#include <mir/cached_ptr.h>
 #include <mir/options/option.h>
 
 namespace usc
@@ -29,10 +30,18 @@ class SessionSwitcher;
 class DMMessageHandler;
 class DMConnection;
 
-class ServerConfiguration : public mir::DefaultServerConfiguration
+class Server : private mir::Server
 {
 public:
-    ServerConfiguration(int argc, char** argv);
+    explicit Server(int argc, char** argv);
+
+    using mir::Server::add_init_callback;
+    using mir::Server::run;
+    using mir::Server::the_main_loop;
+    using mir::Server::the_composite_event_filter;
+    using mir::Server::the_display;
+    using mir::Server::the_compositor;
+    using mir::Server::the_touch_visualizer;
 
     virtual std::shared_ptr<Spinner> the_spinner();
     virtual std::shared_ptr<DMMessageHandler> the_dm_message_handler();
@@ -100,14 +109,12 @@ public:
         return the_options()->get("file", "/tmp/mir_socket");
     }
 
-protected:
+private:
+    inline auto the_options()
+    -> decltype(mir::Server::get_options())
+    { return mir::Server::get_options(); }
+
     virtual std::shared_ptr<SessionSwitcher> the_session_switcher();
-    std::shared_ptr<mir::input::CursorListener> the_cursor_listener() override;
-    std::shared_ptr<mir::ServerStatusListener> the_server_status_listener() override;
-    std::shared_ptr<mir::scene::SessionCoordinator> wrap_session_coordinator(
-        std::shared_ptr<mir::scene::SessionCoordinator> const& wrapped) override;
-    std::shared_ptr<mir::scene::SurfaceCoordinator> wrap_surface_coordinator(
-        std::shared_ptr<mir::scene::SurfaceCoordinator> const& wrapped) override;
 
     mir::CachedPtr<Spinner> spinner;
     mir::CachedPtr<DMConnection> dm_connection;

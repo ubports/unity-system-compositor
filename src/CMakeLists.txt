@@ -21,7 +21,7 @@ set(USC_SRCS
   powerd_mediator.cpp
   powerkey_handler.cpp
   screen_state_handler.cpp
-  server_configuration.cpp
+  server.cpp
   session_coordinator.cpp
   session_switcher.cpp
   surface_coordinator.cpp

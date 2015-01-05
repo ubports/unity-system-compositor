@@ -169,7 +169,7 @@ void DBusScreen::removeDisplayOnRequest(int cookie)
     std::cout << "removeDisplayOnRequest id:" << cookie;
     std::cout << " requested by \"" << requestor.toStdString() << "\"" << std::endl;
 
-    auto caller_requests = it->second;
+    auto& caller_requests = it->second;
     caller_requests.erase(cookie);
     if (caller_requests.size() == 0)
         remove_requestor(requestor, lock);
@@ -205,4 +205,9 @@ void DBusScreen::userAutobrightnessEnable(bool enable)
 void DBusScreen::setInactivityTimeouts(int poweroff_timeout, int dimmer_timeout)
 {
     observer->set_inactivity_timeouts(poweroff_timeout, dimmer_timeout);
+}
+
+void DBusScreen::setTouchVisualizationEnabled(bool enabled)
+{
+    observer->set_touch_visualization_enabled(enabled);
 }
