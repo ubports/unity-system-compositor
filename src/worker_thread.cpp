@@ -17,7 +17,6 @@
  */
 
 #include "worker_thread.h"
-#include <mir/run_mir.h>
 
 #include <algorithm>
 #include <condition_variable>
