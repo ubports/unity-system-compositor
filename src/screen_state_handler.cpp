@@ -49,6 +49,8 @@ ScreenStateHandler::ScreenStateHandler(std::shared_ptr<usc::Server> const& serve
               std::bind(&ScreenStateHandler::dimmer_alarm_notification, this))},
       dbus_screen{new DBusScreen(*this)}
 {
+    /* Make sure the compositor is running before the handler runs. */
+    server->the_compositor()->start();
     reset_timers_l();
 }
 
