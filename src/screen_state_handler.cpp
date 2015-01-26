@@ -49,6 +49,12 @@ ScreenStateHandler::ScreenStateHandler(std::shared_ptr<usc::Server> const& serve
               std::bind(&ScreenStateHandler::dimmer_alarm_notification, this))},
       dbus_screen{new DBusScreen(*this)}
 {
+    /*
+     * Make sure the compositor is running as certain conditions can
+     * cause Mir to tear down the compositor threads before we get
+     * to this point. See bug #1410381.
+     */
+    server->the_compositor()->start();
     reset_timers_l();
 }
 
