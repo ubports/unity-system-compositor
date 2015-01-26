@@ -1,3 +1,13 @@
+unity-system-compositor (0.0.5+15.04.20150108.2-0ubuntu1) vivid; urgency=low
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+  [ Cemil Azizoglu ]
+  * Rebuild for Mir 0.10. (LP: #1355005)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 08 Jan 2015 14:15:05 +0000
+
 unity-system-compositor (0.0.5+15.04.20141204-0ubuntu1) vivid; urgency=low
 
   [ CI bot ]

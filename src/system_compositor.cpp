@@ -31,7 +31,6 @@
 #undef signals
 
 #include <mir/input/composite_event_filter.h>
-#include <mir/run_mir.h>
 #include <mir/abnormal_exit.h>
 #include <mir/main_loop.h>
 

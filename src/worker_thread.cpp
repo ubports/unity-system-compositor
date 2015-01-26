@@ -17,7 +17,8 @@
  */
 
 #include "worker_thread.h"
-#include <mir/run_mir.h>
+
+#include <mir/terminate_with_current_exception.h>
 
 #include <algorithm>
 #include <condition_variable>
