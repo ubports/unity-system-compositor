@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014 Canonical Ltd.
+ * Copyright © 2014-2015 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -16,28 +16,35 @@
  * Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
-#ifndef USC_SURFACE_COORDINATOR_H_
-#define USC_SURFACE_COORDINATOR_H_
+#ifndef USC_SHELL_H_
+#define USC_SHELL_H_
 
-#include <mir/shell/surface_coordinator_wrapper.h>
+#include <mir/shell/shell_wrapper.h>
 
 #include <memory>
+
 
 namespace usc
 {
 class SessionSwitcher;
 
-class SurfaceCoordinator : public mir::shell::SurfaceCoordinatorWrapper
+class Shell : public mir::shell::ShellWrapper
 {
 public:
-    SurfaceCoordinator(
-        std::shared_ptr<mir::scene::SurfaceCoordinator> const& wrapped,
+    Shell(
+        std::shared_ptr<mir::shell::Shell> const& wrapped,
         std::shared_ptr<SessionSwitcher> const& session_switcher);
 
 private:
-    std::shared_ptr<mir::scene::Surface> add_surface(
-        mir::scene::SurfaceCreationParameters const& params,
-        mir::scene::Session* session) override;
+    std::shared_ptr<mir::scene::Session> open_session(
+        pid_t client_pid,
+        std::string const& name,
+        std::shared_ptr<mir::frontend::EventSink> const& sink) override;
+    void close_session(std::shared_ptr<mir::scene::Session> const& session) override;
+
+    mir::frontend::SurfaceId create_surface(
+        std::shared_ptr<mir::scene::Session> const& session,
+        mir::scene::SurfaceCreationParameters const& params) override;
 
     std::shared_ptr<SessionSwitcher> const session_switcher;
 };

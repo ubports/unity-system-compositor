@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014 Canonical Ltd.
+ * Copyright © 2014-2015 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -16,10 +16,12 @@
  * Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
-#include "session_coordinator.h"
+#include "shell.h"
 #include "session_switcher.h"
 
+#include <mir/scene/null_surface_observer.h>
 #include <mir/scene/session.h>
+#include <mir/scene/surface.h>
 #include <mir/frontend/session.h>
 
 #include <iostream>
@@ -71,34 +73,59 @@ public:
     msh::FocusController& focus_controller;
 };
 
+
+struct SessionReadyObserver : ms::NullSurfaceObserver,
+                              std::enable_shared_from_this<SessionReadyObserver>
+{
+    SessionReadyObserver(
+        std::shared_ptr<usc::SessionSwitcher> const& switcher,
+        std::shared_ptr<ms::Surface> const& surface,
+        ms::Session const* session)
+        : switcher{switcher},
+          surface{surface},
+          session{session}
+    {
+    }
+
+    void frame_posted(int) override
+    {
+        ++num_frames_posted;
+        if (num_frames_posted == num_frames_for_session_ready)
+        {
+            switcher->mark_ready(session);
+            surface->remove_observer(shared_from_this());
+        }
+    }
+
+    std::shared_ptr<usc::SessionSwitcher> const switcher;
+    std::shared_ptr<ms::Surface> const surface;
+    ms::Session const* const session;
+    // We need to wait for the second frame before marking the session
+    // as ready. The first frame posted from sessions is a blank frame.
+    // TODO: Solve this issue at its root and remove this workaround
+    int const num_frames_for_session_ready{2};
+    int num_frames_posted{0};
+};
+
 }
 
-usc::SessionCoordinator::SessionCoordinator(
-    std::shared_ptr<ms::SessionCoordinator> const& wrapped,
+usc::Shell::Shell(
+    std::shared_ptr<msh::Shell> const& wrapped,
     std::shared_ptr<SessionSwitcher> const& session_switcher)
-    : msh::SessionCoordinatorWrapper{wrapped},
+    : msh::ShellWrapper{wrapped},
       session_switcher{session_switcher}
 {
 }
 
-std::shared_ptr<mf::Session>
-usc::SessionCoordinator::open_session(
+std::shared_ptr<ms::Session>
+usc::Shell::open_session(
     pid_t client_pid,
     std::string const& name,
     std::shared_ptr<mf::EventSink> const& sink)
 {
     std::cerr << "Opening session " << name << std::endl;
 
-    // We need ms::Session objects because that is what the focus controller
-    // works with.  But the mf::SessionCoordinator interface deals with mf::Session objects.
-    // So we cast here since in practice, these objects are also ms::Sessions.
-    auto orig = std::dynamic_pointer_cast<ms::Session>(
-        msh::SessionCoordinatorWrapper::open_session(client_pid, name, sink));
-    if (!orig)
-    {
-        std::cerr << "Unexpected non-shell session" << std::endl;
-        return std::shared_ptr<mf::Session>();
-    }
+    auto orig = msh::ShellWrapper::open_session(client_pid, name, sink);
 
     auto const usc_session = std::make_shared<UscSession>(orig, *this);
 
@@ -107,12 +134,24 @@ usc::SessionCoordinator::open_session(
     return orig;
 }
 
-void usc::SessionCoordinator::close_session(
-    std::shared_ptr<mf::Session> const& session)
+void usc::Shell::close_session(std::shared_ptr<ms::Session> const& session)
 {
     std::cerr << "Closing session " << session->name() << std::endl;
 
-    msh::SessionCoordinatorWrapper::close_session(session);
+    msh::ShellWrapper::close_session(session);
 
     session_switcher->remove(session);
+}
+
+mf::SurfaceId usc::Shell::create_surface(std::shared_ptr<ms::Session> const& session, ms::SurfaceCreationParameters const& params)
+{
+    auto const id = msh::ShellWrapper::create_surface(session, params);
+
+    auto const surface = session->surface(id);
+    auto const session_ready_observer = std::make_shared<SessionReadyObserver>(
+        session_switcher, surface, session.get());
+
+    surface->add_observer(session_ready_observer);
+
+    return id;
 }

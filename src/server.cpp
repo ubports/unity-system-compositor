@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014 Canonical Ltd.
+ * Copyright © 2014-2015 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -18,8 +18,7 @@
 
 #include "server.h"
 #include "external_spinner.h"
-#include "session_coordinator.h"
-#include "surface_coordinator.h"
+#include "shell.h"
 #include "asio_dm_connection.h"
 #include "session_switcher.h"
 
@@ -127,20 +126,10 @@ usc::Server::Server(int argc, char** argv)
             return std::make_shared<ServerStatusListener>(the_focus_controller());
         });
 
-    wrap_session_coordinator([this](std::shared_ptr<ms::SessionCoordinator> const& wrapped)
-        -> std::shared_ptr<ms::SessionCoordinator>
+    wrap_shell([this](std::shared_ptr<msh::Shell> const& wrapped)
+        -> std::shared_ptr<msh::Shell>
         {
-            return std::make_shared<SessionCoordinator>(
-                wrapped,
-                the_session_switcher());
-        });
-
-    wrap_surface_coordinator([this](std::shared_ptr<ms::SurfaceCoordinator> const& wrapped)
-        -> std::shared_ptr<mir::scene::SurfaceCoordinator>
-        {
-            return std::make_shared<SurfaceCoordinator>(
-                wrapped,
-                the_session_switcher());
+            return std::make_shared<Shell>(wrapped, the_session_switcher());
         });
 
     set_config_filename("unity-system-compositor.conf");
