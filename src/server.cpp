@@ -27,6 +27,7 @@
 #include <mir/server_status_listener.h>
 #include <mir/shell/focus_controller.h>
 #include <mir/scene/session.h>
+#include <mir/abnormal_exit.h>
 
 #include <iostream>
 
@@ -88,12 +89,18 @@ struct ServerStatusListener : public mir::ServerStatusListener
 
     std::shared_ptr<msh::FocusController> const focus_controller;
 };
+const char* const dm_from_fd = "from-dm-fd";
+const char* const dm_to_fd = "to-dm-fd";
+const char* const dm_stub = "debug-without-dm";
 }
 
 usc::Server::Server(int argc, char** argv)
 {
-    add_configuration_option("from-dm-fd", "File descriptor of read end of pipe from display manager [int]", mir::OptionType::integer);
-    add_configuration_option("to-dm-fd",   "File descriptor of write end of pipe to display manager [int]",  mir::OptionType::integer);
+    add_configuration_option(dm_from_fd, "File descriptor of read end of pipe from display manager [int]",
+        mir::OptionType::integer);
+    add_configuration_option(dm_to_fd, "File descriptor of write end of pipe to display manager [int]",
+        mir::OptionType::integer);
+    add_configuration_option(dm_stub, "Allow running without a display manager (only useful when debugging)",  mir::OptionType::null);
     add_configuration_option("blacklist", "Video blacklist regex to use",  mir::OptionType::string);
     add_configuration_option("version", "Show version of Unity System Compositor",  mir::OptionType::null);
     add_configuration_option("spinner", "Path to spinner executable",  mir::OptionType::string);
@@ -174,14 +181,31 @@ std::shared_ptr<usc::DMMessageHandler> usc::Server::the_dm_message_handler()
     return the_session_switcher();
 }
 
+namespace
+{
+struct NullDMMessageHandler : usc::DMConnection
+{
+    void start() override {}
+};
+}
+
 std::shared_ptr<usc::DMConnection> usc::Server::the_dm_connection()
 {
     return dm_connection(
-        [this]
+        [this]() -> std::shared_ptr<usc::DMConnection>
         {
-            return std::make_shared<AsioDMConnection>(
-                the_options()->get("from-dm-fd", -1),
-                the_options()->get("to-dm-fd", -1),
-                the_dm_message_handler());
+            if (the_options()->is_set(dm_from_fd) && the_options()->is_set(dm_to_fd))
+            {
+                return std::make_shared<AsioDMConnection>(
+                    the_options()->get(dm_from_fd, -1),
+                    the_options()->get(dm_to_fd, -1),
+                    the_dm_message_handler());
+            }
+            else if (the_options()->is_set(dm_stub))
+            {
+                return std::make_shared<NullDMMessageHandler>();
+            }
+
+            BOOST_THROW_EXCEPTION(mir::AbnormalExit("to and from FDs are required for display manager"));
         });
 }
