@@ -1,3 +1,11 @@
+unity-system-compositor (0.0.5+15.04.20150126.1-0ubuntu1) vivid; urgency=low
+
+  [ Ricardo Mendoza ]
+  * Make sure the compositor is running before starting the screen state
+    handler.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 26 Jan 2015 23:00:40 +0000
+
 unity-system-compositor (0.0.5+15.04.20150108.2-0ubuntu1) vivid; urgency=low
 
   [ Ubuntu daily release ]
