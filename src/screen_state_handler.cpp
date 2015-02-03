@@ -58,7 +58,7 @@ bool ScreenStateHandler::handle(MirEvent const& event)
 {
     if (mir_event_get_type(&event) != mir_event_type_input)
         return false;
-    if (mir_input_event_get_type(mir_event_get_input_event(&event)) != mir_event_type_motion)
+    if (mir_input_event_get_type(mir_event_get_input_event(&event)) != mir_event_type_touch)
         return false;
 
     std::lock_guard<std::mutex> lock{guard};
