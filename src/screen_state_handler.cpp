@@ -58,7 +58,10 @@ bool ScreenStateHandler::handle(MirEvent const& event)
 {
     if (mir_event_get_type(&event) != mir_event_type_input)
         return false;
-    if (mir_input_event_get_type(mir_event_get_input_event(&event)) != mir_event_type_touch)
+    // TODO: We should consider resetting the timer for pointer and key events too
+    // we have to make sure we wont introduce a bug where pressing the power
+    // key (to turn screen off) will wake the screen though!
+    if (mir_input_event_get_type(mir_event_get_input_event(&event)) != mir_input_event_type_touch)
         return false;
 
     std::lock_guard<std::mutex> lock{guard};
