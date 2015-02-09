@@ -1,3 +1,16 @@
+unity-system-compositor (0.0.5+15.04.20150209-0ubuntu1) vivid; urgency=medium
+
+  [ Andreas Pokorny ]
+  * Port USC to event 2.0 API
+
+  [ Robert Carr ]
+  * Port USC to event 2.0 API
+
+  [ Alan Griffiths ]
+  * Port to the msh::Shell API in Mir
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 09 Feb 2015 16:26:35 +0000
+
 unity-system-compositor (0.0.5+15.04.20150126.1-0ubuntu1) vivid; urgency=low
 
   [ Ricardo Mendoza ]
