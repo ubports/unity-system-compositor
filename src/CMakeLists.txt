@@ -22,9 +22,8 @@ set(USC_SRCS
   powerkey_handler.cpp
   screen_state_handler.cpp
   server.cpp
-  session_coordinator.cpp
+  shell.cpp
   session_switcher.cpp
-  surface_coordinator.cpp
   system_compositor.cpp
   worker_thread.cpp
 )
