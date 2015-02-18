@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014 Canonical Ltd.
+ * Copyright © 2014-2015 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "screen_state_handler.h"
+#include "mir_screen.h"
 
 #include <mir/main_loop.h>
 #include <mir/time/timer.h>
@@ -24,70 +24,62 @@
 #include <mir/input/touch_visualizer.h>
 
 #include <cstdio>
-#include "dbus_screen.h"
-#include "dbus_screen_observer.h"
-#include "powerd_mediator.h"
+#include "screen_hardware.h"
 #include "power_state_change_reason.h"
 #include "server.h"
 
 namespace mi = mir::input;
-namespace mc = mir::compositor;
 namespace mg = mir::graphics;
 
-ScreenStateHandler::ScreenStateHandler(std::shared_ptr<usc::Server> const& server,
-                                       std::chrono::milliseconds poweroff_timeout,
-                                       std::chrono::milliseconds dimmer_timeout)
-    : current_power_mode{MirPowerMode::mir_power_mode_on},
-      restart_timers{true},
-      power_off_timeout{poweroff_timeout},
+usc::MirScreen::MirScreen(
+    std::shared_ptr<usc::ScreenHardware> const& screen_hardware,
+    std::shared_ptr<mir::compositor::Compositor> const& compositor,
+    std::shared_ptr<mir::graphics::Display> const& display,
+    std::shared_ptr<mir::input::TouchVisualizer> const& touch_visualizer,
+    std::shared_ptr<mir::time::Timer> const& timer,
+    std::chrono::milliseconds power_off_timeout,
+    std::chrono::milliseconds dimmer_timeout)
+    : screen_hardware{screen_hardware},
+      compositor{compositor},
+      display{display},
+      touch_visualizer{touch_visualizer},
+      timer{timer},
+      power_off_alarm{timer->create_alarm(
+              std::bind(&usc::MirScreen::power_off_alarm_notification, this))},
+      dimmer_alarm{timer->create_alarm(
+              std::bind(&usc::MirScreen::dimmer_alarm_notification, this))},
+      power_off_timeout{power_off_timeout},
       dimming_timeout{dimmer_timeout},
-      powerd_mediator{new PowerdMediator()},
-      server{server},
-      power_off_alarm{server->the_main_loop()->create_alarm(
-              std::bind(&ScreenStateHandler::power_off_alarm_notification, this))},
-      dimmer_alarm{server->the_main_loop()->create_alarm(
-              std::bind(&ScreenStateHandler::dimmer_alarm_notification, this))},
-      dbus_screen{new DBusScreen(*this)}
+      current_power_mode{MirPowerMode::mir_power_mode_on},
+      restart_timers{true},
+      power_state_change_handler{[](MirPowerMode,PowerStateChangeReason){}}
 {
     /*
      * Make sure the compositor is running as certain conditions can
      * cause Mir to tear down the compositor threads before we get
      * to this point. See bug #1410381.
      */
-    server->the_compositor()->start();
+    compositor->start();
     reset_timers_l();
 }
 
-ScreenStateHandler::~ScreenStateHandler() = default;
+usc::MirScreen::~MirScreen() = default;
 
-bool ScreenStateHandler::handle(MirEvent const& event)
+void usc::MirScreen::keep_display_on_temporarily()
 {
-    if (mir_event_get_type(&event) != mir_event_type_input)
-        return false;
-
-    auto input_event_type = mir_input_event_get_type(mir_event_get_input_event(&event));
-    // TODO: We should consider resetting the timer for key events too
-    // we have to make sure we wont introduce a bug where pressing the power
-    // key (to turn screen off) or just the volume keys will wake the screen though!
-    if (!(input_event_type == mir_input_event_type_touch
-          || input_event_type == mir_input_event_type_pointer))
-        return false;
-
     std::lock_guard<std::mutex> lock{guard};
     reset_timers_l();
     if (current_power_mode == MirPowerMode::mir_power_mode_on)
-        powerd_mediator->set_normal_backlight();
-
-    return false;
+        screen_hardware->set_normal_backlight();
 }
 
-void ScreenStateHandler::enable_inactivity_timers(bool enable)
+void usc::MirScreen::enable_inactivity_timers(bool enable)
 {
     std::lock_guard<std::mutex> lock{guard};
     enable_inactivity_timers_l(enable);
 }
 
-void ScreenStateHandler::toggle_screen_power_mode(PowerStateChangeReason reason)
+void usc::MirScreen::toggle_screen_power_mode(PowerStateChangeReason reason)
 {
     std::lock_guard<std::mutex> lock{guard};
     MirPowerMode new_mode = (current_power_mode == MirPowerMode::mir_power_mode_on) ?
@@ -96,13 +88,13 @@ void ScreenStateHandler::toggle_screen_power_mode(PowerStateChangeReason reason)
     set_screen_power_mode_l(new_mode, reason);
 }
 
-void ScreenStateHandler::set_screen_power_mode(MirPowerMode mode, PowerStateChangeReason reason)
+void usc::MirScreen::set_screen_power_mode(MirPowerMode mode, PowerStateChangeReason reason)
 {
     std::lock_guard<std::mutex> lock{guard};
     set_screen_power_mode_l(mode, reason);
 }
 
-void ScreenStateHandler::keep_display_on(bool on)
+void usc::MirScreen::keep_display_on(bool on)
 {
     std::lock_guard<std::mutex> lock{guard};
     restart_timers = !on;
@@ -112,19 +104,19 @@ void ScreenStateHandler::keep_display_on(bool on)
         set_screen_power_mode_l(MirPowerMode::mir_power_mode_on, PowerStateChangeReason::unknown);
 }
 
-void ScreenStateHandler::set_brightness(int brightness)
+void usc::MirScreen::set_brightness(int brightness)
 {
     std::lock_guard<std::mutex> lock{guard};
-    powerd_mediator->set_brightness(brightness);
+    screen_hardware->set_brightness(brightness);
 }
 
-void ScreenStateHandler::enable_auto_brightness(bool enable)
+void usc::MirScreen::enable_auto_brightness(bool enable)
 {
     std::lock_guard<std::mutex> lock{guard};
-    powerd_mediator->enable_auto_brightness(enable);
+    screen_hardware->enable_auto_brightness(enable);
 }
 
-void ScreenStateHandler::set_inactivity_timeouts(int raw_poweroff_timeout, int raw_dimmer_timeout)
+void usc::MirScreen::set_inactivity_timeouts(int raw_poweroff_timeout, int raw_dimmer_timeout)
 {
     std::lock_guard<std::mutex> lock{guard};
 
@@ -141,13 +133,13 @@ void ScreenStateHandler::set_inactivity_timeouts(int raw_poweroff_timeout, int r
     reset_timers_l();
 }
 
-void ScreenStateHandler::set_screen_power_mode_l(MirPowerMode mode, PowerStateChangeReason reason)
+void usc::MirScreen::set_screen_power_mode_l(MirPowerMode mode, PowerStateChangeReason reason)
 {
     if (mode == MirPowerMode::mir_power_mode_on)
     {
         /* The screen may be dim, but on - make sure to reset backlight */
         if (current_power_mode == MirPowerMode::mir_power_mode_on)
-            powerd_mediator->set_normal_backlight();
+            screen_hardware->set_normal_backlight();
         configure_display_l(mode, reason);
         reset_timers_l();
     }
@@ -158,14 +150,12 @@ void ScreenStateHandler::set_screen_power_mode_l(MirPowerMode mode, PowerStateCh
     }
 }
 
-void ScreenStateHandler::configure_display_l(MirPowerMode mode, PowerStateChangeReason reason)
+void usc::MirScreen::configure_display_l(MirPowerMode mode, PowerStateChangeReason reason)
 {
     if (current_power_mode == mode)
         return;
 
-    std::shared_ptr<mg::Display> display = server->the_display();
     std::shared_ptr<mg::DisplayConfiguration> displayConfig = display->configuration();
-    std::shared_ptr<mc::Compositor> compositor = server->the_compositor();
 
     displayConfig->for_each_output(
         [&](const mg::UserDisplayConfigurationOutput displayConfigOutput) {
@@ -179,11 +169,11 @@ void ScreenStateHandler::configure_display_l(MirPowerMode mode, PowerStateChange
     if (power_on)
     {
         //Some devices do not turn screen on properly from suspend mode
-        powerd_mediator->disable_suspend();
+        screen_hardware->disable_suspend();
     }
     else
     {
-        powerd_mediator->turn_off_backlight();
+        screen_hardware->turn_off_backlight();
     }
 
     display->configure(*displayConfig.get());
@@ -191,24 +181,25 @@ void ScreenStateHandler::configure_display_l(MirPowerMode mode, PowerStateChange
     if (power_on)
     {
         compositor->start();
-        powerd_mediator->set_normal_backlight();
+        screen_hardware->set_normal_backlight();
     }
 
     current_power_mode = mode;
 
-    dbus_screen->emit_power_state_change(mode, reason);
+    // TODO: Don't call this under lock
+    power_state_change_handler(mode, reason);
 
     if (!power_on)
-        powerd_mediator->allow_suspend();
+        screen_hardware->allow_suspend();
 }
 
-void ScreenStateHandler::cancel_timers_l()
+void usc::MirScreen::cancel_timers_l()
 {
     power_off_alarm->cancel();
     dimmer_alarm->cancel();
 }
 
-void ScreenStateHandler::reset_timers_l()
+void usc::MirScreen::reset_timers_l()
 {
     if (restart_timers && current_power_mode != MirPowerMode::mir_power_mode_off)
     {
@@ -220,7 +211,7 @@ void ScreenStateHandler::reset_timers_l()
     }
 }
 
-void ScreenStateHandler::enable_inactivity_timers_l(bool enable)
+void usc::MirScreen::enable_inactivity_timers_l(bool enable)
 {
     if (enable)
         reset_timers_l();
@@ -228,25 +219,32 @@ void ScreenStateHandler::enable_inactivity_timers_l(bool enable)
         cancel_timers_l();
 }
 
-void ScreenStateHandler::power_off_alarm_notification()
+void usc::MirScreen::power_off_alarm_notification()
 {
     std::lock_guard<std::mutex> lock{guard};
     configure_display_l(MirPowerMode::mir_power_mode_off, PowerStateChangeReason::inactivity);
 }
 
-void ScreenStateHandler::dimmer_alarm_notification()
+void usc::MirScreen::dimmer_alarm_notification()
 {
     std::lock_guard<std::mutex> lock{guard};
-    powerd_mediator->set_dim_backlight();
+    screen_hardware->set_dim_backlight();
 }
 
-void ScreenStateHandler::set_touch_visualization_enabled(bool enabled)
+void usc::MirScreen::set_touch_visualization_enabled(bool enabled)
 {
     std::lock_guard<std::mutex> lock{guard};
-    
-    auto visualizer = server->the_touch_visualizer();
+
     if (enabled)
-        visualizer->enable();
+        touch_visualizer->enable();
     else
-        visualizer->disable();
+        touch_visualizer->disable();
+}
+
+void usc::MirScreen::register_power_state_change_handler(
+    PowerStateChangeHandler const& handler)
+{
+    std::lock_guard<std::mutex> lock{guard};
+
+    power_state_change_handler = handler;
 }

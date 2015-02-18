@@ -21,6 +21,7 @@
 #include "shell.h"
 #include "asio_dm_connection.h"
 #include "session_switcher.h"
+#include "powerd_mediator.h"
 
 #include <mir/input/cursor_listener.h>
 #include <mir/server_status_listener.h>
@@ -172,5 +173,14 @@ std::shared_ptr<usc::DMConnection> usc::Server::the_dm_connection()
                 the_options()->get("from-dm-fd", -1),
                 the_options()->get("to-dm-fd", -1),
                 the_dm_message_handler());
+        });
+}
+
+std::shared_ptr<usc::ScreenHardware> usc::Server::the_screen_hardware()
+{
+    return screen_hardware(
+        [this]
+        {
+            return std::make_shared<PowerdMediator>();
         });
 }

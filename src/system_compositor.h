@@ -22,15 +22,14 @@
 
 #include <memory>
 
-class ScreenStateHandler;
-class PowerKeyHandler;
-
 namespace usc
 {
 
 class Server;
 class DMConnection;
 class Spinner;
+class ScreenEventHandler;
+class MirScreen;
 
 class SystemCompositor
 {
@@ -44,8 +43,8 @@ private:
     std::shared_ptr<Server> const server;
     std::shared_ptr<DMConnection> dm_connection;
     std::shared_ptr<Spinner> const spinner;
-    std::shared_ptr<ScreenStateHandler> screen_state_handler;
-    std::shared_ptr<PowerKeyHandler> power_key_handler;
+    std::shared_ptr<MirScreen> mir_screen;
+    std::shared_ptr<ScreenEventHandler> screen_event_handler;
 };
 
 }
