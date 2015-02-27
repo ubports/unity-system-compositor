@@ -1,3 +1,13 @@
+unity-system-compositor (0.0.5+15.04.20150227-0ubuntu1) vivid; urgency=medium
+
+  [ CI Train Bot ]
+  * New rebuild forced.
+
+  [ Kevin DuBois ]
+  * No change rebuild for Mir 0.12
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Fri, 27 Feb 2015 18:53:50 +0000
+
 unity-system-compositor (0.0.5+15.04.20150209-0ubuntu1) vivid; urgency=medium
 
   [ Andreas Pokorny ]
