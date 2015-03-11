@@ -18,7 +18,7 @@
 #include "screen_state_handler.h"
 #include "power_state_change_reason.h"
 
-#include <mir/time/timer.h>
+#include <mir/time/alarm_factory.h>
 
 #include <cstdio>
 #include "dbus_screen.h"
@@ -26,7 +26,7 @@
 
 namespace mi = mir::input;
 
-PowerKeyHandler::PowerKeyHandler(mir::time::Timer& timer,
+PowerKeyHandler::PowerKeyHandler(mir::time::AlarmFactory& timer,
                                  std::chrono::milliseconds power_key_ignore_timeout,
                                  std::chrono::milliseconds shutdown_timeout,
                                  ScreenStateHandler& screen_state_handler)

@@ -29,7 +29,7 @@ namespace mir
 namespace time
 {
 class Alarm;
-class Timer;
+class AlarmFactory;
 }
 }
 
@@ -38,7 +38,7 @@ class ScreenStateHandler;
 class PowerKeyHandler : public mir::input::EventFilter
 {
 public:
-    PowerKeyHandler(mir::time::Timer& timer,
+    PowerKeyHandler(mir::time::AlarmFactory& timer,
                     std::chrono::milliseconds power_key_ignore_timeout,
                     std::chrono::milliseconds shutdown_timeout,
                     ScreenStateHandler& screen_state_handler);
