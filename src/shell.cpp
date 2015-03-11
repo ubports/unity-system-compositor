@@ -61,7 +61,9 @@ public:
 
     void raise_and_focus() override
     {
-        focus_controller.set_focus_to(scene_session, scene_session->default_surface());
+        auto const surface = scene_session->default_surface();
+        focus_controller.raise({surface});
+        focus_controller.set_focus_to(scene_session, surface);
     }
 
     bool corresponds_to(mir::frontend::Session const* s) override
