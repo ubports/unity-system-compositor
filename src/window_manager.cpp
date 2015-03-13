@@ -185,35 +185,6 @@ auto usc::WindowManager::add_surface(
     return result;
 }
 
-void usc::WindowManager::remove_surface(
-    std::shared_ptr<ms::Session> const& /*session*/,
-    std::weak_ptr<ms::Surface> const& /*surface*/)
-{
-}
-
-void usc::WindowManager::add_display(mir::geometry::Rectangle const& /*area*/)
-{
-}
-
-void usc::WindowManager::remove_display(mir::geometry::Rectangle const& /*area*/)
-{
-}
-
-bool usc::WindowManager::handle_key_event(MirKeyInputEvent const* /*event*/)
-{
-    return false;
-}
-
-bool usc::WindowManager::handle_touch_event(MirTouchInputEvent const* /*event*/)
-{
-    return false;
-}
-
-bool usc::WindowManager::handle_pointer_event(MirPointerInputEvent const* /*event*/)
-{
-    return false;
-}
-
 int usc::WindowManager::set_surface_attribute(
     std::shared_ptr<ms::Session> const& /*session*/,
     std::shared_ptr<ms::Surface> const& surface,
