@@ -31,86 +31,6 @@ namespace msh = mir::shell;
 namespace ms = mir::scene;
 namespace mf = mir::frontend;
 
-namespace
-{
-
-class UscSession : public usc::Session
-{
-public:
-    UscSession(
-        std::shared_ptr<ms::Session> const& scene_session,
-        msh::FocusController& focus_controller)
-        : scene_session{scene_session},
-          focus_controller(focus_controller)
-    {
-    }
-
-    std::string name()
-    {
-        return scene_session->name();
-    }
-
-    void show() override
-    {
-        scene_session->show();
-    }
-
-    void hide() override
-    {
-        scene_session->hide();
-    }
-
-    void raise_and_focus() override
-    {
-        auto const surface = scene_session->default_surface();
-        focus_controller.raise({surface});
-        focus_controller.set_focus_to(scene_session, surface);
-    }
-
-    bool corresponds_to(mir::frontend::Session const* s) override
-    {
-        return scene_session.get() == s;
-    }
-
-    std::shared_ptr<ms::Session> const scene_session;
-    msh::FocusController& focus_controller;
-};
-
-
-struct SessionReadyObserver : ms::NullSurfaceObserver,
-                              std::enable_shared_from_this<SessionReadyObserver>
-{
-    SessionReadyObserver(
-        std::shared_ptr<usc::SessionSwitcher> const& switcher,
-        std::shared_ptr<ms::Surface> const& surface,
-        ms::Session const* session)
-        : switcher{switcher},
-          surface{surface},
-          session{session}
-    {
-    }
-
-    void frame_posted(int) override
-    {
-        ++num_frames_posted;
-        if (num_frames_posted == num_frames_for_session_ready)
-        {
-            switcher->mark_ready(session);
-            surface->remove_observer(shared_from_this());
-        }
-    }
-
-    std::shared_ptr<usc::SessionSwitcher> const switcher;
-    std::shared_ptr<ms::Surface> const surface;
-    ms::Session const* const session;
-    // We need to wait for the second frame before marking the session
-    // as ready. The first frame posted from sessions is a blank frame.
-    // TODO: Solve this issue at its root and remove this workaround
-    int const num_frames_for_session_ready{2};
-    int num_frames_posted{0};
-};
-
-}
 
 usc::Shell::Shell(
     std::shared_ptr<mir::shell::InputTargeter> const& input_targeter,
@@ -123,7 +43,12 @@ usc::Shell::Shell(
     : msh::AbstractShell(input_targeter, surface_coordinator, session_coordinator, prompt_session_manager,
       [&](msh::FocusController* focus_controller)
       {
-        return std::make_shared<WindowManager>(focus_controller, display_layout, session_coordinator, surface_configurator);
+        return std::make_shared<WindowManager>(
+            focus_controller,
+            display_layout,
+            session_coordinator,
+            surface_configurator,
+            session_switcher);
       })
 {
 }
@@ -134,35 +59,19 @@ usc::Shell::open_session(
     std::string const& name,
     std::shared_ptr<mf::EventSink> const& sink)
 {
-    std::cerr << "Opening session " << name << std::endl;
-
     auto orig = msh::AbstractShell::open_session(client_pid, name, sink);
-
-    auto const usc_session = std::make_shared<UscSession>(orig, *this);
-
-    session_switcher->add(usc_session, client_pid);
-
     return orig;
 }
 
 void usc::Shell::close_session(std::shared_ptr<ms::Session> const& session)
 {
-    std::cerr << "Closing session " << session->name() << std::endl;
-
     msh::AbstractShell::close_session(session);
-
-    session_switcher->remove(session);
 }
 
 mf::SurfaceId usc::Shell::create_surface(std::shared_ptr<ms::Session> const& session, ms::SurfaceCreationParameters const& params)
 {
     auto const id = msh::AbstractShell::create_surface(session, params);
 
-    auto const surface = session->surface(id);
-    auto const session_ready_observer = std::make_shared<SessionReadyObserver>(
-        session_switcher, surface, session.get());
-
-    surface->add_observer(session_ready_observer);
 
     return id;
 }
