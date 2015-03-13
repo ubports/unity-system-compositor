@@ -25,6 +25,7 @@ set(USC_SRCS
   shell.cpp
   session_switcher.cpp
   system_compositor.cpp
+  window_manager.cpp
   worker_thread.cpp
 )
 
