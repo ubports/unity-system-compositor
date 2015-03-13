@@ -22,7 +22,6 @@ set(USC_SRCS
   powerkey_handler.cpp
   screen_state_handler.cpp
   server.cpp
-  shell.cpp
   session_switcher.cpp
   system_compositor.cpp
   window_manager.cpp

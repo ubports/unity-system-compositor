@@ -18,12 +18,13 @@
 
 #include "server.h"
 #include "external_spinner.h"
-#include "shell.h"
 #include "asio_dm_connection.h"
 #include "session_switcher.h"
+#include "window_manager.h"
 
 #include <mir/input/cursor_listener.h>
 #include <mir/server_status_listener.h>
+#include <mir/shell/abstract_shell.h>
 #include <mir/shell/focus_controller.h>
 #include <mir/scene/session.h>
 
@@ -109,7 +110,7 @@ usc::Server::Server(int argc, char** argv)
     set_command_line_handler(&ignore_unknown_arguments);
 
     wrap_cursor_listener([this](std::shared_ptr<mir::input::CursorListener> const& default_)
-        -> std::shared_ptr<mir::input::CursorListener>
+         -> std::shared_ptr<mir::input::CursorListener>
         {
             // This is a workaround for u8 desktop preview in 14.04 for the lack of client cursor API.
             // We need to disable the cursor for XMir but leave it on for the desktop preview.
@@ -121,21 +122,29 @@ usc::Server::Server(int argc, char** argv)
         });
 
     override_the_server_status_listener([this]()
-        -> std::shared_ptr<mir::ServerStatusListener>
+         -> std::shared_ptr<mir::ServerStatusListener>
         {
             return std::make_shared<ServerStatusListener>(the_focus_controller());
         });
 
     override_the_shell([this]
         {
-            return std::make_shared<Shell>(
+            auto const builder = [&](msh::FocusController* focus_controller)
+               {
+                 return std::make_shared<WindowManager>(
+                     focus_controller,
+                     the_shell_display_layout(),
+                     the_session_coordinator(),
+                     the_surface_configurator(),
+                     the_session_switcher());
+               };
+
+            return std::make_shared<msh::AbstractShell>(
                 the_input_targeter(),
                 the_surface_coordinator(),
                 the_session_coordinator(),
                 the_prompt_session_manager(),
-                the_surface_configurator(),
-                the_shell_display_layout(),
-                the_session_switcher());
+                builder);
         });
 
     set_config_filename("unity-system-compositor.conf");
