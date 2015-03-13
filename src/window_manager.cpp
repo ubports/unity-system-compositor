@@ -18,26 +18,29 @@
 
 #include "window_manager.h"
 
+#include "mir/geometry/rectangle.h"
 #include "mir/scene/null_surface_observer.h"
-#include "mir/scene/placement_strategy.h"
 #include "mir/scene/session.h"
 #include "mir/scene/session_coordinator.h"
 #include "mir/scene/surface.h"
 #include "mir/scene/surface_configurator.h"
 #include "mir/scene/surface_creation_parameters.h"
+#include "mir/shell/display_layout.h"
 #include "mir/shell/focus_controller.h"
+
+#include "mir_toolkit/client_types.h"
 
 namespace mf = mir::frontend;
 namespace ms = mir::scene;
 namespace msh = mir::shell;
 
 usc::WindowManager::WindowManager(
-    msh::FocusController* focus_controller,
-    std::shared_ptr<ms::PlacementStrategy> const& placement_strategy,
-    std::shared_ptr<ms::SessionCoordinator> const& session_coordinator,
-    std::shared_ptr<ms::SurfaceConfigurator> const& surface_configurator) :
+    mir::shell::FocusController* focus_controller,
+    std::shared_ptr<mir::shell::DisplayLayout> const& display_layout,
+    std::shared_ptr<mir::scene::SessionCoordinator> const& session_coordinator,
+    std::shared_ptr<mir::scene::SurfaceConfigurator> const& surface_configurator) :
     focus_controller{focus_controller},
-    placement_strategy{placement_strategy},
+    display_layout{display_layout},
     session_coordinator{session_coordinator},
     surface_configurator{surface_configurator}
 {
@@ -95,7 +98,21 @@ auto usc::WindowManager::add_surface(
     std::function<mf::SurfaceId(std::shared_ptr<ms::Session> const& session, ms::SurfaceCreationParameters const& params)> const& build)
 -> mf::SurfaceId
 {
-    auto const result = build(session, placement_strategy->place(*session, params));
+    mir::graphics::DisplayConfigurationOutputId const output_id_invalid{
+        mir_display_output_id_invalid};
+    auto placed_parameters = params;
+
+    mir::geometry::Rectangle rect{params.top_left, params.size};
+
+    if (params.output_id != output_id_invalid)
+    {
+        display_layout->place_in_output(params.output_id, rect);
+    }
+
+    placed_parameters.top_left = rect.top_left;
+    placed_parameters.size = rect.size;
+
+    auto const result = build(session, placed_parameters);
     auto const surface = session->surface(result);
 
     surface->add_observer(std::make_shared<SurfaceReadyObserver>(focus_controller, session, surface));

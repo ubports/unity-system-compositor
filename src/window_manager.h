@@ -25,7 +25,7 @@ namespace mir
 {
 namespace scene { class PlacementStrategy; class SurfaceConfigurator; class SessionCoordinator; }
 
-namespace shell { class FocusController; }
+namespace shell { class FocusController; class DisplayLayout; }
 }
 
 namespace usc
@@ -33,8 +33,9 @@ namespace usc
 class WindowManager : public mir::shell::WindowManager
 {
 public:
-    explicit WindowManager(mir::shell::FocusController* focus_controller,
-        std::shared_ptr<mir::scene::PlacementStrategy> const& placement_strategy,
+    explicit WindowManager(
+        mir::shell::FocusController* focus_controller,
+        std::shared_ptr<mir::shell::DisplayLayout> const& display_layout,
         std::shared_ptr<mir::scene::SessionCoordinator> const& session_coordinator,
         std::shared_ptr<mir::scene::SurfaceConfigurator> const& surface_configurator);
 
@@ -69,6 +70,7 @@ public:
 
 private:
     mir::shell::FocusController* const focus_controller;
+    std::shared_ptr<mir::shell::DisplayLayout> const display_layout;
     std::shared_ptr<mir::scene::PlacementStrategy> const placement_strategy;
     std::shared_ptr<mir::scene::SessionCoordinator> const session_coordinator;
     std::shared_ptr<mir::scene::SurfaceConfigurator> const surface_configurator;

@@ -126,10 +126,16 @@ usc::Server::Server(int argc, char** argv)
             return std::make_shared<ServerStatusListener>(the_focus_controller());
         });
 
-    wrap_shell([this](std::shared_ptr<msh::Shell> const& wrapped)
-        -> std::shared_ptr<msh::Shell>
+    override_the_shell([this]
         {
-            return std::make_shared<Shell>(wrapped, the_session_switcher());
+            return std::make_shared<Shell>(
+                the_input_targeter(),
+                the_surface_coordinator(),
+                the_session_coordinator(),
+                the_prompt_session_manager(),
+                the_surface_configurator(),
+                the_shell_display_layout(),
+                the_session_switcher());
         });
 
     set_config_filename("unity-system-compositor.conf");

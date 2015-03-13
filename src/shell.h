@@ -19,20 +19,30 @@
 #ifndef USC_SHELL_H_
 #define USC_SHELL_H_
 
-#include <mir/shell/shell_wrapper.h>
+#include <mir/shell/abstract_shell.h>
 
 #include <memory>
 
+namespace mir
+{
+namespace scene { class SurfaceConfigurator; }
+namespace shell { class DisplayLayout; }
+}
 
 namespace usc
 {
 class SessionSwitcher;
 
-class Shell : public mir::shell::ShellWrapper
+class Shell : public mir::shell::AbstractShell
 {
 public:
     Shell(
-        std::shared_ptr<mir::shell::Shell> const& wrapped,
+        std::shared_ptr<mir::shell::InputTargeter> const& input_targeter,
+        std::shared_ptr<mir::scene::SurfaceCoordinator> const& surface_coordinator,
+        std::shared_ptr<mir::scene::SessionCoordinator> const& session_coordinator,
+        std::shared_ptr<mir::scene::PromptSessionManager> const& prompt_session_manager,
+        std::shared_ptr<mir::scene::SurfaceConfigurator> const& surface_configurator,
+        std::shared_ptr<mir::shell::DisplayLayout> const& display_layout,
         std::shared_ptr<SessionSwitcher> const& session_switcher);
 
 private:

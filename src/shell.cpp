@@ -18,6 +18,7 @@
 
 #include "shell.h"
 #include "session_switcher.h"
+#include "window_manager.h"
 
 #include <mir/scene/null_surface_observer.h>
 #include <mir/scene/session.h>
@@ -112,10 +113,18 @@ struct SessionReadyObserver : ms::NullSurfaceObserver,
 }
 
 usc::Shell::Shell(
-    std::shared_ptr<msh::Shell> const& wrapped,
+    std::shared_ptr<mir::shell::InputTargeter> const& input_targeter,
+    std::shared_ptr<mir::scene::SurfaceCoordinator> const& surface_coordinator,
+    std::shared_ptr<mir::scene::SessionCoordinator> const& session_coordinator,
+    std::shared_ptr<mir::scene::PromptSessionManager> const& prompt_session_manager,
+    std::shared_ptr<mir::scene::SurfaceConfigurator> const& surface_configurator,
+    std::shared_ptr<mir::shell::DisplayLayout> const& display_layout,
     std::shared_ptr<SessionSwitcher> const& session_switcher)
-    : msh::ShellWrapper{wrapped},
-      session_switcher{session_switcher}
+    : msh::AbstractShell(input_targeter, surface_coordinator, session_coordinator, prompt_session_manager,
+      [&](msh::FocusController* focus_controller)
+      {
+        return std::make_shared<WindowManager>(focus_controller, display_layout, session_coordinator, surface_configurator);
+      })
 {
 }
 
@@ -127,7 +136,7 @@ usc::Shell::open_session(
 {
     std::cerr << "Opening session " << name << std::endl;
 
-    auto orig = msh::ShellWrapper::open_session(client_pid, name, sink);
+    auto orig = msh::AbstractShell::open_session(client_pid, name, sink);
 
     auto const usc_session = std::make_shared<UscSession>(orig, *this);
 
@@ -140,14 +149,14 @@ void usc::Shell::close_session(std::shared_ptr<ms::Session> const& session)
 {
     std::cerr << "Closing session " << session->name() << std::endl;
 
-    msh::ShellWrapper::close_session(session);
+    msh::AbstractShell::close_session(session);
 
     session_switcher->remove(session);
 }
 
 mf::SurfaceId usc::Shell::create_surface(std::shared_ptr<ms::Session> const& session, ms::SurfaceCreationParameters const& params)
 {
-    auto const id = msh::ShellWrapper::create_surface(session, params);
+    auto const id = msh::AbstractShell::create_surface(session, params);
 
     auto const surface = session->surface(id);
     auto const session_ready_observer = std::make_shared<SessionReadyObserver>(
