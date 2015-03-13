@@ -39,7 +39,6 @@ public:
         mir::shell::FocusController* focus_controller,
         std::shared_ptr<mir::shell::DisplayLayout> const& display_layout,
         std::shared_ptr<mir::scene::SessionCoordinator> const& session_coordinator,
-        std::shared_ptr<mir::scene::SurfaceConfigurator> const& surface_configurator,
         std::shared_ptr<SessionSwitcher> const& session_switcher);
 
     void add_session(std::shared_ptr<mir::scene::Session> const& session) override;
@@ -76,7 +75,6 @@ private:
     std::shared_ptr<mir::shell::DisplayLayout> const display_layout;
     std::shared_ptr<mir::scene::PlacementStrategy> const placement_strategy;
     std::shared_ptr<mir::scene::SessionCoordinator> const session_coordinator;
-    std::shared_ptr<mir::scene::SurfaceConfigurator> const surface_configurator;
     std::shared_ptr<SessionSwitcher> const session_switcher;
 };
 }

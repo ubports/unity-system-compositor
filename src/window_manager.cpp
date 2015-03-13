@@ -25,7 +25,6 @@
 #include "mir/scene/session.h"
 #include "mir/scene/session_coordinator.h"
 #include "mir/scene/surface.h"
-#include "mir/scene/surface_configurator.h"
 #include "mir/scene/surface_creation_parameters.h"
 #include "mir/shell/display_layout.h"
 #include "mir/shell/focus_controller.h"
@@ -123,12 +122,10 @@ usc::WindowManager::WindowManager(
     mir::shell::FocusController* focus_controller,
     std::shared_ptr<mir::shell::DisplayLayout> const& display_layout,
     std::shared_ptr<mir::scene::SessionCoordinator> const& session_coordinator,
-    std::shared_ptr<mir::scene::SurfaceConfigurator> const& surface_configurator,
     std::shared_ptr<SessionSwitcher> const& session_switcher) :
     focus_controller{focus_controller},
     display_layout{display_layout},
     session_coordinator{session_coordinator},
-    surface_configurator{surface_configurator},
     session_switcher{session_switcher}
 {
 }
@@ -223,11 +220,5 @@ int usc::WindowManager::set_surface_attribute(
     MirSurfaceAttrib attrib,
     int value)
 {
-    auto const configured_value = surface_configurator->select_attribute_value(*surface, attrib, value);
-
-    auto const result = surface->configure(attrib, configured_value);
-
-    surface_configurator->attribute_set(*surface, attrib, result);
-
-    return result;
+    return surface->configure(attrib, value);
 }

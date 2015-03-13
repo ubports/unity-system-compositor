@@ -135,7 +135,6 @@ usc::Server::Server(int argc, char** argv)
                      focus_controller,
                      the_shell_display_layout(),
                      the_session_coordinator(),
-                     the_surface_configurator(),
                      the_session_switcher());
                };
 
