@@ -29,7 +29,7 @@ namespace mir
 namespace time
 {
 class Alarm;
-class Timer;
+class AlarmFactory;
 }
 }
 
@@ -41,7 +41,7 @@ class ScreenEventHandler : public mir::input::EventFilter
 {
 public:
     ScreenEventHandler(
-        mir::time::Timer& timer,
+        mir::time::AlarmFactory& timer,
         std::chrono::milliseconds power_key_ignore_timeout,
         std::chrono::milliseconds shutdown_timeout,
         std::function<void()> const& shutdown,

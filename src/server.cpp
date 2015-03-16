@@ -83,7 +83,7 @@ struct ServerStatusListener : public mir::ServerStatusListener
 
     std::weak_ptr<ms::Session> weak_active_session()
     {
-        return focus_controller->focussed_application();
+        return focus_controller->focused_session();
     }
 
     std::shared_ptr<msh::FocusController> const focus_controller;

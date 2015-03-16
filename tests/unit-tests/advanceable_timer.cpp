@@ -120,26 +120,8 @@ private:
 };
 
 
-std::unique_ptr<mir::time::Alarm> AdvanceableTimer::notify_in(
-    std::chrono::milliseconds delay,
-    std::function<void()> callback)
-{
-    auto alarm = create_alarm(callback);
-    alarm->reschedule_in(delay);
-    return alarm;
-}
-
-std::unique_ptr<mir::time::Alarm> AdvanceableTimer::notify_at(
-    mir::time::Timestamp time_point,
-    std::function<void()> callback)
-{
-    auto alarm = create_alarm(callback);
-    alarm->reschedule_for(time_point);
-    return alarm;
-}
-
 std::unique_ptr<mir::time::Alarm> AdvanceableTimer::create_alarm(
-    std::function<void()> callback)
+    std::function<void()> const& callback)
 {
     decltype(now) now_tmp;
     {
@@ -153,6 +135,12 @@ std::unique_ptr<mir::time::Alarm> AdvanceableTimer::create_alarm(
     register_alarm(adv_alarm);
 
     return std::unique_ptr<AlarmWrapper>(new AlarmWrapper{adv_alarm});
+}
+
+std::unique_ptr<mir::time::Alarm> AdvanceableTimer::create_alarm(
+    std::shared_ptr<mir::LockableCallback> const&)
+{
+    throw std::runtime_error("Not implemented");
 }
 
 void AdvanceableTimer::advance_by(std::chrono::milliseconds advance)

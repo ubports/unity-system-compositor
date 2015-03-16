@@ -17,7 +17,7 @@
 #include "mir_screen.h"
 
 #include <mir/main_loop.h>
-#include <mir/time/timer.h>
+#include <mir/time/alarm_factory.h>
 #include <mir/compositor/compositor.h>
 #include <mir/graphics/display.h>
 #include <mir/graphics/display_configuration.h>
@@ -36,17 +36,17 @@ usc::MirScreen::MirScreen(
     std::shared_ptr<mir::compositor::Compositor> const& compositor,
     std::shared_ptr<mir::graphics::Display> const& display,
     std::shared_ptr<mir::input::TouchVisualizer> const& touch_visualizer,
-    std::shared_ptr<mir::time::Timer> const& timer,
+    std::shared_ptr<mir::time::AlarmFactory> const& alarm_factory,
     std::chrono::milliseconds power_off_timeout,
     std::chrono::milliseconds dimmer_timeout)
     : screen_hardware{screen_hardware},
       compositor{compositor},
       display{display},
       touch_visualizer{touch_visualizer},
-      timer{timer},
-      power_off_alarm{timer->create_alarm(
+      alarm_factory{alarm_factory},
+      power_off_alarm{alarm_factory->create_alarm(
               std::bind(&usc::MirScreen::power_off_alarm_notification, this))},
-      dimmer_alarm{timer->create_alarm(
+      dimmer_alarm{alarm_factory->create_alarm(
               std::bind(&usc::MirScreen::dimmer_alarm_notification, this))},
       power_off_timeout{power_off_timeout},
       dimming_timeout{dimmer_timeout},

@@ -70,7 +70,7 @@ struct StubDisplayConfiguration : mg::DisplayConfiguration
 
 struct MockDisplay : mg::Display
 {
-    void for_each_display_buffer(std::function<void(mg::DisplayBuffer&)> const& f) override
+    void for_each_display_sync_group(std::function<void(mg::DisplaySyncGroup&)> const& f) override
     {
     }
 

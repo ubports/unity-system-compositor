@@ -18,12 +18,12 @@
 #include "screen.h"
 #include "power_state_change_reason.h"
 
-#include <mir/time/timer.h>
+#include <mir/time/alarm_factory.h>
 
 #include <cstdio>
 
 usc::ScreenEventHandler::ScreenEventHandler(
-    mir::time::Timer& timer,
+    mir::time::AlarmFactory& alarm_factory,
     std::chrono::milliseconds power_key_ignore_timeout,
     std::chrono::milliseconds shutdown_timeout,
     std::function<void()> const& shutdown,
@@ -33,8 +33,8 @@ usc::ScreenEventHandler::ScreenEventHandler(
       power_key_ignore_timeout{power_key_ignore_timeout},
       shutdown_timeout{shutdown_timeout},
       shutdown{shutdown},
-      shutdown_alarm{timer.create_alarm([this]{ shutdown_alarm_notification(); })},
-      long_press_alarm{timer.create_alarm([this]{ long_press_notification(); })}
+      shutdown_alarm{alarm_factory.create_alarm([this]{ shutdown_alarm_notification(); })},
+      long_press_alarm{alarm_factory.create_alarm([this]{ long_press_notification(); })}
 {
 }
 

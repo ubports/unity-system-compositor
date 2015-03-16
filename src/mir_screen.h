@@ -30,7 +30,7 @@ namespace mir
 namespace compositor { class Compositor; }
 namespace graphics {class Display;}
 namespace input { class TouchVisualizer; }
-namespace time { class Timer; class Alarm; }
+namespace time { class AlarmFactory; class Alarm; }
 }
 
 namespace usc
@@ -45,7 +45,7 @@ public:
               std::shared_ptr<mir::compositor::Compositor> const& compositor,
               std::shared_ptr<mir::graphics::Display> const& display,
               std::shared_ptr<mir::input::TouchVisualizer> const& touch_visualizer,
-              std::shared_ptr<mir::time::Timer> const& timer,
+              std::shared_ptr<mir::time::AlarmFactory> const& alarm_factory,
               std::chrono::milliseconds power_off_timeout,
               std::chrono::milliseconds dimmer_timeout);
     ~MirScreen();
@@ -80,7 +80,7 @@ private:
     std::shared_ptr<mir::compositor::Compositor> const compositor;
     std::shared_ptr<mir::graphics::Display> const display;
     std::shared_ptr<mir::input::TouchVisualizer> const touch_visualizer;
-    std::shared_ptr<mir::time::Timer> const timer;
+    std::shared_ptr<mir::time::AlarmFactory> const alarm_factory;
     std::unique_ptr<mir::time::Alarm> const power_off_alarm;
     std::unique_ptr<mir::time::Alarm> const dimmer_alarm;
 
