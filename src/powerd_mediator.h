@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014 Canonical Ltd.
+ * Copyright © 2014-2015 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -17,6 +17,8 @@
 #ifndef POWERD_MEDIATOR_
 #define POWERD_MEDIATOR_
 
+#include "screen_hardware.h"
+
 #include <mir_toolkit/common.h>
 
 #include <QString>
@@ -33,27 +35,27 @@ class QDBusServiceWatcher;
  * A Proxy to powerd. Note this class is not thread-safe,
  * synchronization should be done externally.
  */
-class PowerdMediator : public QObject
+class PowerdMediator : public QObject, public usc::ScreenHardware
 {
     Q_OBJECT
 public:
     PowerdMediator();
     ~PowerdMediator();
 
-    void set_dim_backlight();
-    void set_normal_backlight();
-    void turn_off_backlight();
-    void allow_suspend();
-    void disable_suspend();
+    void set_dim_backlight() override;
+    void set_normal_backlight() override;
+    void turn_off_backlight() override;
+    void allow_suspend() override;
+    void disable_suspend() override;
 
-    void change_backlight_values(int dim_brightness, int normal_brightness);
-    void enable_auto_brightness(bool flag);
+    void change_backlight_values(int dim_brightness, int normal_brightness) override;
+    void enable_auto_brightness(bool flag) override;
 
-    bool auto_brightness_supported();
-    int min_brightness();
-    int max_brightness();
+    bool auto_brightness_supported() override;
+    int min_brightness() override;
+    int max_brightness() override;
 
-    void set_brightness(int brightness);
+    void set_brightness(int brightness) override;
 
 private Q_SLOTS:
     void powerd_registered();

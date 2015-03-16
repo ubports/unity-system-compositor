@@ -21,6 +21,7 @@
 #include "shell.h"
 #include "asio_dm_connection.h"
 #include "session_switcher.h"
+#include "powerd_mediator.h"
 
 #include <mir/input/cursor_listener.h>
 #include <mir/server_status_listener.h>
@@ -82,7 +83,7 @@ struct ServerStatusListener : public mir::ServerStatusListener
 
     std::weak_ptr<ms::Session> weak_active_session()
     {
-        return focus_controller->focussed_application();
+        return focus_controller->focused_session();
     }
 
     std::shared_ptr<msh::FocusController> const focus_controller;
@@ -172,5 +173,14 @@ std::shared_ptr<usc::DMConnection> usc::Server::the_dm_connection()
                 the_options()->get("from-dm-fd", -1),
                 the_options()->get("to-dm-fd", -1),
                 the_dm_message_handler());
+        });
+}
+
+std::shared_ptr<usc::ScreenHardware> usc::Server::the_screen_hardware()
+{
+    return screen_hardware(
+        [this]
+        {
+            return std::make_shared<PowerdMediator>();
         });
 }

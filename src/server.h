@@ -29,6 +29,7 @@ class Spinner;
 class SessionSwitcher;
 class DMMessageHandler;
 class DMConnection;
+class ScreenHardware;
 
 class Server : private mir::Server
 {
@@ -46,6 +47,7 @@ public:
     virtual std::shared_ptr<Spinner> the_spinner();
     virtual std::shared_ptr<DMMessageHandler> the_dm_message_handler();
     virtual std::shared_ptr<DMConnection> the_dm_connection();
+    virtual std::shared_ptr<ScreenHardware> the_screen_hardware();
 
     bool show_version()
     {
@@ -119,6 +121,7 @@ private:
     mir::CachedPtr<Spinner> spinner;
     mir::CachedPtr<DMConnection> dm_connection;
     mir::CachedPtr<SessionSwitcher> session_switcher;
+    mir::CachedPtr<ScreenHardware> screen_hardware;
 };
 
 }

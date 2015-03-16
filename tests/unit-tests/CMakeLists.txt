@@ -23,6 +23,10 @@ add_executable(
   usc_unit_tests
 
   test_session_switcher.cpp
+  test_screen_event_handler.cpp
+  test_mir_screen.cpp
+
+  advanceable_timer.cpp
 )
 
 target_link_libraries(
