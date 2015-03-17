@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014 Canonical Ltd.
+ * Copyright © 2014-2015 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef POWERKEY_HANDLER_H_
-#define POWERKEY_HANDLER_H_
+#ifndef USC_SCREEN_EVENT_HANDLER_H_
+#define USC_SCREEN_EVENT_HANDLER_H_
 
 #include "mir/input/event_filter.h"
 
@@ -33,17 +33,21 @@ class AlarmFactory;
 }
 }
 
-class ScreenStateHandler;
+namespace usc
+{
+class Screen;
 
-class PowerKeyHandler : public mir::input::EventFilter
+class ScreenEventHandler : public mir::input::EventFilter
 {
 public:
-    PowerKeyHandler(mir::time::AlarmFactory& timer,
-                    std::chrono::milliseconds power_key_ignore_timeout,
-                    std::chrono::milliseconds shutdown_timeout,
-                    ScreenStateHandler& screen_state_handler);
+    ScreenEventHandler(
+        mir::time::AlarmFactory& timer,
+        std::chrono::milliseconds power_key_ignore_timeout,
+        std::chrono::milliseconds shutdown_timeout,
+        std::function<void()> const& shutdown,
+        Screen& screen);
 
-    ~PowerKeyHandler();
+    ~ScreenEventHandler();
 
     bool handle(MirEvent const& event) override;
 
@@ -56,14 +60,16 @@ private:
     std::mutex guard;
     std::atomic<bool> long_press_detected;
 
-    ScreenStateHandler* screen_state_handler;
-
-    std::chrono::milliseconds power_key_ignore_timeout;
-    std::chrono::milliseconds shutdown_timeout;
+    Screen* const screen;
+    std::chrono::milliseconds const power_key_ignore_timeout;
+    std::chrono::milliseconds const shutdown_timeout;
+    std::function<void()> const shutdown;
 
     std::unique_ptr<mir::time::Alarm> shutdown_alarm;
     std::unique_ptr<mir::time::Alarm> long_press_alarm;
 
 };
+
+}
 
 #endif

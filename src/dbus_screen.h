@@ -28,10 +28,9 @@
 #include <QtCore>
 #include <QDBusContext>
 
-namespace usc {class WorkerThread;}
+namespace usc {class WorkerThread; class Screen; }
 
 class DBusScreenAdaptor;
-class DBusScreenObserver;
 class QDBusInterface;
 class QDBusServiceWatcher;
 enum class PowerStateChangeReason;
@@ -42,7 +41,7 @@ class DBusScreen : public QObject, protected QDBusContext
     Q_CLASSINFO("D-Bus Interface", "com.canonical.Unity.Screen")
 
 public:
-    explicit DBusScreen(DBusScreenObserver& observer, QObject *parent = 0);
+    explicit DBusScreen(usc::Screen& observer, QObject *parent = 0);
     virtual ~DBusScreen();
 
     void emit_power_state_change(MirPowerMode mode, PowerStateChangeReason reason);
@@ -70,7 +69,7 @@ private:
     std::unique_ptr<DBusScreenAdaptor> dbus_adaptor;
     std::unique_ptr<QDBusServiceWatcher> service_watcher;
     std::unordered_map<std::string, std::unordered_set<int>> display_requests;
-    DBusScreenObserver* const observer;
+    usc::Screen* const observer;
     std::unique_ptr<usc::WorkerThread> worker_thread;
 };
 

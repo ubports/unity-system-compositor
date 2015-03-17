@@ -16,9 +16,9 @@
 
 #include "dbus_screen.h"
 #include "dbus_screen_adaptor.h"
-#include "dbus_screen_observer.h"
 #include "power_state_change_reason.h"
 #include "worker_thread.h"
+#include "screen.h"
 
 #include <atomic>
 #include <memory>
@@ -53,7 +53,7 @@ enum DBusHandlerTaskId
 }
 
 
-DBusScreen::DBusScreen(DBusScreenObserver& observer, QObject *parent)
+DBusScreen::DBusScreen(usc::Screen& observer, QObject *parent)
     : QObject(parent),
       dbus_adaptor{new DBusScreenAdaptor(this)},
       service_watcher{new QDBusServiceWatcher()},
@@ -74,9 +74,18 @@ DBusScreen::DBusScreen(DBusScreenObserver& observer, QObject *parent)
     //QT's ~QObject will release this child object
     //so release ownership from the unique_ptr
     dbus_adaptor.release();
+    this->observer->register_power_state_change_handler(
+        [this](MirPowerMode mode, PowerStateChangeReason reason)
+        {
+            emit_power_state_change(mode,reason);
+        });
 }
 
-DBusScreen::~DBusScreen() = default;
+DBusScreen::~DBusScreen()
+{
+    observer->register_power_state_change_handler(
+        [](MirPowerMode, PowerStateChangeReason) {});
+}
 
 bool DBusScreen::setScreenPowerMode(const QString &mode, int reason)
 {

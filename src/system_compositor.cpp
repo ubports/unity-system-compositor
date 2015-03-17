@@ -17,13 +17,13 @@
  *              Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
-
 #include "system_compositor.h"
 #include "server.h"
 #include "dm_connection.h"
 #include "spinner.h"
-#include "screen_state_handler.h"
-#include "powerkey_handler.h"
+#include "mir_screen.h"
+#include "screen_event_handler.h"
+#include "dbus_screen.h"
 
 // Qt headers will introduce a #define of "signals"
 // but some mir headers use "signals" as a variable name in
@@ -135,7 +135,8 @@ void usc::SystemCompositor::run()
 
             dm_connection->start();
 
-            guard.qt_thread = std::thread(&SystemCompositor::qt_main, this);
+            if (!server->disable_inactivity_policy())
+                guard.qt_thread = std::thread(&SystemCompositor::qt_main, this);
         });
 
     server->run();
@@ -146,32 +147,32 @@ void usc::SystemCompositor::qt_main()
     int argc{0};
     QCoreApplication app(argc, nullptr);
 
-    if (!server->disable_inactivity_policy())
-    {
-        std::chrono::seconds inactivity_display_off_timeout{server->inactivity_display_off_timeout()};
-        std::chrono::seconds inactivity_display_dim_timeout{server->inactivity_display_dim_timeout()};
-        std::chrono::milliseconds power_key_ignore_timeout{server->power_key_ignore_timeout()};
-        std::chrono::milliseconds shutdown_timeout{server->shutdown_timeout()};
+    std::chrono::seconds inactivity_display_off_timeout{server->inactivity_display_off_timeout()};
+    std::chrono::seconds inactivity_display_dim_timeout{server->inactivity_display_dim_timeout()};
+    std::chrono::milliseconds power_key_ignore_timeout{server->power_key_ignore_timeout()};
+    std::chrono::milliseconds shutdown_timeout{server->shutdown_timeout()};
 
-        screen_state_handler = std::make_shared<ScreenStateHandler>(server,
-            std::chrono::duration_cast<std::chrono::milliseconds>(inactivity_display_off_timeout),
-            std::chrono::duration_cast<std::chrono::milliseconds>(inactivity_display_dim_timeout));
+    mir_screen = std::make_shared<MirScreen>(
+        server->the_screen_hardware(),
+        server->the_compositor(),
+        server->the_display(),
+        server->the_touch_visualizer(),
+        server->the_main_loop(),
+        inactivity_display_off_timeout,
+        inactivity_display_dim_timeout);
 
-        power_key_handler = std::make_shared<PowerKeyHandler>(*(server->the_main_loop()),
-            power_key_ignore_timeout,
-            shutdown_timeout,
-            *screen_state_handler);
+    screen_event_handler =
+        std::make_shared<ScreenEventHandler>(
+                *(server->the_main_loop()),
+                power_key_ignore_timeout,
+                shutdown_timeout,
+                [] { if (system("shutdown -P now")); }, // ignore warning
+                *mir_screen);
 
-        auto composite_filter = server->the_composite_event_filter();
-        composite_filter->append(screen_state_handler);
-        composite_filter->append(power_key_handler);
-    }
+    auto composite_filter = server->the_composite_event_filter();
+    composite_filter->append(screen_event_handler);
+
+    DBusScreen screen{*mir_screen};
 
     app.exec();
-
-    // Destroy components that depend on Qt event handling inside the Qt thread,
-    // to silence warnings during shutdown
-
-    // ScreenStateHandler uses the Qt DBus infrastructure
-    screen_state_handler.reset();
 }

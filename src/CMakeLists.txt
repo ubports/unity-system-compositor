@@ -19,8 +19,8 @@ set(USC_SRCS
   dbus_screen.cpp
   external_spinner.cpp
   powerd_mediator.cpp
-  powerkey_handler.cpp
-  screen_state_handler.cpp
+  screen_event_handler.cpp
+  mir_screen.cpp
   server.cpp
   session_switcher.cpp
   system_compositor.cpp
