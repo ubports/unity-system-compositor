@@ -70,9 +70,10 @@ private:
     static void static_toggle_timeout(DBusTimeout* timeout, void* data);
     static void static_wake_up_loop(void* data);
 
-    std::mutex mutex;
     DBusConnection* const connection;
     std::atomic<bool> running;
+
+    std::mutex mutex;
     std::vector<DBusWatch*> watches;
     std::vector<std::pair<DBusTimeout*,mir::Fd>> timeouts;
     std::vector<std::function<void(void)>> actions;
