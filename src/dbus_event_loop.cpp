@@ -29,6 +29,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include <system_error>
+#include <boost/throw_exception.hpp>
+
 namespace
 {
 
@@ -81,12 +84,19 @@ usc::DBusEventLoop::DBusEventLoop(DBusConnection* connection)
       epoll_fd{epoll_create1(EPOLL_CLOEXEC)}
 {
     if (epoll_fd == -1)
-        throw std::system_error(errno, std::system_category(), "DBusEventLoop epoll_create1");
+    {
+        BOOST_THROW_EXCEPTION(
+            std::system_error(errno, std::system_category(), "epoll_create1"));
+    }
 
     int pipefd[2]{};
 
     if (pipe2(pipefd, O_CLOEXEC) == -1)
-        throw std::system_error(errno, std::system_category(), "DBusEventLoop pipe");
+    {
+        BOOST_THROW_EXCEPTION(
+            std::system_error(errno, std::system_category(), "pipe2"));
+
+    }
 
     wake_up_fd_r = mir::Fd{pipefd[0]};
     wake_up_fd_w = mir::Fd{pipefd[1]};
@@ -96,8 +106,8 @@ usc::DBusEventLoop::DBusEventLoop(DBusConnection* connection)
     ev.events = EPOLLIN;
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, ev.data.fd, &ev) == -1)
     {
-        throw std::system_error(errno, std::system_category(),
-                                "DBusEventLoop epoll_ctl add wake up");
+        BOOST_THROW_EXCEPTION(
+            std::system_error(errno, std::system_category(), "epoll_ctl"));
     }
 
     dbus_connection_set_watch_functions(
@@ -150,7 +160,8 @@ void usc::DBusEventLoop::run(std::promise<void>& started)
             if (errno == EINTR)
                 continue;
 
-            throw std::system_error(errno, std::system_category(), "DBusEventLoop epoll_wait");
+            BOOST_THROW_EXCEPTION(
+                std::system_error(errno, std::system_category(), "epoll_wait"));
         }
 
         if (event.data.fd == wake_up_fd_r)
@@ -368,7 +379,10 @@ int usc::DBusEventLoop::timer_fd_for(DBusTimeout* timeout)
 void usc::DBusEventLoop::wake_up_loop()
 {
     if (write(wake_up_fd_w, "a", 1) != 1)
-        throw std::system_error(errno, std::system_category(), "DBusEventLoop write wake up");
+    {
+        BOOST_THROW_EXCEPTION(
+            std::system_error(errno, std::system_category(), "write"));
+    }
 }
 
 void usc::DBusEventLoop::enqueue(std::function<void()> const& action)

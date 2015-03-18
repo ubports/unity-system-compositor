@@ -46,7 +46,7 @@ pkg_check_modules(MIRCLIENT REQUIRED mirclient)
 pkg_check_modules(MIRSERVER REQUIRED mirserver)
 pkg_check_modules(DBUS REQUIRED dbus-1)
 
-find_package(Boost 1.48.0 COMPONENTS chrono date_time filesystem system thread program_options regex REQUIRED)
+find_package(Boost 1.48.0 COMPONENTS system REQUIRED)
 find_package(GLESv2 REQUIRED)
 find_package(Qt5Core)
 find_package(Qt5DBus)

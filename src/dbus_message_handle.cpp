@@ -19,6 +19,7 @@
 #include "dbus_message_handle.h"
 
 #include <stdexcept>
+#include <boost/throw_exception.hpp>
 
 usc::DBusMessageHandle::DBusMessageHandle(DBusMessage* message)
     : message{message}
@@ -29,7 +30,7 @@ usc::DBusMessageHandle::DBusMessageHandle(::DBusMessage* message, int first_arg_
     : message{message}
 {
     if (!message)
-        throw std::runtime_error("Invalid dbus message");
+        BOOST_THROW_EXCEPTION(std::runtime_error("Invalid dbus message"));
 
     va_list args;
     va_start(args, first_arg_type);
@@ -39,7 +40,8 @@ usc::DBusMessageHandle::DBusMessageHandle(::DBusMessage* message, int first_arg_
     if (!appended)
     {
         dbus_message_unref(message);
-        throw std::runtime_error("dbus_message_append_args_valist: Failed to append args");
+        BOOST_THROW_EXCEPTION(
+            std::runtime_error("dbus_message_append_args_valist: Failed to append args"));
     }
 }
 
@@ -48,16 +50,17 @@ usc::DBusMessageHandle::DBusMessageHandle(
     : message{message}
 {
     if (!message)
-        throw std::runtime_error("Invalid dbus message");
+        BOOST_THROW_EXCEPTION(std::runtime_error("Invalid dbus message"));
 
     if (!dbus_message_append_args_valist(message, first_arg_type, args))
     {
         dbus_message_unref(message);
-        throw std::runtime_error("dbus_message_append_args_valist: Failed to append args");
+        BOOST_THROW_EXCEPTION(
+            std::runtime_error("dbus_message_append_args_valist: Failed to append args"));
     }
 }
 
-usc::DBusMessageHandle::DBusMessageHandle(DBusMessageHandle&& other)
+usc::DBusMessageHandle::DBusMessageHandle(DBusMessageHandle&& other) noexcept
     : message{other.message}
 {
     other.message = nullptr;

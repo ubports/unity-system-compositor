@@ -41,6 +41,7 @@
 #include <regex.h>
 #include <GLES2/gl2.h>
 #include <QCoreApplication>
+#include <boost/throw_exception.hpp>
 
 namespace
 {
@@ -123,7 +124,10 @@ void usc::SystemCompositor::run()
             std::cerr << "GL_VERSION = " << version << std::endl;
 
             if (!check_blacklist(server->blacklist(), vendor, renderer, version))
-                throw mir::AbnormalExit ("Video driver is blacklisted, exiting");
+            {
+                BOOST_THROW_EXCEPTION(
+                    mir::AbnormalExit("Video driver is blacklisted, exiting"));
+            }
 
             dm_connection = server->the_dm_connection();
 

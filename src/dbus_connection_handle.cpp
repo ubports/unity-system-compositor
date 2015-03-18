@@ -20,6 +20,7 @@
 #include "scoped_dbus_error.h"
 
 #include <stdexcept>
+#include <boost/throw_exception.hpp>
 
 usc::DBusConnectionHandle::DBusConnectionHandle(const char* address)
 {
@@ -28,10 +29,16 @@ usc::DBusConnectionHandle::DBusConnectionHandle(const char* address)
 
     connection = dbus_connection_open_private(address, &error);
     if (!connection || error)
-        throw std::runtime_error("dbus_connection_open: " + error.message_str());
+    {
+        BOOST_THROW_EXCEPTION(
+            std::runtime_error("dbus_connection_open: " + error.message_str()));
+    }
 
-     if (!dbus_bus_register(connection, &error))
-        throw std::runtime_error("dbus_bus_register: " + error.message_str());
+    if (!dbus_bus_register(connection, &error))
+    {
+        BOOST_THROW_EXCEPTION(
+            std::runtime_error("dbus_bus_register: " + error.message_str()));
+    }
 }
 
 usc::DBusConnectionHandle::~DBusConnectionHandle()
@@ -48,9 +55,16 @@ void usc::DBusConnectionHandle::request_name(char const* name) const
     auto const request_result = dbus_bus_request_name(
         connection, name, DBUS_NAME_FLAG_DO_NOT_QUEUE, &error);
     if (error)
-        throw std::runtime_error("dbus_request_name: " + error.message_str());
+    {
+        BOOST_THROW_EXCEPTION(
+            std::runtime_error("dbus_request_name: " + error.message_str()));
+    }
+
     if (request_result != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER)
-        throw std::runtime_error("dbus_request_name: Failed to become primary owner");
+    {
+        BOOST_THROW_EXCEPTION(
+            std::runtime_error("dbus_request_name: Failed to become primary owner"));
+    }
 }
 
 void usc::DBusConnectionHandle::add_match(char const* match) const
@@ -59,7 +73,10 @@ void usc::DBusConnectionHandle::add_match(char const* match) const
 
     dbus_bus_add_match(connection, match, &error);
     if (error)
-        throw std::runtime_error("dbus_add_match: " + error.message_str());
+    {
+        BOOST_THROW_EXCEPTION(
+            std::runtime_error("dbus_add_match: " + error.message_str()));
+    }
 }
 
 void usc::DBusConnectionHandle::add_filter(
@@ -71,8 +88,12 @@ void usc::DBusConnectionHandle::add_filter(
         filter_func,
         user_data,
         nullptr);
+
     if (!added)
-        throw std::runtime_error("dbus_connection_add_filter: Failed to add filter");
+    {
+        BOOST_THROW_EXCEPTION(
+            std::runtime_error("dbus_connection_add_filter: Failed to add filter"));
+    }
 }
 
 usc::DBusConnectionHandle::operator ::DBusConnection*() const

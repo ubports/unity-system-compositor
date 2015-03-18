@@ -31,7 +31,7 @@ public:
     DBusMessageHandle(DBusMessage* message);
     DBusMessageHandle(DBusMessage* message, int first_arg_type, ...);
     DBusMessageHandle(DBusMessage* message, int first_arg_type, va_list args);
-    DBusMessageHandle(DBusMessageHandle&&);
+    DBusMessageHandle(DBusMessageHandle&&) noexcept;
     ~DBusMessageHandle();
 
     operator ::DBusMessage*() const;
