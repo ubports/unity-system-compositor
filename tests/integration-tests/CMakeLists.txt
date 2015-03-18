@@ -16,6 +16,7 @@
 
 include_directories(
  ${CMAKE_SOURCE_DIR}
+ ${CMAKE_BINARY_DIR}
  ${MIRSERVER_INCLUDE_DIRS}
  ${DBUS_INCLUDE_DIRS}
 )

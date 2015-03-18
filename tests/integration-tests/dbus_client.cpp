@@ -102,12 +102,10 @@ bool ut::DBusAsyncReplyBool::get()
 ut::DBusClient::DBusClient(
     std::string const& bus_address,
     std::string const& destination,
-    std::string const& path,
-    std::string const& interface)
+    std::string const& path)
     : connection{bus_address.c_str()},
       destination{destination},
-      path{path},
-      interface{interface}
+      path{path}
 {
 }
 
@@ -118,22 +116,24 @@ void ut::DBusClient::DBusClient::disconnect()
 }
 
 ::DBusPendingCall* ut::DBusClient::invoke_with_pending(
-    const char* method, int first_arg_type, ...)
+    char const* interface, char const* method, int first_arg_type, ...)
 {
+    static int const timeout_ms = 5000;
+
     va_list args;
     va_start(args, first_arg_type);
     usc::DBusMessageHandle msg{
         dbus_message_new_method_call(
             destination.c_str(),
             path.c_str(),
-            interface.c_str(),
+            interface,
             method),
         first_arg_type, args};
     va_end(args);
 
     DBusPendingCall* pending_reply;
     dbus_connection_send_with_reply(
-        connection, msg, &pending_reply, 3000);
+        connection, msg, &pending_reply, timeout_ms);
     dbus_connection_flush(connection);
 
     return pending_reply;

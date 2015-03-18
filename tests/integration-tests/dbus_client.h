@@ -80,19 +80,20 @@ public:
     DBusClient(
         std::string const& bus_address,
         std::string const& destination,
-        std::string const& path,
-        std::string const& interface);
+        std::string const& path);
 
     void disconnect();
 
     template <typename T, typename... Args>
-    T invoke_with_reply(const char* method, int first_arg_type, Args... args)
+    T invoke_with_reply(
+        char const* interface, char const* method, int first_arg_type, Args... args)
     {
-        return T{invoke_with_pending(method, first_arg_type, args...)};
+        return T{invoke_with_pending(interface, method, first_arg_type, args...)};
     }
 
 protected:
-    DBusPendingCall* invoke_with_pending(const char* method, int first_arg_type, ...);
+    DBusPendingCall* invoke_with_pending(
+        char const* interface, char const* method, int first_arg_type, ...);
     usc::DBusConnectionHandle connection;
     std::string const destination;
     std::string const path;

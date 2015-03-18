@@ -42,8 +42,7 @@ public:
         : ut::DBusClient{
             address,
             test_service_name,
-            test_service_path,
-            test_service_interface}
+            test_service_path}
     {
         std::string const match =
             std::string{"type='signal',interface='"} +
@@ -55,7 +54,7 @@ public:
     ut::DBusAsyncReplyInt request_add(int32_t a, int32_t b)
     {
         return invoke_with_reply<ut::DBusAsyncReplyInt>(
-            "add",
+            test_service_interface, "add",
             DBUS_TYPE_INT32, &a,
             DBUS_TYPE_INT32, &b,
             DBUS_TYPE_INVALID);
