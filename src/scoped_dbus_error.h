@@ -34,7 +34,8 @@ struct ScopedDBusError : ::DBusError
 
     ~ScopedDBusError()
     {
-        dbus_error_free(this);
+        if (dbus_error_is_set(this) == TRUE)
+            dbus_error_free(this);
     }
 
     std::string message_str() const
@@ -46,6 +47,9 @@ struct ScopedDBusError : ::DBusError
     {
         return dbus_error_is_set(this) == TRUE;
     }
+
+    ScopedDBusError(ScopedDBusError const&) = delete;
+    ScopedDBusError& operator=(ScopedDBusError const&) = delete;
 };
 
 }
