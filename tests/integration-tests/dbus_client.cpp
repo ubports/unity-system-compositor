@@ -99,6 +99,17 @@ bool ut::DBusAsyncReplyBool::get()
     return val == TRUE;
 }
 
+std::string ut::DBusAsyncReplyString::get()
+{
+    auto reply = ut::DBusAsyncReply::get();
+    throw_on_invalid_reply(reply);
+    throw_on_error_reply(reply);
+
+    char* val{nullptr};
+    dbus_message_get_args(reply, nullptr, DBUS_TYPE_STRING, &val, DBUS_TYPE_INVALID);
+    return std::string{val};
+}
+
 ut::DBusClient::DBusClient(
     std::string const& bus_address,
     std::string const& destination,
