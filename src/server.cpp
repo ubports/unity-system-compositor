@@ -25,7 +25,6 @@
 
 #include <mir/input/cursor_listener.h>
 #include <mir/server_status_listener.h>
-#include <mir/shell/abstract_shell.h>
 #include <mir/shell/focus_controller.h>
 #include <mir/scene/session.h>
 
@@ -128,24 +127,14 @@ usc::Server::Server(int argc, char** argv)
             return std::make_shared<ServerStatusListener>(the_focus_controller());
         });
 
-    override_the_shell([this]
-        {
-            auto const builder = [&](msh::FocusController* focus_controller)
-               {
-                 return std::make_shared<WindowManager>(
-                     focus_controller,
-                     the_shell_display_layout(),
-                     the_session_coordinator(),
-                     the_session_switcher());
-               };
-
-            return std::make_shared<msh::AbstractShell>(
-                the_input_targeter(),
-                the_surface_coordinator(),
-                the_session_coordinator(),
-                the_prompt_session_manager(),
-                builder);
-        });
+    override_the_window_manager_builder([this](msh::FocusController* focus_controller)
+       {
+         return std::make_shared<WindowManager>(
+             focus_controller,
+             the_shell_display_layout(),
+             the_session_coordinator(),
+             the_session_switcher());
+       });
 
     set_config_filename("unity-system-compositor.conf");
 
