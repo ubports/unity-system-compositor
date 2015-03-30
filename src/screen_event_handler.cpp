@@ -19,6 +19,7 @@
 #include "power_state_change_reason.h"
 
 #include <mir/time/alarm_factory.h>
+#include <mir_toolkit/events/input/input_event.h>
 
 #include <cstdio>
 
@@ -52,14 +53,14 @@ bool usc::ScreenEventHandler::handle(MirEvent const& event)
 
     if (input_event_type == mir_input_event_type_key)
     {
-        auto const kev = mir_input_event_get_key_input_event(input_event);
-        if (mir_key_input_event_get_key_code(kev) != POWER_KEY_CODE)
+        auto const kev = mir_input_event_get_keyboard_event(input_event);
+        if (mir_keyboard_event_key_code(kev) != POWER_KEY_CODE)
             return false;
 
-        auto const action = mir_key_input_event_get_action(kev);
-        if (action == mir_key_input_event_action_down)
+        auto const action = mir_keyboard_event_action(kev);
+        if (action == mir_keyboard_action_down)
             power_key_down();
-        else if (action == mir_key_input_event_action_up)
+        else if (action == mir_keyboard_action_up)
             power_key_up();
     }
     else if (input_event_type == mir_input_event_type_touch ||

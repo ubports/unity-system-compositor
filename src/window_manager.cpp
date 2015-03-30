@@ -121,7 +121,7 @@ struct SessionReadyObserver : ms::NullSurfaceObserver,
 usc::WindowManager::WindowManager(
     mir::shell::FocusController* focus_controller,
     std::shared_ptr<mir::shell::DisplayLayout> const& display_layout,
-    std::shared_ptr<mir::scene::SessionCoordinator> const& session_coordinator,
+    std::shared_ptr<ms::SessionCoordinator> const& session_coordinator,
     std::shared_ptr<SessionSwitcher> const& session_switcher) :
     focus_controller{focus_controller},
     display_layout{display_layout},
@@ -183,6 +183,35 @@ auto usc::WindowManager::add_surface(
     surface->add_observer(session_ready_observer);
 
     return result;
+}
+
+void usc::WindowManager::remove_surface(
+    std::shared_ptr<ms::Session> const& /*session*/,
+    std::weak_ptr<ms::Surface> const& /*surface*/)
+{
+}
+
+void usc::WindowManager::add_display(mir::geometry::Rectangle const& /*area*/)
+{
+}
+
+void usc::WindowManager::remove_display(mir::geometry::Rectangle const& /*area*/)
+{
+}
+
+bool usc::WindowManager::handle_key_event(MirKeyboardEvent const* /*event*/)
+{
+    return false;
+}
+
+bool usc::WindowManager::handle_touch_event(MirTouchEvent const* /*event*/)
+{
+    return false;
+}
+
+bool usc::WindowManager::handle_pointer_event(MirPointerEvent const* /*event*/)
+{
+    return false;
 }
 
 int usc::WindowManager::set_surface_attribute(

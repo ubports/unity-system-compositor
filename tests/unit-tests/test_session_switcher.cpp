@@ -98,6 +98,10 @@ public:
 
     std::shared_ptr<mir::frontend::Surface> get_surface(mir::frontend::SurfaceId surface) const override { return nullptr; }
 
+    mir::frontend::BufferStreamId create_buffer_stream(mir::graphics::BufferProperties const& /*props*/) override { return {}; }
+    std::shared_ptr<mir::frontend::BufferStream> get_buffer_stream(mir::frontend::BufferStreamId /*stream*/) const override { return nullptr; }
+    void destroy_buffer_stream(mir::frontend::BufferStreamId /*stream*/) override {}
+
     std::string name() const override { return name_; }
 
 private:
