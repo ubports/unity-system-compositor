@@ -22,9 +22,9 @@ set(USC_SRCS
   screen_event_handler.cpp
   mir_screen.cpp
   server.cpp
-  shell.cpp
   session_switcher.cpp
   system_compositor.cpp
+  window_manager.cpp
   worker_thread.cpp
 )
 

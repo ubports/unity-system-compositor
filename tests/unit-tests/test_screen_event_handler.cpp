@@ -73,16 +73,16 @@ struct AScreenEventHandler : testing::Test
 
     static const int32_t POWER_KEY_CODE = 26;
     mir::EventUPtr power_key_down_event = mir::events::make_event(
-        MirInputDeviceId{1}, 0, mir_key_input_event_action_down,
+        MirInputDeviceId{1}, 0, mir_keyboard_action_down,
         POWER_KEY_CODE, 0, mir_input_event_modifier_none);
     mir::EventUPtr power_key_up_event = mir::events::make_event(
-        MirInputDeviceId{1}, 0, mir_key_input_event_action_up,
+        MirInputDeviceId{1}, 0, mir_keyboard_action_up,
         POWER_KEY_CODE, 0, mir_input_event_modifier_none);
     mir::EventUPtr touch_event = mir::events::make_event(
         MirInputDeviceId{1}, 0, mir_input_event_modifier_none);
     mir::EventUPtr pointer_event = mir::events::make_event(
         MirInputDeviceId{1}, 0, mir_input_event_modifier_none,
-        mir_pointer_input_event_action_motion,
+        mir_pointer_action_motion,
         {}, 0.0f, 0.0f, 0.0f, 0.0f);
 
     AdvanceableTimer timer;
