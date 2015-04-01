@@ -1,4 +1,4 @@
-# Copyright © 2014 Canonical Ltd.
+# Copyright © 2015 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 3 as
@@ -14,5 +14,30 @@
 #
 # Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
 
-add_subdirectory(unit-tests/)
-add_subdirectory(integration-tests/)
+include_directories(
+ ${CMAKE_SOURCE_DIR}
+ ${CMAKE_BINARY_DIR}
+ ${MIRSERVER_INCLUDE_DIRS}
+ ${DBUS_INCLUDE_DIRS}
+)
+
+add_executable(
+  usc_integration_tests
+
+  dbus_bus.cpp
+  dbus_client.cpp
+  test_dbus_event_loop.cpp
+)
+
+target_link_libraries(
+   usc_integration_tests
+
+   usc
+   ${GTEST_BOTH_LIBRARIES}
+   ${GMOCK_LIBRARY}
+   ${GMOCK_MAIN_LIBRARY}
+)
+
+add_test(usc_integration_tests ${EXECUTABLE_OUTPUT_PATH}/usc_integration_tests)
+
+add_dependencies(usc_integration_tests GMock)

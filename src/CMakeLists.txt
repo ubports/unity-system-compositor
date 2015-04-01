@@ -16,6 +16,9 @@
 
 set(USC_SRCS
   asio_dm_connection.cpp
+  dbus_connection_handle.cpp
+  dbus_message_handle.cpp
+  dbus_event_loop.cpp
   dbus_screen.cpp
   external_spinner.cpp
   powerd_mediator.cpp
@@ -51,6 +54,7 @@ include_directories(
   ${Boost_INCLUDE_DIRS}
   ${GLESv2_INCLUDE_DIRS}
   ${MIRSERVER_INCLUDE_DIRS}
+  ${DBUS_INCLUDE_DIRS}
 )
 add_definitions(
   -DDEFAULT_SPINNER="${CMAKE_INSTALL_FULL_BINDIR}/unity-system-compositor-spinner"
@@ -65,6 +69,7 @@ target_link_libraries(usc
   pthread
   ${Boost_LIBRARIES}
   ${GLESv2_LIBRARIES}
+  ${DBUS_LIBRARIES}
 )
 
 target_link_libraries(unity-system-compositor
