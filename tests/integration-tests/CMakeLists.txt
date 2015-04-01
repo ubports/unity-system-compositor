@@ -22,11 +22,18 @@ include_directories(
 )
 
 add_executable(
+  usc_test_helper_wait_for_signal
+  usc_test_helper_wait_for_signal.c
+)
+
+add_executable(
   usc_integration_tests
 
+  run_command.cpp
   dbus_bus.cpp
   dbus_client.cpp
   test_dbus_event_loop.cpp
+  test_external_spinner.cpp
 )
 
 target_link_libraries(
@@ -41,3 +48,4 @@ target_link_libraries(
 add_test(usc_integration_tests ${EXECUTABLE_OUTPUT_PATH}/usc_integration_tests)
 
 add_dependencies(usc_integration_tests GMock)
+add_dependencies(usc_integration_tests usc_test_helper_wait_for_signal)

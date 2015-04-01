@@ -18,11 +18,15 @@
 
 #include "external_spinner.h"
 
+#include <unistd.h>
+#include <signal.h>
+
 usc::ExternalSpinner::ExternalSpinner(
     std::string const& executable,
     std::string const& mir_socket)
     : executable{executable},
-      mir_socket{mir_socket}
+      mir_socket{mir_socket},
+      spinner_pid{0}
 {
 }
 
@@ -33,22 +37,37 @@ usc::ExternalSpinner::~ExternalSpinner()
 
 void usc::ExternalSpinner::ensure_running()
 {
-    if (executable.empty() || process.state() != QProcess::NotRunning)
+    std::lock_guard<std::mutex> lock{mutex};
+
+    if (executable.empty() || spinner_pid)
         return;
 
-    // Launch spinner process to provide default background when a session isn't ready
-    QStringList env = QProcess::systemEnvironment();
-    env << "MIR_SOCKET=" + QString::fromStdString(mir_socket);
-    process.setEnvironment(env);
-    process.start(executable.c_str());
+    auto pid = fork();
+    if (!pid)
+    {
+        setenv("MIR_SOCKET", mir_socket.c_str(), 1);
+        execlp(executable.c_str(), executable.c_str(), nullptr);
+    }
+    else
+    {
+        spinner_pid = pid;
+    }
 }
 
 void usc::ExternalSpinner::kill()
 {
-    process.close();
+    std::lock_guard<std::mutex> lock{mutex};
+
+    if (spinner_pid)
+    {
+        ::kill(spinner_pid, SIGTERM);
+        spinner_pid = 0;
+    }
 }
 
 pid_t usc::ExternalSpinner::pid()
 {
-    return process.processId();
+    std::lock_guard<std::mutex> lock{mutex};
+
+    return spinner_pid;
 }
