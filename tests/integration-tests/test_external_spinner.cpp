@@ -72,7 +72,7 @@ std::vector<pid_t> pidof(std::string const& process_name)
 
 struct AnExternalSpinner : testing::Test
 {
-    std::vector<pid_t> pids_of_spinners()
+    std::vector<pid_t> spinner_pids()
     {
         return pidof(spinner_cmd);
     }
@@ -99,7 +99,7 @@ struct AnExternalSpinner : testing::Test
         auto const timeout = std::chrono::milliseconds{3000};
         auto const expire = std::chrono::steady_clock::now() + timeout;
 
-        while (pids_of_spinners().size() > 0)
+        while (spinner_pids().size() > 0)
         {
             if (std::chrono::steady_clock::now() > expire)
                 BOOST_THROW_EXCEPTION(std::runtime_error("wait_for_no_spinner timed out"));
@@ -120,7 +120,7 @@ TEST_F(AnExternalSpinner, starts_spinner_process)
 
     spinner.ensure_running();
 
-    EXPECT_THAT(pids_of_spinners(), SizeIs(1));
+    EXPECT_THAT(spinner_pids(), SizeIs(1));
 }
 
 TEST_F(AnExternalSpinner, kills_spinner_process_on_destruction)
@@ -130,7 +130,7 @@ TEST_F(AnExternalSpinner, kills_spinner_process_on_destruction)
     {
         usc::ExternalSpinner another_spinner{spinner_cmd, "bla"};
         another_spinner.ensure_running();
-        EXPECT_THAT(pids_of_spinners(), SizeIs(1));
+        EXPECT_THAT(spinner_pids(), SizeIs(1));
     }
 
     wait_for_spinner_to_terminate();
@@ -141,7 +141,7 @@ TEST_F(AnExternalSpinner, kills_spinner_process_on_request)
     using namespace testing;
 
     spinner.ensure_running();
-    EXPECT_THAT(pids_of_spinners(), SizeIs(1));
+    EXPECT_THAT(spinner_pids(), SizeIs(1));
     spinner.kill();
 
     wait_for_spinner_to_terminate();
@@ -154,7 +154,7 @@ TEST_F(AnExternalSpinner, starts_spinner_process_only_once)
     spinner.ensure_running();
     spinner.ensure_running();
 
-    EXPECT_THAT(pids_of_spinners(), SizeIs(1));
+    EXPECT_THAT(spinner_pids(), SizeIs(1));
 }
 
 TEST_F(AnExternalSpinner, sets_mir_socket_in_spinner_process_environment)
