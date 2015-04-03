@@ -18,9 +18,9 @@
 
 #include "server.h"
 #include "external_spinner.h"
-#include "shell.h"
 #include "asio_dm_connection.h"
 #include "session_switcher.h"
+#include "window_manager.h"
 #include "powerd_mediator.h"
 
 #include <mir/input/cursor_listener.h>
@@ -127,11 +127,14 @@ usc::Server::Server(int argc, char** argv)
             return std::make_shared<ServerStatusListener>(the_focus_controller());
         });
 
-    wrap_shell([this](std::shared_ptr<msh::Shell> const& wrapped)
-        -> std::shared_ptr<msh::Shell>
-        {
-            return std::make_shared<Shell>(wrapped, the_session_switcher());
-        });
+    override_the_window_manager_builder([this](msh::FocusController* focus_controller)
+       {
+         return std::make_shared<WindowManager>(
+             focus_controller,
+             the_shell_display_layout(),
+             the_session_coordinator(),
+             the_session_switcher());
+       });
 
     set_config_filename("unity-system-compositor.conf");
 

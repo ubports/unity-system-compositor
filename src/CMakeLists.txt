@@ -25,12 +25,12 @@ set(USC_SRCS
   screen_event_handler.cpp
   mir_screen.cpp
   server.cpp
-  shell.cpp
   session_switcher.cpp
   system_compositor.cpp
   thread_name.cpp
   unity_screen_service.cpp
   unity_screen_service_introspection.h
+  window_manager.cpp
   worker_thread.cpp
 )
 

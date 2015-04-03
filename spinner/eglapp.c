@@ -144,11 +144,6 @@ mir_eglapp_bool mir_eglapp_init(int argc, char *argv[],
         mir_buffer_usage_hardware,
         mir_display_output_id_invalid
     };
-    MirEventDelegate delegate = 
-    {
-        mir_eglapp_handle_event,
-        NULL
-    };
     EGLConfig eglconfig;
     EGLint neglconfigs;
     EGLContext eglctx;
@@ -323,7 +318,7 @@ mir_eglapp_bool mir_eglapp_init(int argc, char *argv[],
     surface = mir_connection_create_surface_sync(connection, &surfaceparm);
     CHECK(mir_surface_is_valid(surface), "Can't create a surface");
 
-    mir_surface_set_event_handler(surface, &delegate);
+    mir_surface_set_event_handler(surface, mir_eglapp_handle_event, NULL);
 
     egldisplay = eglGetDisplay(
                     (EGLNativeDisplayType) mir_connection_get_egl_native_display(connection));
