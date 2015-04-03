@@ -74,6 +74,13 @@ public:
     bool get();
 };
 
+class DBusAsyncReplyString : DBusAsyncReply
+{
+public:
+    using DBusAsyncReply::DBusAsyncReply;
+    std::string get();
+};
+
 class DBusClient
 {
 public:

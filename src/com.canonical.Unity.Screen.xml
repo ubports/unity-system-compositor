@@ -1,0 +1,29 @@
+<!DOCTYPE node PUBLIC '-//freedesktop//DTD D-BUS Object Introspection 1.0//EN' 'http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd'>
+<node>
+  <interface name='com.canonical.Unity.Screen'>
+    <method name='setScreenPowerMode'>
+      <arg type='b' direction='out'/>
+      <arg name='mode' type='s' direction='in'/>
+      <arg name='reason' type='i' direction='in'/>
+    </method>
+    <method name='keepDisplayOn'>
+      <arg type='i' direction='out'/>
+    </method>
+    <method name='removeDisplayOnRequest'>
+      <arg name='id' type='i' direction='in'/>
+    </method>
+    <method name='setUserBrightness'>
+      <arg name='brightness' type='i' direction='in'/>
+    </method>
+    <method name='userAutobrightnessEnable'>
+      <arg name='enable' type='b' direction='in'/>
+    </method>
+    <method name='setInactivityTimeouts'>
+      <arg name='poweroff_timeout' type='i' direction='in'/>
+      <arg name='dimmer_timeout' type='i' direction='in'/>
+    </method>
+    <method name='setTouchVisualizationEnabled'>
+      <arg name='enabled' type='b' direction='in'/>
+    </method>
+  </interface>
+</node>

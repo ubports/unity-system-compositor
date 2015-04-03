@@ -14,31 +14,13 @@
 #
 # Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
 
-include_directories(
- ${CMAKE_SOURCE_DIR}
- ${CMAKE_BINARY_DIR}
- ${MIRSERVER_INCLUDE_DIRS}
- ${DBUS_INCLUDE_DIRS}
-)
+header=$1
+varname=$2
+filename=$3
 
-add_executable(
-  usc_integration_tests
+header_guard=$(echo "USC_$(basename $header)_" | tr '[a-z].' '[A-Z]_')
 
-  dbus_bus.cpp
-  dbus_client.cpp
-  test_dbus_event_loop.cpp
-  test_unity_screen_service.cpp
-)
-
-target_link_libraries(
-   usc_integration_tests
-
-   usc
-   ${GTEST_BOTH_LIBRARIES}
-   ${GMOCK_LIBRARY}
-   ${GMOCK_MAIN_LIBRARY}
-)
-
-add_test(usc_integration_tests ${EXECUTABLE_OUTPUT_PATH}/usc_integration_tests)
-
-add_dependencies(usc_integration_tests GMock)
+echo "#ifndef $header_guard
+#define $header_guard
+const char* const $varname = R\"($(cat $filename))\";
+#endif" > $header
