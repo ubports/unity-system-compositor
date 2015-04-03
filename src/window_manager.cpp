@@ -199,7 +199,7 @@ void usc::WindowManager::remove_display(mir::geometry::Rectangle const& /*area*/
 {
 }
 
-bool usc::WindowManager::handle_key_event(MirKeyboardEvent const* /*event*/)
+bool usc::WindowManager::handle_keyboard_event(MirKeyboardEvent const* /*event*/)
 {
     return false;
 }
