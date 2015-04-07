@@ -21,12 +21,16 @@
 #include "asio_dm_connection.h"
 #include "session_switcher.h"
 #include "window_manager.h"
+#include "mir_screen.h"
+#include "screen_event_handler.h"
 #include "powerd_mediator.h"
+#include "unity_screen_service.h"
 
 #include <mir/input/cursor_listener.h>
 #include <mir/server_status_listener.h>
 #include <mir/shell/focus_controller.h>
 #include <mir/scene/session.h>
+#include <mir/main_loop.h>
 
 #include <iostream>
 
@@ -179,11 +183,63 @@ std::shared_ptr<usc::DMConnection> usc::Server::the_dm_connection()
         });
 }
 
+std::shared_ptr<usc::Screen> usc::Server::the_screen()
+{
+    return screen(
+        [this]
+        {
+            return std::make_shared<MirScreen>(
+                the_screen_hardware(),
+                the_compositor(),
+                the_display(),
+                the_touch_visualizer(),
+                the_main_loop(),
+                inactivity_display_off_timeout(),
+                inactivity_display_dim_timeout());
+        });
+}
+
+std::shared_ptr<mi::EventFilter> usc::Server::the_screen_event_handler()
+{
+    return screen_event_handler(
+        [this]
+        {
+            return std::make_shared<ScreenEventHandler>(
+                the_screen(),
+                the_main_loop(),
+                power_key_ignore_timeout(),
+                shutdown_timeout(),
+                [] { if (system("shutdown -P now")); }); // ignore warning
+        });
+}
+
 std::shared_ptr<usc::ScreenHardware> usc::Server::the_screen_hardware()
 {
     return screen_hardware(
         [this]
         {
-            return std::make_shared<PowerdMediator>();
+            return std::make_shared<usc::PowerdMediator>(dbus_bus_address());
         });
+}
+
+std::shared_ptr<usc::UnityScreenService> usc::Server::the_unity_screen_service()
+{
+    return unity_screen_service(
+        [this]
+        {
+            return std::make_shared<UnityScreenService>(
+                    dbus_bus_address(),
+                    the_screen());
+        });
+}
+
+std::string usc::Server::dbus_bus_address()
+{
+    static char const* const default_bus_address{"unix:path=/var/run/dbus/system_bus_socket"};
+
+    char const* bus = getenv("DBUS_SYSTEM_BUS_ADDRESS");
+    if (!bus)
+        bus = default_bus_address;
+
+    return std::string{bus};
 }
