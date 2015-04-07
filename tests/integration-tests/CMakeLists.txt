@@ -33,6 +33,7 @@ add_executable(
   dbus_bus.cpp
   dbus_client.cpp
   test_dbus_event_loop.cpp
+  test_unity_screen_service.cpp
   test_external_spinner.cpp
 )
 
