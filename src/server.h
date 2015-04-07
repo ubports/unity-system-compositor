@@ -98,7 +98,7 @@ private:
 
     std::chrono::milliseconds inactivity_display_off_timeout()
     {
-        return std::chrono::seconds{
+        return std::chrono::milliseconds{
            1000 * the_options()->get("inactivity-display-off-timeout", 60)};
     }
 
