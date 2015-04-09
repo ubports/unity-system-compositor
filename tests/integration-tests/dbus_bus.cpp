@@ -17,43 +17,18 @@
  */
 
 #include "dbus_bus.h"
+#include "run_command.h"
 
 #include <sstream>
 #include <stdexcept>
 
-#include <cstdio>
-#include <cstdlib>
 #include <csignal>
-
-namespace
-{
-
-std::string run_command(std::string const& cmd)
-{
-    auto fp = ::popen(cmd.c_str(), "r");
-    if (!fp)
-        throw std::runtime_error("Failed to execute command: " + cmd);
-
-    std::string reply;
-
-    char buffer[64];
-    while (!feof(fp))
-    {
-        auto nread = fread(buffer, 1, 64, fp);
-        reply.append(buffer, nread);
-    }
-
-    pclose(fp);
-
-    return reply;
-}
-
-}
 
 usc::test::DBusBus::DBusBus()
     : pid{0}
 {
-    auto launch = run_command("dbus-daemon --session --print-address=1 --print-pid=1 --fork");
+    auto launch = usc::test::run_command(
+        "dbus-daemon --session --print-address=1 --print-pid=1 --fork");
     std::stringstream ss{launch};
 
     std::getline(ss, address_);
