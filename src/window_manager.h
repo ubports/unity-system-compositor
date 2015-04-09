@@ -49,6 +49,11 @@ public:
         mir::scene::SurfaceCreationParameters const& params,
         std::function<mir::frontend::SurfaceId(std::shared_ptr<mir::scene::Session> const& session, mir::scene::SurfaceCreationParameters const& params)> const& build) override;
 
+    void modify_surface(
+        std::shared_ptr<mir::scene::Session> const& session,
+        std::shared_ptr<mir::scene::Surface> const& surface,
+        mir::shell::SurfaceSpecification const& modifications) override;
+
     void remove_surface(
         std::shared_ptr<mir::scene::Session> const& session,
         std::weak_ptr<mir::scene::Surface> const& surface) override;
