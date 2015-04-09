@@ -28,6 +28,7 @@
 #include "mir/scene/surface_creation_parameters.h"
 #include "mir/shell/display_layout.h"
 #include "mir/shell/focus_controller.h"
+#include "mir/shell/surface_specification.h"
 
 #include "mir_toolkit/client_types.h"
 
@@ -183,6 +184,15 @@ auto usc::WindowManager::add_surface(
     surface->add_observer(session_ready_observer);
 
     return result;
+}
+
+void usc::WindowManager::modify_surface(
+    std::shared_ptr<ms::Session> const& /*session*/,
+    std::shared_ptr<ms::Surface> const& surface,
+    msh::SurfaceSpecification const& modifications)
+{
+    if (modifications.name.is_set())
+        surface->rename(modifications.name.value());
 }
 
 void usc::WindowManager::remove_surface(
