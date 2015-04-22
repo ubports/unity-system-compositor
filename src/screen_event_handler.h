@@ -59,6 +59,7 @@ private:
 
     std::mutex guard;
     std::atomic<bool> long_press_detected;
+    std::atomic<MirPowerMode> mode_at_press_start;
 
     Screen* const screen;
     std::chrono::milliseconds const power_key_ignore_timeout;
