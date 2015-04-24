@@ -256,7 +256,7 @@ bool usc::PowerdMediator::is_system_suspended()
 
 void usc::PowerdMediator::init_powerd_state(ForceDisableSuspend force_disable_suspend)
 {
-    std::unique_lock<decltype(mutex)> lock{mutex};
+    std::lock_guard<decltype(mutex)> lock{mutex};
 
     init_brightness_params();
 

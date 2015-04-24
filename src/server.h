@@ -98,14 +98,16 @@ private:
 
     std::chrono::milliseconds inactivity_display_off_timeout()
     {
-        return std::chrono::milliseconds{
-           1000 * the_options()->get("inactivity-display-off-timeout", 60)};
+        using namespace std::chrono;
+        return duration_cast<milliseconds>(
+            seconds{the_options()->get("inactivity-display-off-timeout", 60)});
     }
 
     std::chrono::milliseconds inactivity_display_dim_timeout()
     {
-        return std::chrono::milliseconds{
-            1000 * the_options()->get("inactivity-display-dim-timeout", 45)};
+        using namespace std::chrono;
+        return duration_cast<milliseconds>(
+            seconds{the_options()->get("inactivity-display-dim-timeout", 45)});
     }
 
     std::chrono::milliseconds shutdown_timeout()
