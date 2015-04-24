@@ -92,8 +92,9 @@ static void mir_eglapp_handle_event(MirSurface* surface, MirEvent const* ev, voi
 {
     (void) surface;
     (void) context;
-    if (ev->type == mir_event_type_resize)
+    if (mir_event_get_type(ev) == mir_event_type_resize)
     {
+        MirResizeEvent const* resize = mir_event_get_resize_event(ev);
         /*
          * FIXME: https://bugs.launchpad.net/mir/+bug/1194384
          * It is unsafe to set the width and height here because we're in a
@@ -101,7 +102,9 @@ static void mir_eglapp_handle_event(MirSurface* surface, MirEvent const* ev, voi
          * support for event queuing (directing them to another thread) or
          * full single-threaded callbacks. (LP: #1194384).
          */
-        printf("Resized to %dx%d\n", ev->resize.width, ev->resize.height);
+        printf("Resized to %dx%d\n",
+               mir_resize_event_get_width(resize),
+               mir_resize_event_get_height(resize));
     }
 }
 
@@ -332,8 +335,7 @@ mir_eglapp_bool mir_eglapp_init(int argc, char *argv[],
     CHECK(neglconfigs > 0, "No EGL config available");
 
     eglsurface = eglCreateWindowSurface(egldisplay, eglconfig,
-            (EGLNativeWindowType)mir_surface_get_egl_native_window(surface),
-            NULL);
+        (EGLNativeWindowType)mir_buffer_stream_get_egl_native_window(mir_surface_get_buffer_stream(surface)), NULL);
     CHECK(eglsurface != EGL_NO_SURFACE, "eglCreateWindowSurface failed");
 
     eglctx = eglCreateContext(egldisplay, eglconfig, EGL_NO_CONTEXT,
