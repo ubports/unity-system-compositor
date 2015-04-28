@@ -17,13 +17,12 @@
 set(USC_SRCS
   asio_dm_connection.cpp
   dbus_connection_handle.cpp
-  dbus_message_handle.cpp
   dbus_event_loop.cpp
-  dbus_screen.cpp
+  dbus_message_handle.cpp
   external_spinner.cpp
+  mir_screen.cpp
   powerd_mediator.cpp
   screen_event_handler.cpp
-  mir_screen.cpp
   server.cpp
   session_switcher.cpp
   system_compositor.cpp
@@ -31,7 +30,6 @@ set(USC_SRCS
   unity_screen_service.cpp
   unity_screen_service_introspection.h
   window_manager.cpp
-  worker_thread.cpp
 )
 
 # Generate unity_screen_service_introspection.h from the introspection XML file
@@ -42,10 +40,6 @@ add_custom_command(
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   VERBATIM
 )
-qt5_add_dbus_adaptor(USC_SRCS
-                     com.canonical.Unity.Screen.xml
-                     dbus_screen.h DBusScreen
-                     dbus_screen_adaptor DBusScreenAdaptor)
 
 # Compile system compositor
 add_library(
@@ -69,8 +63,6 @@ include_directories(
 add_definitions(
   -DDEFAULT_SPINNER="${CMAKE_INSTALL_FULL_BINDIR}/unity-system-compositor-spinner"
 )
-
-qt5_use_modules(usc Core DBus)
 
 link_directories(${MIRSERVER_LIBRARY_DIRS})
 

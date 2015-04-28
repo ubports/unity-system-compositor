@@ -41,11 +41,11 @@ class ScreenEventHandler : public mir::input::EventFilter
 {
 public:
     ScreenEventHandler(
-        mir::time::AlarmFactory& timer,
+        std::shared_ptr<Screen> const& screen,
+        std::shared_ptr<mir::time::AlarmFactory> const& alarm_factory,
         std::chrono::milliseconds power_key_ignore_timeout,
         std::chrono::milliseconds shutdown_timeout,
-        std::function<void()> const& shutdown,
-        Screen& screen);
+        std::function<void()> const& shutdown);
 
     ~ScreenEventHandler();
 
@@ -58,16 +58,15 @@ private:
     void long_press_notification();
 
     std::mutex guard;
-    std::atomic<bool> long_press_detected;
-
-    Screen* const screen;
+    std::shared_ptr<Screen> const screen;
+    std::shared_ptr<mir::time::AlarmFactory> const alarm_factory;
     std::chrono::milliseconds const power_key_ignore_timeout;
     std::chrono::milliseconds const shutdown_timeout;
     std::function<void()> const shutdown;
 
+    std::atomic<bool> long_press_detected;
     std::unique_ptr<mir::time::Alarm> shutdown_alarm;
     std::unique_ptr<mir::time::Alarm> long_press_alarm;
-
 };
 
 }
