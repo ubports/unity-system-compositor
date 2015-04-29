@@ -298,18 +298,20 @@ TEST_F(AMirScreen, disabling_inactivity_timers_disables_dim_and_power_off)
     timer->advance_by(power_off_timeout);
 }
 
-TEST_F(AMirScreen, toggle_screen_power_mode_from_on_to_off)
+TEST_F(AMirScreen, set_screen_power_mode_from_on_to_off)
 {
     expect_screen_is_turned_off();
-    mir_screen.toggle_screen_power_mode(PowerStateChangeReason::power_key);
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_off,
+                                     PowerStateChangeReason::power_key);
 }
 
-TEST_F(AMirScreen, toggle_screen_power_mode_from_off_to_on)
+TEST_F(AMirScreen, set_screen_power_mode_from_off_to_on)
 {
     turn_screen_off();
 
     expect_screen_is_turned_on();
-    mir_screen.toggle_screen_power_mode(PowerStateChangeReason::power_key);
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                     PowerStateChangeReason::power_key);
 }
 
 TEST_F(AMirScreen, sets_hardware_brightness)
@@ -359,7 +361,8 @@ TEST_F(AMirScreen, invokes_handler_when_power_state_changes)
     mir_screen.register_power_state_change_handler(handler);
 
     auto const toggle_reason = PowerStateChangeReason::power_key;
-    mir_screen.toggle_screen_power_mode(PowerStateChangeReason::power_key);
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_off,
+                                     PowerStateChangeReason::power_key);
 
     EXPECT_THAT(handler_reason, Eq(toggle_reason));
     EXPECT_THAT(handler_mode, Eq(MirPowerMode::mir_power_mode_off));
