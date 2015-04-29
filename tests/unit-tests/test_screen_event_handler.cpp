@@ -21,6 +21,7 @@
 #include "src/screen.h"
 
 #include "advanceable_timer.h"
+#include "fake_shared.h"
 
 #include <mir/events/event_builders.h>
 
@@ -93,11 +94,11 @@ struct AScreenEventHandler : testing::Test
     testing::NiceMock<MockScreen> mock_screen;
     std::atomic<bool> shutdown_called{false};
     usc::ScreenEventHandler screen_event_handler{
-        timer,
+        usc::test::fake_shared(mock_screen),
+        usc::test::fake_shared(timer),
         power_key_ignore_timeout,
         shutdown_timeout,
-        [&] { shutdown_called = true; },
-        mock_screen};
+        [&] { shutdown_called = true; }};
 };
 
 }

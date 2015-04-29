@@ -48,8 +48,6 @@ pkg_check_modules(DBUS REQUIRED dbus-1)
 
 find_package(Boost 1.48.0 COMPONENTS system REQUIRED)
 find_package(GLESv2 REQUIRED)
-find_package(Qt5Core)
-find_package(Qt5DBus)
 
 add_subdirectory(spinner/)
 add_subdirectory(src/)

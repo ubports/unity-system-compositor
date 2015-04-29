@@ -20,28 +20,15 @@
 #include "system_compositor.h"
 #include "server.h"
 #include "dm_connection.h"
-#include "spinner.h"
-#include "mir_screen.h"
-#include "screen_event_handler.h"
-#include "dbus_screen.h"
-
-// Qt headers will introduce a #define of "signals"
-// but some mir headers use "signals" as a variable name in
-// method declarations
-#undef signals
 
 #include <mir/input/composite_event_filter.h>
 #include <mir/abnormal_exit.h>
-#include <mir/main_loop.h>
 
 #include <cerrno>
 #include <iostream>
 #include <sys/stat.h>
-#include <thread>
 #include <regex.h>
 #include <GLES2/gl2.h>
-#include <QCoreApplication>
-#include <boost/throw_exception.hpp>
 
 namespace
 {
@@ -100,25 +87,12 @@ void usc::SystemCompositor::run()
         return;
     }
 
-    struct ScopeGuard
-    {
-        ~ScopeGuard()
-        {
-            if (qt_thread.joinable())
-            {
-                QCoreApplication::quit();
-                qt_thread.join();
-            }
-        }
-
-        std::thread qt_thread;
-    } guard;
-
     server->add_init_callback([&]
         {
             auto vendor = (char *) glGetString(GL_VENDOR);
             auto renderer = (char *) glGetString (GL_RENDERER);
             auto version = (char *) glGetString (GL_VERSION);
+
             std::cerr << "GL_VENDOR = " << vendor << std::endl;
             std::cerr << "GL_RENDERER = " << renderer << std::endl;
             std::cerr << "GL_VERSION = " << version << std::endl;
@@ -140,43 +114,16 @@ void usc::SystemCompositor::run()
             dm_connection->start();
 
             if (!server->disable_inactivity_policy())
-                guard.qt_thread = std::thread(&SystemCompositor::qt_main, this);
+            {
+                screen = server->the_screen();
+                screen_event_handler = server->the_screen_event_handler();
+
+                auto composite_filter = server->the_composite_event_filter();
+                composite_filter->append(screen_event_handler);
+
+                unity_screen_service = server->the_unity_screen_service();
+            }
         });
 
     server->run();
-}
-
-void usc::SystemCompositor::qt_main()
-{
-    int argc{0};
-    QCoreApplication app(argc, nullptr);
-
-    std::chrono::seconds inactivity_display_off_timeout{server->inactivity_display_off_timeout()};
-    std::chrono::seconds inactivity_display_dim_timeout{server->inactivity_display_dim_timeout()};
-    std::chrono::milliseconds power_key_ignore_timeout{server->power_key_ignore_timeout()};
-    std::chrono::milliseconds shutdown_timeout{server->shutdown_timeout()};
-
-    mir_screen = std::make_shared<MirScreen>(
-        server->the_screen_hardware(),
-        server->the_compositor(),
-        server->the_display(),
-        server->the_touch_visualizer(),
-        server->the_main_loop(),
-        inactivity_display_off_timeout,
-        inactivity_display_dim_timeout);
-
-    screen_event_handler =
-        std::make_shared<ScreenEventHandler>(
-                *(server->the_main_loop()),
-                power_key_ignore_timeout,
-                shutdown_timeout,
-                [] { if (system("shutdown -P now")); }, // ignore warning
-                *mir_screen);
-
-    auto composite_filter = server->the_composite_event_filter();
-    composite_filter->append(screen_event_handler);
-
-    DBusScreen screen{*mir_screen};
-
-    app.exec();
 }

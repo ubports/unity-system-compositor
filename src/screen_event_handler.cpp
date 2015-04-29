@@ -24,19 +24,20 @@
 #include <cstdio>
 
 usc::ScreenEventHandler::ScreenEventHandler(
-    mir::time::AlarmFactory& alarm_factory,
+    std::shared_ptr<Screen> const& screen,
+    std::shared_ptr<mir::time::AlarmFactory> const& alarm_factory,
     std::chrono::milliseconds power_key_ignore_timeout,
     std::chrono::milliseconds shutdown_timeout,
-    std::function<void()> const& shutdown,
-    Screen& screen)
-    : long_press_detected{false},
-      mode_at_press_start{MirPowerMode::mir_power_mode_off},
-      screen{&screen},
+    std::function<void()> const& shutdown)
+    : screen{screen},
+      alarm_factory{alarm_factory},
       power_key_ignore_timeout{power_key_ignore_timeout},
       shutdown_timeout{shutdown_timeout},
       shutdown{shutdown},
-      shutdown_alarm{alarm_factory.create_alarm([this]{ shutdown_alarm_notification(); })},
-      long_press_alarm{alarm_factory.create_alarm([this]{ long_press_notification(); })}
+      long_press_detected{false},
+      mode_at_press_start{MirPowerMode::mir_power_mode_off},
+      shutdown_alarm{alarm_factory->create_alarm([this]{ shutdown_alarm_notification(); })},
+      long_press_alarm{alarm_factory->create_alarm([this]{ long_press_notification(); })}
 {
 }
 

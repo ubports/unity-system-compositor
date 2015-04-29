@@ -22,6 +22,14 @@
 
 #include <memory>
 
+namespace mir
+{
+namespace input
+{
+class EventFilter;
+}
+}
+
 namespace usc
 {
 
@@ -29,7 +37,8 @@ class Server;
 class DMConnection;
 class Spinner;
 class ScreenEventHandler;
-class MirScreen;
+class Screen;
+class UnityScreenService;
 
 class SystemCompositor
 {
@@ -38,13 +47,12 @@ public:
     void run();
 
 private:
-    void qt_main();
-
     std::shared_ptr<Server> const server;
     std::shared_ptr<DMConnection> dm_connection;
     std::shared_ptr<Spinner> const spinner;
-    std::shared_ptr<MirScreen> mir_screen;
-    std::shared_ptr<ScreenEventHandler> screen_event_handler;
+    std::shared_ptr<Screen> screen;
+    std::shared_ptr<mir::input::EventFilter> screen_event_handler;
+    std::shared_ptr<UnityScreenService> unity_screen_service;
 };
 
 }
