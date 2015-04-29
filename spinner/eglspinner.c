@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <GLES2/gl2.h>
 #include <math.h>
+#include <sys/stat.h>
 #if HAVE_PROPS
 #include <hybris/properties/properties.h>
 #endif
@@ -36,6 +37,7 @@
 #define VALUE_KEY        "GRID_UNIT_PX"
 #define VALUE_KEY_LENGTH 12
 #define PROP_KEY         "ro.product.device"
+#define DEFAULT_FILE     "/etc/ubuntu-touch-session.d/android.conf"
 #define FILE_BASE        "/etc/ubuntu-touch-session.d/"
 #define FILE_EXTENSION   ".conf"
 
@@ -52,13 +54,20 @@ int get_gu ()
     // get name of file to read from
     bzero ((void*) filename, MAX_LENGTH);
     strcpy (filename, FILE_BASE);
+
+    struct stat buf;   
+    if (stat(DEFAULT_FILE, &buf) == 0)
+        strcpy (filename, DEFAULT_FILE);
+    else
+    {        
 #ifdef HAVE_PROPS
-    char* defaultValue = "";
-    char  value[PROP_VALUE_MAX];
-    property_get (PROP_KEY, value, defaultValue);
-    strcat (filename, value);
+        char* defaultValue = "";
+        char  value[PROP_VALUE_MAX];
+        property_get (PROP_KEY, value, defaultValue);
+        strcat (filename, value);
 #endif
-    strcat (filename, FILE_EXTENSION);
+        strcat (filename, FILE_EXTENSION);
+    }
 
     // try to open it
     handle = fopen ((const char*) filename, "r");
