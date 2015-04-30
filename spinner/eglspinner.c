@@ -57,7 +57,9 @@ int get_gu ()
 
     struct stat buf;   
     if (stat(DEFAULT_FILE, &buf) == 0)
+    {
         strcpy (filename, DEFAULT_FILE);
+    }
     else
     {        
 #ifdef HAVE_PROPS
