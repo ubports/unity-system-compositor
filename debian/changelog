@@ -1,3 +1,11 @@
+unity-system-compositor (0.0.5+15.04.20150430-0ubuntu1) vivid; urgency=medium
+
+  [ Ricardo Salveti de Araujo ]
+  * Check if the android.conf file is present which means we are on the
+    new way of defining device specific environment variables.
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Thu, 30 Apr 2015 16:23:53 +0000
+
 unity-system-compositor (0.0.5+15.04.20150227-0ubuntu1) vivid; urgency=medium
 
   [ CI Train Bot ]
