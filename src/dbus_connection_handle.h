@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014 Canonical Ltd.
+ * Copyright © 2015 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -16,34 +16,31 @@
  * Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
-#ifndef USC_EXTERNAL_SPINNER_H_
-#define USC_EXTERNAL_SPINNER_H_
+#ifndef USC_DBUS_CONNECTION_HANDLE_H_
+#define USC_DBUS_CONNECTION_HANDLE_H_
 
-#include "spinner.h"
-
-#include <string>
-#include <sys/types.h>
-#include <mutex>
+#include <dbus/dbus.h>
 
 namespace usc
 {
 
-class ExternalSpinner : public Spinner
+class DBusConnectionHandle
 {
 public:
-    ExternalSpinner(std::string const& executable,
-                    std::string const& mir_socket);
-    ~ExternalSpinner();
+    DBusConnectionHandle(char const* address);
+    ~DBusConnectionHandle();
 
-    void ensure_running() override;
-    void kill() override;
-    pid_t pid() override;
+    void request_name(char const* name) const;
+    void add_match(char const* match) const;
+    void add_filter(DBusHandleMessageFunction filter_func, void* user_data) const;
+
+    operator ::DBusConnection*() const;
 
 private:
-    std::string const executable;
-    std::string const mir_socket;
-    std::mutex mutex;
-    pid_t spinner_pid;
+    DBusConnectionHandle(DBusConnectionHandle const&) = delete;
+    DBusConnectionHandle& operator=(DBusConnectionHandle const&) = delete;
+
+    ::DBusConnection* connection;
 };
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014 Canonical Ltd.
+ * Copyright © 2015 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -16,36 +16,31 @@
  * Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
-#ifndef USC_EXTERNAL_SPINNER_H_
-#define USC_EXTERNAL_SPINNER_H_
-
-#include "spinner.h"
+#ifndef USC_TEST_DBUS_BUS_H_
+#define USC_TEST_DBUS_BUS_H_
 
 #include <string>
 #include <sys/types.h>
-#include <mutex>
 
 namespace usc
 {
+namespace test
+{
 
-class ExternalSpinner : public Spinner
+class DBusBus
 {
 public:
-    ExternalSpinner(std::string const& executable,
-                    std::string const& mir_socket);
-    ~ExternalSpinner();
+    DBusBus();
+    ~DBusBus();
 
-    void ensure_running() override;
-    void kill() override;
-    pid_t pid() override;
+    std::string address();
 
 private:
-    std::string const executable;
-    std::string const mir_socket;
-    std::mutex mutex;
-    pid_t spinner_pid;
+    std::string address_;
+    pid_t pid;
 };
 
+}
 }
 
 #endif

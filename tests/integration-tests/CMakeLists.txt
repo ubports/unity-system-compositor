@@ -1,4 +1,4 @@
-# Copyright © 2014 Canonical Ltd.
+# Copyright © 2015 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 3 as
@@ -16,21 +16,30 @@
 
 include_directories(
  ${CMAKE_SOURCE_DIR}
+ ${CMAKE_BINARY_DIR}
  ${MIRSERVER_INCLUDE_DIRS}
+ ${DBUS_INCLUDE_DIRS}
 )
 
 add_executable(
-  usc_unit_tests
+  usc_test_helper_wait_for_signal
+  usc_test_helper_wait_for_signal.c
+)
 
-  test_session_switcher.cpp
-  test_screen_event_handler.cpp
-  test_mir_screen.cpp
+add_executable(
+  usc_integration_tests
 
-  advanceable_timer.cpp
+  run_command.cpp
+  dbus_bus.cpp
+  dbus_client.cpp
+  test_dbus_event_loop.cpp
+  test_unity_screen_service.cpp
+  test_external_spinner.cpp
+  test_powerd_mediator.cpp
 )
 
 target_link_libraries(
-   usc_unit_tests
+   usc_integration_tests
 
    usc
    ${GTEST_BOTH_LIBRARIES}
@@ -38,6 +47,7 @@ target_link_libraries(
    ${GMOCK_MAIN_LIBRARY}
 )
 
-add_test(usc_unit_tests ${EXECUTABLE_OUTPUT_PATH}/usc_unit_tests)
+add_test(usc_integration_tests ${EXECUTABLE_OUTPUT_PATH}/usc_integration_tests)
 
-add_dependencies(usc_unit_tests GMock)
+add_dependencies(usc_integration_tests GMock)
+add_dependencies(usc_integration_tests usc_test_helper_wait_for_signal)

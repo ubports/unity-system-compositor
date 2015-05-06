@@ -18,14 +18,19 @@
 
 #include "server.h"
 #include "external_spinner.h"
-#include "shell.h"
 #include "asio_dm_connection.h"
 #include "session_switcher.h"
+#include "window_manager.h"
+#include "mir_screen.h"
+#include "screen_event_handler.h"
+#include "powerd_mediator.h"
+#include "unity_screen_service.h"
 
 #include <mir/input/cursor_listener.h>
 #include <mir/server_status_listener.h>
 #include <mir/shell/focus_controller.h>
 #include <mir/scene/session.h>
+#include <mir/main_loop.h>
 
 #include <iostream>
 
@@ -82,7 +87,7 @@ struct ServerStatusListener : public mir::ServerStatusListener
 
     std::weak_ptr<ms::Session> weak_active_session()
     {
-        return focus_controller->focussed_application();
+        return focus_controller->focused_session();
     }
 
     std::shared_ptr<msh::FocusController> const focus_controller;
@@ -126,11 +131,14 @@ usc::Server::Server(int argc, char** argv)
             return std::make_shared<ServerStatusListener>(the_focus_controller());
         });
 
-    wrap_shell([this](std::shared_ptr<msh::Shell> const& wrapped)
-        -> std::shared_ptr<msh::Shell>
-        {
-            return std::make_shared<Shell>(wrapped, the_session_switcher());
-        });
+    override_the_window_manager_builder([this](msh::FocusController* focus_controller)
+       {
+         return std::make_shared<WindowManager>(
+             focus_controller,
+             the_shell_display_layout(),
+             the_session_coordinator(),
+             the_session_switcher());
+       });
 
     set_config_filename("unity-system-compositor.conf");
 
@@ -173,4 +181,65 @@ std::shared_ptr<usc::DMConnection> usc::Server::the_dm_connection()
                 the_options()->get("to-dm-fd", -1),
                 the_dm_message_handler());
         });
+}
+
+std::shared_ptr<usc::Screen> usc::Server::the_screen()
+{
+    return screen(
+        [this]
+        {
+            return std::make_shared<MirScreen>(
+                the_screen_hardware(),
+                the_compositor(),
+                the_display(),
+                the_touch_visualizer(),
+                the_main_loop(),
+                inactivity_display_off_timeout(),
+                inactivity_display_dim_timeout());
+        });
+}
+
+std::shared_ptr<mi::EventFilter> usc::Server::the_screen_event_handler()
+{
+    return screen_event_handler(
+        [this]
+        {
+            return std::make_shared<ScreenEventHandler>(
+                the_screen(),
+                the_main_loop(),
+                power_key_ignore_timeout(),
+                shutdown_timeout(),
+                [] { if (system("shutdown -P now")); }); // ignore warning
+        });
+}
+
+std::shared_ptr<usc::ScreenHardware> usc::Server::the_screen_hardware()
+{
+    return screen_hardware(
+        [this]
+        {
+            return std::make_shared<usc::PowerdMediator>(dbus_bus_address());
+        });
+}
+
+std::shared_ptr<usc::UnityScreenService> usc::Server::the_unity_screen_service()
+{
+    return unity_screen_service(
+        [this]
+        {
+            return std::make_shared<UnityScreenService>(
+                    dbus_bus_address(),
+                    the_screen());
+        });
+}
+
+std::string usc::Server::dbus_bus_address()
+{
+    static char const* const default_bus_address{"unix:path=/var/run/dbus/system_bus_socket"};
+
+    char const* bus = getenv("DBUS_SYSTEM_BUS_ADDRESS");
+    if (!bus)
+        bus = default_bus_address;
+
+    return std::string{bus};
 }

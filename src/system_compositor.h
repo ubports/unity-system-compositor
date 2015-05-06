@@ -22,8 +22,13 @@
 
 #include <memory>
 
-class ScreenStateHandler;
-class PowerKeyHandler;
+namespace mir
+{
+namespace input
+{
+class EventFilter;
+}
+}
 
 namespace usc
 {
@@ -31,6 +36,9 @@ namespace usc
 class Server;
 class DMConnection;
 class Spinner;
+class ScreenEventHandler;
+class Screen;
+class UnityScreenService;
 
 class SystemCompositor
 {
@@ -39,13 +47,12 @@ public:
     void run();
 
 private:
-    void qt_main();
-
     std::shared_ptr<Server> const server;
     std::shared_ptr<DMConnection> dm_connection;
     std::shared_ptr<Spinner> const spinner;
-    std::shared_ptr<ScreenStateHandler> screen_state_handler;
-    std::shared_ptr<PowerKeyHandler> power_key_handler;
+    std::shared_ptr<Screen> screen;
+    std::shared_ptr<mir::input::EventFilter> screen_event_handler;
+    std::shared_ptr<UnityScreenService> unity_screen_service;
 };
 
 }
