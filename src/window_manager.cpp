@@ -83,40 +83,49 @@ public:
     msh::FocusController& focus_controller;
 };
 
-
-struct SessionReadyObserver : ms::NullSurfaceObserver,
-                              std::enable_shared_from_this<SessionReadyObserver>
+struct SurfaceReadyObserver : ms::NullSurfaceObserver,
+                              std::enable_shared_from_this<SurfaceReadyObserver>
 {
-    SessionReadyObserver(
-        std::shared_ptr<usc::SessionSwitcher> const& switcher,
-        std::shared_ptr<ms::Surface> const& surface,
-        ms::Session const* session)
-        : switcher{switcher},
-          surface{surface},
-          session{session}
-    {
-    }
+    using ActivateFunction = std::function<void(
+        std::shared_ptr<ms::Session> const& session,
+        std::shared_ptr<ms::Surface> const& surface)>;
 
-    void frame_posted(int) override
-    {
-        ++num_frames_posted;
-        if (num_frames_posted == num_frames_for_session_ready)
-        {
-            switcher->mark_ready(session);
-            surface->remove_observer(shared_from_this());
-        }
-    }
+    SurfaceReadyObserver(
+        ActivateFunction const& activate,
+        std::shared_ptr<ms::Session> const& session,
+        std::shared_ptr<ms::Surface> const& surface);
 
-    std::shared_ptr<usc::SessionSwitcher> const switcher;
-    std::shared_ptr<ms::Surface> const surface;
-    ms::Session const* const session;
-    // We need to wait for the second frame before marking the session
-    // as ready. The first frame posted from sessions is a blank frame.
-    // TODO: Solve this issue at its root and remove this workaround
-    int const num_frames_for_session_ready{2};
-    int num_frames_posted{0};
+    ~SurfaceReadyObserver();
+
+private:
+    void frame_posted(int) override;
+
+    ActivateFunction const activate;
+    std::weak_ptr<ms::Session> const session;
+    std::weak_ptr<ms::Surface> const surface;
 };
 
+SurfaceReadyObserver::SurfaceReadyObserver(
+    ActivateFunction const& activate,
+std::shared_ptr<ms::Session> const& session,
+    std::shared_ptr<ms::Surface> const& surface) :
+activate{activate},
+session{session},
+surface{surface}
+{
+}
+
+SurfaceReadyObserver::~SurfaceReadyObserver()
+= default;
+
+void SurfaceReadyObserver::frame_posted(int)
+{
+    if (auto const s = surface.lock())
+    {
+        activate(session.lock(), s);
+        s->remove_observer(shared_from_this());
+    }
+}
 }
 
 usc::WindowManager::WindowManager(
@@ -178,8 +187,13 @@ auto usc::WindowManager::add_surface(
     auto const result = build(session, placed_parameters);
     auto const surface = session->surface(result);
 
-    auto const session_ready_observer = std::make_shared<SessionReadyObserver>(
-        session_switcher, surface, session.get());
+    auto const session_ready_observer = std::make_shared<SurfaceReadyObserver>(
+        [this](std::shared_ptr<ms::Session> const& session, std::shared_ptr<ms::Surface> const& surface)
+        {
+            session_switcher->mark_ready(session.get());
+        },
+        session,
+        surface);
 
     surface->add_observer(session_ready_observer);
 
