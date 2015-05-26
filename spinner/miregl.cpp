@@ -31,6 +31,8 @@ public:
 
     void swap_buffers(EGLSurface eglsurface) const;
 
+    void destroy_surface(EGLSurface eglsurface) const;
+
     ~MirEglApp();
 
     MirConnection* const connection;
@@ -83,7 +85,7 @@ MirEglSurface::MirEglSurface(std::shared_ptr<MirEglApp> const& mir_egl_app, MirS
 
 MirEglSurface::~MirEglSurface()
 {
-    mir_egl_app->release_current();
+    mir_egl_app->destroy_surface(eglsurface);
     mir_surface_release_sync(surface);
 }
 
@@ -132,8 +134,13 @@ MirEglApp::MirEglApp(MirConnection* const connection, MirPixelFormat pixel_forma
     if (egldisplay == EGL_NO_DISPLAY)
         throw std::runtime_error("Can't eglGetDisplay");
 
-    if (!eglInitialize(egldisplay, NULL, NULL))
+    EGLint major;
+    EGLint minor;
+    if (!eglInitialize(egldisplay, &major, &minor))
         throw std::runtime_error("Can't eglInitialize");
+
+    if (major != 1 || minor != 4)
+        throw std::runtime_error("EGL version is not 1.4");
 
     if (!eglChooseConfig(egldisplay, attribs, &eglconfig, 1, &neglconfigs))
         throw std::runtime_error("Could not eglChooseConfig");
@@ -172,7 +179,7 @@ EGLSurface MirEglApp::create_surface(MirSurface* surface)
 
 void MirEglApp::release_current()
 {
-    eglMakeCurrent(egldisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, eglctx);
+    eglMakeCurrent(egldisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 }
 
 void MirEglApp::make_current(EGLSurface eglsurface) const
@@ -201,9 +208,16 @@ void MirEglApp::swap_buffers(EGLSurface eglsurface) const
     }
 }
 
+void MirEglApp::destroy_surface(EGLSurface eglsurface) const
+{
+    eglDestroySurface(egldisplay, eglsurface);
+}
+
+
 MirEglApp::~MirEglApp()
 {
     eglMakeCurrent(egldisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglDestroyContext(egldisplay, eglctx);
     eglTerminate(egldisplay);
     mir_connection_release(connection);
 }
