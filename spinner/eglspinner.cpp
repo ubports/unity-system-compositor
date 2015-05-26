@@ -123,14 +123,14 @@ static GLuint load_shader(const char *src, GLenum type)
 }
 
 // Colours from http://design.ubuntu.com/brand/colour-palette
-#define MID_AUBERGINE   0.368627451f, 0.152941176f, 0.31372549f
-#define ORANGE          0.866666667f, 0.282352941f, 0.141414141f
-#define WARM_GREY       0.682352941f, 0.654901961f, 0.623529412f
-#define COOL_GREY       0.2f,         0.2f,         0.2f
-#define LIGHT_AUBERGINE 0.466666667f, 0.297297297f, 0.435294118f
-#define DARK_AUBERGINE  0.17254902f,  0.0f,         0.117647059f
+//#define MID_AUBERGINE   0.368627451f, 0.152941176f, 0.31372549f
+//#define ORANGE          0.866666667f, 0.282352941f, 0.141414141f
+//#define WARM_GREY       0.682352941f, 0.654901961f, 0.623529412f
+//#define COOL_GREY       0.2f,         0.2f,         0.2f
+//#define LIGHT_AUBERGINE 0.466666667f, 0.297297297f, 0.435294118f
+//#define DARK_AUBERGINE  0.17254902f,  0.0f,         0.117647059f
 #define BLACK           0.0f,         0.0f,         0.0f
-#define WHITE           1.0f,         1.0f,         1.0f
+//#define WHITE           1.0f,         1.0f,         1.0f
 
 cairo_surface_t* pngToSurface (const char* filename)
 {
@@ -212,10 +212,10 @@ GLuint createShaderProgram(const char* vertexShaderSrc, const char* fragmentShad
 typedef struct _AnimationValues
 {
     double lastTimeStamp;
-    double angle;
-    double fadeBackground;
-    double fadeLogo;
-    double fadeGlow;
+    GLfloat angle;
+    GLfloat fadeBackground;
+    GLfloat fadeLogo;
+    GLfloat fadeGlow;
 } AnimationValues;
 
 void
