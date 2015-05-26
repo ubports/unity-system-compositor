@@ -67,17 +67,19 @@ void update_surfaceparm(
 
     const MirDisplayMode *mode = &output->modes[output->current_mode];
 
-    printf("Current active output is %dx%d %+d%+d\n",
+    printf("Current active output is [%u] %dx%d %+d%+d\n",
+           output->output_id,
            mode->horizontal_resolution, mode->vertical_resolution,
            output->position_x, output->position_y);
 
+    surfaceparm.output_id = output->output_id;
     surfaceparm.width = *width > 0 ? *width : mode->horizontal_resolution;
     surfaceparm.height = *height > 0 ? *height : mode->vertical_resolution;
 
     mir_display_config_destroy(display_config);
 }
 
-void select_pixel_format(MirSurfaceParameters& surfaceparm, MirConnection* connection)
+MirPixelFormat select_pixel_format(MirConnection* connection)
 {
     unsigned int format[mir_pixel_formats];
     unsigned int nformats;
@@ -88,10 +90,12 @@ void select_pixel_format(MirSurfaceParameters& surfaceparm, MirConnection* conne
         mir_pixel_formats,
         &nformats);
 
-    surfaceparm.pixel_format = (MirPixelFormat) format[0];
+    auto const pixel_format = (MirPixelFormat) format[0];
 
     printf("Server supports %d of %d surface pixel formats. Using format: %d\n",
-           nformats, mir_pixel_formats, surfaceparm.pixel_format);
+           nformats, mir_pixel_formats, pixel_format);
+
+    return pixel_format;
 }
 }
 
@@ -231,11 +235,11 @@ std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv
     if (!mir_connection_is_valid(connection))
         throw std::runtime_error("Can't get connection");
 
-    select_pixel_format(surfaceparm, connection);
-
-    auto const mir_egl_app = make_mir_eglapp(connection, surfaceparm.pixel_format, swapinterval);
+    auto const pixel_format = select_pixel_format(connection);
+    auto const mir_egl_app = make_mir_eglapp(connection, pixel_format, swapinterval);
 
     update_surfaceparm(surfaceparm, connection, width, height);
+    surfaceparm.pixel_format = pixel_format;
 
     *width = surfaceparm.width;
     *height = surfaceparm.height;
