@@ -19,34 +19,14 @@
 #ifndef __EGLAPP_H__
 #define __EGLAPP_H__
 
-#ifdef __cplusplus
-#include <mir_toolkit/common.h>
 #include <memory>
-#include <EGL/eglplatform.h>
 
-struct MirConnection;
-
-extern "C" {
-#else
-#  include <stdbool.h>
-#endif
+class MirEglSurface;
 
 extern float mir_eglapp_background_opacity;
 
-bool mir_eglapp_init(int argc, char *argv[],
+std::shared_ptr<MirEglSurface> mir_eglapp_init(int argc, char *argv[],
                                 unsigned int *width, unsigned int *height);
-void mir_eglapp_swap_buffers(void);
-bool mir_eglapp_running(void);
-void mir_eglapp_shutdown(void);
-#ifdef __cplusplus
-}
-
-class MirEglApp;
-class MirEglSurface;
-std::shared_ptr<MirEglApp> make_mir_eglapp(
-    MirConnection* const connection,
-    MirPixelFormat const& pixel_format,
-    EGLint swapinterval);
-#endif
+bool mir_eglapp_running();
 
 #endif

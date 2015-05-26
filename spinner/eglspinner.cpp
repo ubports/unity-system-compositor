@@ -18,6 +18,7 @@
  */
 
 #include "eglapp.h"
+#include "miregl.h"
 #include <assert.h>
 #include <cairo.h>
 #include <glib.h>
@@ -63,7 +64,7 @@ int get_gu ()
     else
     {        
 #ifdef HAVE_PROPS
-        char* defaultValue = "";
+        char const* defaultValue = "";
         char  value[PROP_VALUE_MAX];
         property_get (PROP_KEY, value, defaultValue);
         strcat (filename, value);
@@ -325,8 +326,8 @@ int main(int argc, char *argv[])
     unsigned int width = 0;
     unsigned int height = 0;
 
-    if (!mir_eglapp_init(argc, argv, &width, &height))
-        return 1;
+    auto const surface = mir_eglapp_init(argc, argv, &width, &height);
+    surface->egl_make_current();
 
     double pixelSize = (double) get_gu () * 11.18;
     double halfRealWidth = ((2.0 / (double) width) * pixelSize) / 2.0;
@@ -334,10 +335,10 @@ int main(int argc, char *argv[])
 
     const GLfloat vertices[] =
     {
-         halfRealWidth,  halfRealHeight,
-         halfRealWidth, -halfRealHeight,
-        -halfRealWidth,  halfRealHeight,
-        -halfRealWidth, -halfRealHeight,
+        (GLfloat)halfRealWidth, (GLfloat)halfRealHeight,
+        (GLfloat)halfRealWidth, (GLfloat)-halfRealHeight,
+        (GLfloat)-halfRealWidth,(GLfloat)halfRealHeight,
+        (GLfloat)-halfRealWidth,(GLfloat)-halfRealHeight,
     };
 
     const GLfloat texCoordsSpinner[] =
@@ -414,10 +415,8 @@ int main(int argc, char *argv[])
         // update animation variable
         updateAnimation (timer, &anim);
 
-        mir_eglapp_swap_buffers();
+        surface->swap_buffers();
     }
-
-    mir_eglapp_shutdown();
 
     glDeleteTextures(2, texture);
     g_timer_destroy (timer);
