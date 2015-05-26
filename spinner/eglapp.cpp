@@ -220,7 +220,13 @@ std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv
     if (surfaceparm.width && surfaceparm.height)
     {
         result.push_back(std::make_shared<MirEglSurface>(mir_egl_app, surfaceparm));
-        printf("Surfaces created = %ld\n", result.size());
+        return result;
+    }
+
+    // If an output has been specified just do that
+    if (surfaceparm.output_id == mir_display_output_id_invalid)
+    {
+        result.push_back(std::make_shared<MirEglSurface>(mir_egl_app, surfaceparm));
         return result;
     }
 
