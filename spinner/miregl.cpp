@@ -84,19 +84,31 @@ MirEglSurface::~MirEglSurface()
     mir_surface_release_sync(surface);
 }
 
-void MirEglSurface::egl_make_current() const
+void MirEglSurface::egl_make_current()
 {
+    auto const buffer_stream = mir_surface_get_buffer_stream(surface);
+    mir_buffer_stream_get_current_buffer(buffer_stream, &buffer_package);
     mir_egl_app->make_current(eglsurface);
 }
 
-void MirEglSurface::swap_buffers() const
+void MirEglSurface::swap_buffers()
 {
     mir_egl_app->swap_buffers(eglsurface);
 }
 
-void MirEglSurface::egl_release_current() const
+void MirEglSurface::egl_release_current()
 {
     mir_egl_app->release_current();
+}
+
+unsigned int MirEglSurface::width() const
+{
+    return buffer_package->width;
+}
+
+unsigned int MirEglSurface::height() const
+{
+    return buffer_package->height;
 }
 
 MirEglApp::MirEglApp(MirConnection* const connection, MirPixelFormat pixel_format, EGLint swapinterval) :

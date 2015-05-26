@@ -51,9 +51,7 @@ MirDisplayOutput const* find_first_active_output(MirDisplayConfiguration const* 
 
 void update_surfaceparm(
     MirSurfaceParameters& surfaceparm,
-    MirConnection* const connection,
-    unsigned int* width,
-    unsigned int* height)
+    MirConnection* const connection)
 {
     /* eglapps are interested in the screen size, so
     use mir_connection_create_display_config */
@@ -73,8 +71,6 @@ void update_surfaceparm(
            output->position_x, output->position_y);
 
     surfaceparm.output_id = output->output_id;
-    surfaceparm.width = *width > 0 ? *width : mode->horizontal_resolution;
-    surfaceparm.height = *height > 0 ? *height : mode->vertical_resolution;
 
     mir_display_config_destroy(display_config);
 }
@@ -99,13 +95,12 @@ MirPixelFormat select_pixel_format(MirConnection* connection)
 }
 }
 
-std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv[],
-                                unsigned int *width, unsigned int *height)
+std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv[])
 {
     MirSurfaceParameters surfaceparm =
         {
             "eglappsurface",
-            256, 256,
+            0, 0,
             mir_pixel_format_xbgr_8888,
             mir_buffer_usage_hardware,
             mir_display_output_id_invalid
@@ -169,10 +164,6 @@ std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv
                         }
                     }
                     break;
-                case 'f':
-                    *width = 0;
-                    *height = 0;
-                    break;
                 case 's':
                     {
                         unsigned int w, h;
@@ -184,8 +175,8 @@ std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv
                         }
                         if (sscanf(arg, "%ux%u", &w, &h) == 2)
                         {
-                            *width = w;
-                            *height = h;
+                            surfaceparm.width = w;
+                            surfaceparm.height = h;
                         }
                         else
                         {
@@ -219,7 +210,6 @@ std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv
                 printf("Usage: %s [<options>]\n"
                        "  -b               Background opacity (0.0 - 1.0)\n"
                        "  -h               Show this help text\n"
-                       "  -f               Force full screen\n"
                        "  -o ID            Force placement on output monitor ID\n"
                        "  -n               Don't sync to vblank\n"
                        "  -m socket        Mir server socket\n"
@@ -236,13 +226,11 @@ std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv
         throw std::runtime_error("Can't get connection");
 
     auto const pixel_format = select_pixel_format(connection);
-    auto const mir_egl_app = make_mir_eglapp(connection, pixel_format, swapinterval);
-
-    update_surfaceparm(surfaceparm, connection, width, height);
     surfaceparm.pixel_format = pixel_format;
 
-    *width = surfaceparm.width;
-    *height = surfaceparm.height;
+    auto const mir_egl_app = make_mir_eglapp(connection, pixel_format, swapinterval);
+
+    update_surfaceparm(surfaceparm, connection);
 
     auto const mir_egl_surface = std::make_shared<MirEglSurface>(mir_egl_app, surfaceparm);
     return {mir_egl_surface};

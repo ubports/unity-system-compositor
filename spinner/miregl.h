@@ -41,21 +41,24 @@ public:
     ~MirEglSurface();
 
     template<typename Painter>
-    void paint(Painter const& functor) const
+    void paint(Painter const& functor)
     {
         egl_make_current();
-        functor();
+        functor(width(), height());
         swap_buffers();
         egl_release_current();
     }
 
 private:
-    void egl_make_current() const;
-    void egl_release_current() const;
-    void swap_buffers() const;
+    void egl_make_current();
+    void egl_release_current();
+    void swap_buffers();
+    unsigned int width() const;
+    unsigned int height() const;
 
     std::shared_ptr<MirEglApp> const mir_egl_app;
     MirSurface* const surface;
+    MirBufferPackage* buffer_package;
     EGLSurface const eglsurface;
 
 };

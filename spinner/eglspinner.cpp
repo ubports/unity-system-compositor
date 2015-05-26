@@ -345,27 +345,14 @@ try
     GLint fadeLogo;
     GLint aTexCoords[2];
     GLint sampler[2];
-    unsigned int width = 0;
-    unsigned int height = 0;
 
-    auto const surfaces = mir_eglapp_init(argc, argv, &width, &height);
+    auto const surfaces = mir_eglapp_init(argc, argv);
 
     running = 1;
     signal(SIGINT, shutdown);
     signal(SIGTERM, shutdown);
 
     double pixelSize = (double) get_gu () * 11.18;
-    double halfRealWidth = ((2.0 / (double) width) * pixelSize) / 2.0;
-    double halfRealHeight = ((2.0 / (double) height) * pixelSize) / 2.0;
-
-    const GLfloat vertices[] =
-    {
-        (GLfloat)halfRealWidth, (GLfloat)halfRealHeight,
-        (GLfloat)halfRealWidth, (GLfloat)-halfRealHeight,
-        (GLfloat)-halfRealWidth,(GLfloat)halfRealHeight,
-        (GLfloat)-halfRealWidth,(GLfloat)-halfRealHeight,
-    };
-
     const GLfloat texCoordsSpinner[] =
     {
         -0.5f, 0.5f,
@@ -377,9 +364,7 @@ try
     prog[0] = createShaderProgram (vShaderSrcSpinner, fShaderSrcGlow);
     prog[1] = createShaderProgram (vShaderSrcSpinner, fShaderSrcLogo);
 
-    // setup viewport and projection
     glClearColor(BLACK, mir_eglapp_background_opacity);
-    glViewport(0, 0, width, height);
 
     // setup proper GL-blending
     glEnable(GL_BLEND);
@@ -403,8 +388,6 @@ try
     uploadTexture(texture[1], PKGDATADIR "/spinner-logo.png");
 
     // bunch of shader-attributes to enable
-    glVertexAttribPointer(vpos[0], 2, GL_FLOAT, GL_FALSE, 0, vertices);
-    glVertexAttribPointer(vpos[1], 2, GL_FLOAT, GL_FALSE, 0, vertices);
     glVertexAttribPointer(aTexCoords[0], 2, GL_FLOAT, GL_FALSE, 0, texCoordsSpinner);
     glVertexAttribPointer(aTexCoords[1], 2, GL_FLOAT, GL_FALSE, 0, texCoordsSpinner);
     glEnableVertexAttribArray(vpos[0]);
@@ -419,8 +402,24 @@ try
     while (mir_eglapp_running())
     {
         for (auto const& surface : surfaces)
-            surface->paint([&]
+            surface->paint([&](unsigned int width, unsigned int height)
             {
+                double halfRealWidth = ((2.0 / (double) width) * pixelSize) / 2.0;
+                double halfRealHeight = ((2.0 / (double) height) * pixelSize) / 2.0;
+
+                const GLfloat vertices[] =
+                    {
+                        (GLfloat)halfRealWidth, (GLfloat)halfRealHeight,
+                        (GLfloat)halfRealWidth, (GLfloat)-halfRealHeight,
+                        (GLfloat)-halfRealWidth,(GLfloat)halfRealHeight,
+                        (GLfloat)-halfRealWidth,(GLfloat)-halfRealHeight,
+                    };
+
+                glVertexAttribPointer(vpos[0], 2, GL_FLOAT, GL_FALSE, 0, vertices);
+                glVertexAttribPointer(vpos[1], 2, GL_FLOAT, GL_FALSE, 0, vertices);
+
+                glViewport(0, 0, width, height);
+
                 glClearColor(BLACK, anim.fadeBackground);
                 glClear(GL_COLOR_BUFFER_BIT);
 
