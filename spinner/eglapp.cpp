@@ -27,52 +27,40 @@ static const char appname[] = "eglspinner";
 
 namespace
 {
-MirDisplayOutput const* find_first_active_output(MirDisplayConfiguration const* conf)
+std::vector<uint32_t> active_outputs(MirConnection* const connection)
 {
-    const MirDisplayOutput *output = NULL;
-    int d;
-
-    for (d = 0; d < (int)conf->num_outputs; d++)
-    {
-        const MirDisplayOutput *out = conf->outputs + d;
-
-        if (out->used &&
-            out->connected &&
-            out->num_modes &&
-            out->current_mode < out->num_modes)
-        {
-            output = out;
-            break;
-        }
-    }
-
-    return output;
-}
-
-void update_surfaceparm(
-    MirSurfaceParameters& surfaceparm,
-    MirConnection* const connection)
-{
+    std::vector<uint32_t> result;
     /* eglapps are interested in the screen size, so
     use mir_connection_create_display_config */
     MirDisplayConfiguration* display_config =
         mir_connection_create_display_config(connection);
 
-    const MirDisplayOutput *output = find_first_active_output(display_config);
+    for (MirDisplayOutput* output = display_config->outputs;
+         output != display_config->outputs + display_config->num_outputs;
+         ++output)
+    {
+        if (output->used &&
+            output->connected &&
+            output->num_modes &&
+            output->current_mode < output->num_modes)
+        {
+            const MirDisplayMode *mode = &output->modes[output->current_mode];
 
-    if (!output)
-        throw std::runtime_error("No active outputs found.");
+            printf("Current active output is [%u] %dx%d %+d%+d\n",
+                   output->output_id,
+                   mode->horizontal_resolution, mode->vertical_resolution,
+                   output->position_x, output->position_y);
 
-    const MirDisplayMode *mode = &output->modes[output->current_mode];
-
-    printf("Current active output is [%u] %dx%d %+d%+d\n",
-           output->output_id,
-           mode->horizontal_resolution, mode->vertical_resolution,
-           output->position_x, output->position_y);
-
-    surfaceparm.output_id = output->output_id;
+            result.push_back(output->output_id);
+        }
+    }
 
     mir_display_config_destroy(display_config);
+
+    if (result.empty())
+        throw std::runtime_error("No active outputs found.");
+
+    return result;
 }
 
 MirPixelFormat select_pixel_format(MirConnection* connection)
@@ -230,9 +218,15 @@ std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv
 
     auto const mir_egl_app = make_mir_eglapp(connection, pixel_format, swapinterval);
 
-    update_surfaceparm(surfaceparm, connection);
+    std::vector<std::shared_ptr<MirEglSurface>> result;
 
-    auto const mir_egl_surface = std::make_shared<MirEglSurface>(mir_egl_app, surfaceparm);
-    return {mir_egl_surface};
+    for (auto const output_id : active_outputs(connection))
+    {
+        surfaceparm.output_id = output_id;
+        result.push_back(std::make_shared<MirEglSurface>(mir_egl_app, surfaceparm));
+
+    }
+
+    return result;
 }
 
