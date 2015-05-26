@@ -89,9 +89,13 @@ void MirEglSurface::egl_make_current() const
     mir_egl_app->make_current(eglsurface);
 }
 
-void MirEglSurface::swap_buffers()
+void MirEglSurface::swap_buffers() const
 {
     mir_egl_app->swap_buffers(eglsurface);
+}
+
+void MirEglSurface::egl_release_current() const
+{
     mir_egl_app->release_current();
 }
 

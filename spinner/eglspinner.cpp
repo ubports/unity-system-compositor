@@ -418,30 +418,30 @@ try
 
     while (mir_eglapp_running())
     {
-        surface->egl_make_current();
-        glClearColor(BLACK, anim.fadeBackground);
-        glClear(GL_COLOR_BUFFER_BIT);
+        surface->paint([&]
+        {
+            glClearColor(BLACK, anim.fadeBackground);
+            glClear(GL_COLOR_BUFFER_BIT);
 
-        // draw glow
-        glUseProgram(prog[0]);
-        glBindTexture(GL_TEXTURE_2D, texture[0]);
-        glUniform1i(sampler[0], 0);
-        glUniform1f(theta, anim.angle);
-        glUniform1f(fadeGlow, anim.fadeGlow);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+            // draw glow
+            glUseProgram(prog[0]);
+            glBindTexture(GL_TEXTURE_2D, texture[0]);
+            glUniform1i(sampler[0], 0);
+            glUniform1f(theta, anim.angle);
+            glUniform1f(fadeGlow, anim.fadeGlow);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-        // draw logo
-        glUseProgram(prog[1]);
-        glBindTexture(GL_TEXTURE_2D, texture[1]);
-        glUniform1i(sampler[1], 0);
-        glUniform1f(theta, anim.angle);
-        glUniform1f(fadeLogo, anim.fadeLogo);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+            // draw logo
+            glUseProgram(prog[1]);
+            glBindTexture(GL_TEXTURE_2D, texture[1]);
+            glUniform1i(sampler[1], 0);
+            glUniform1f(theta, anim.angle);
+            glUniform1f(fadeLogo, anim.fadeLogo);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-        // update animation variable
-        updateAnimation (timer, &anim);
-
-        surface->swap_buffers();
+            // update animation variable
+            updateAnimation(timer, &anim);
+        });
     }
 
     glDeleteTextures(2, texture);

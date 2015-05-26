@@ -40,14 +40,24 @@ public:
 
     ~MirEglSurface();
 
-    void egl_make_current() const;
-
-    void swap_buffers();
+    template<typename Painter>
+    void paint(Painter const& functor) const
+    {
+        egl_make_current();
+        functor();
+        swap_buffers();
+        egl_release_current();
+    }
 
 private:
+    void egl_make_current() const;
+    void egl_release_current() const;
+    void swap_buffers() const;
+
     std::shared_ptr<MirEglApp> const mir_egl_app;
     MirSurface* const surface;
     EGLSurface const eglsurface;
+
 };
 
 #endif //UNITYSYSTEMCOMPOSITOR_MIREGL_H
