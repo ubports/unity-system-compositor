@@ -27,6 +27,9 @@
 #include <sys/stat.h>
 #if HAVE_PROPS
 #include <hybris/properties/properties.h>
+
+#include <signal.h>
+
 #include <iostream>
 
 #endif
@@ -312,6 +315,23 @@ const char fShaderSrcLogo[] =
         "    float a = col.a * uFadeLogo;                     \n"
         "    gl_FragColor = vec4(r, g, b, a);                 \n"
         "}                                                    \n";
+
+
+static volatile sig_atomic_t running = 0;
+
+static void shutdown(int signum)
+{
+    if (running)
+    {
+        running = 0;
+        printf("Signal %d received. Good night.\n", signum);
+    }
+}
+
+bool mir_eglapp_running()
+{
+    return running;
+}
 }
 
 int main(int argc, char *argv[])
@@ -329,6 +349,10 @@ try
     unsigned int height = 0;
 
     auto const surface = mir_eglapp_init(argc, argv, &width, &height);
+
+    running = 1;
+    signal(SIGINT, shutdown);
+    signal(SIGTERM, shutdown);
     surface->egl_make_current();
 
     double pixelSize = (double) get_gu () * 11.18;

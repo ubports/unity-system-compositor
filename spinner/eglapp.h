@@ -27,6 +27,5 @@ extern float mir_eglapp_background_opacity;
 
 std::shared_ptr<MirEglSurface> mir_eglapp_init(int argc, char *argv[],
                                 unsigned int *width, unsigned int *height);
-bool mir_eglapp_running();
 
 #endif

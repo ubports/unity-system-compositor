@@ -18,14 +18,11 @@
 
 #include "miregl.h"
 
-#include <signal.h>
 
 
 float mir_eglapp_background_opacity = 1.0f;
 
 static const char appname[] = "eglspinner";
-
-static volatile sig_atomic_t running = 0;
 
 
 namespace
@@ -93,20 +90,6 @@ void update_surfaceparm(
     printf("Server supports %d of %d surface pixel formats. Using format: %d\n",
            nformats, mir_pixel_formats, surfaceparm.pixel_format);
 }
-}
-
-static void shutdown(int signum)
-{
-    if (running)
-    {
-        running = 0;
-        printf("Signal %d received. Good night.\n", signum);
-    }
-}
-
-bool mir_eglapp_running()
-{
-    return running;
 }
 
 std::shared_ptr<MirEglSurface> mir_eglapp_init(int argc, char *argv[],
@@ -249,13 +232,8 @@ std::shared_ptr<MirEglSurface> mir_eglapp_init(int argc, char *argv[],
 
     auto const mir_egl_app = make_mir_eglapp(connection, surfaceparm.pixel_format, swapinterval);
 
-    signal(SIGINT, shutdown);
-    signal(SIGTERM, shutdown);
-
     *width = surfaceparm.width;
     *height = surfaceparm.height;
-
-    running = 1;
 
     auto const mir_egl_surface = std::make_shared<MirEglSurface>(mir_egl_app, surfaceparm);
     return mir_egl_surface;
