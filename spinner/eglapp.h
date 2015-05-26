@@ -20,6 +20,12 @@
 #define __EGLAPP_H__
 
 #ifdef __cplusplus
+#include <mir_toolkit/common.h>
+#include <memory>
+#include <EGL/eglplatform.h>
+
+struct MirConnection;
+
 extern "C" {
 #else
 #  include <stdbool.h>
@@ -34,6 +40,13 @@ bool mir_eglapp_running(void);
 void mir_eglapp_shutdown(void);
 #ifdef __cplusplus
 }
+
+class MirEglApp;
+class MirEglSurface;
+std::shared_ptr<MirEglApp> make_mir_eglapp(
+    MirConnection* const connection,
+    MirPixelFormat const& pixel_format,
+    EGLint swapinterval);
 #endif
 
 #endif
