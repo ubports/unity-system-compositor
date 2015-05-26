@@ -33,7 +33,7 @@ endif()
 
 link_directories(${MIRCLIENT_LIBRARY_DIRS})
 
-add_executable(unity-system-compositor-spinner eglapp.c eglapp.h eglspinner.c)
+add_executable(unity-system-compositor-spinner eglapp.cpp eglapp.h eglspinner.c)
 target_link_libraries(unity-system-compositor-spinner
   EGL
   ${CAIRO_LDFLAGS}

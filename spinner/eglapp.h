@@ -21,6 +21,8 @@
 
 #ifdef __cplusplus
 extern "C" {
+#else
+#  include <stdbool.h>
 #endif
 
 typedef int mir_eglapp_bool;
@@ -29,10 +31,10 @@ struct MirSurface;
 
 extern float mir_eglapp_background_opacity;
 
-mir_eglapp_bool mir_eglapp_init(int argc, char *argv[],
+bool mir_eglapp_init(int argc, char *argv[],
                                 unsigned int *width, unsigned int *height);
 void            mir_eglapp_swap_buffers(void);
-mir_eglapp_bool mir_eglapp_running(void);
+bool mir_eglapp_running(void);
 void            mir_eglapp_shutdown(void);
 
 struct MirConnection* mir_eglapp_native_connection();
