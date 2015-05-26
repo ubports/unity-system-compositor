@@ -353,7 +353,6 @@ try
     running = 1;
     signal(SIGINT, shutdown);
     signal(SIGTERM, shutdown);
-    surface->egl_make_current();
 
     double pixelSize = (double) get_gu () * 11.18;
     double halfRealWidth = ((2.0 / (double) width) * pixelSize) / 2.0;
@@ -419,6 +418,7 @@ try
 
     while (mir_eglapp_running())
     {
+        surface->egl_make_current();
         glClearColor(BLACK, anim.fadeBackground);
         glClear(GL_COLOR_BUFFER_BIT);
 

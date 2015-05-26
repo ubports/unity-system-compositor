@@ -92,6 +92,7 @@ void MirEglSurface::egl_make_current() const
 void MirEglSurface::swap_buffers()
 {
     mir_egl_app->swap_buffers(eglsurface);
+    mir_egl_app->release_current();
 }
 
 MirEglApp::MirEglApp(MirConnection* const connection, MirPixelFormat pixel_format, EGLint swapinterval) :
@@ -131,6 +132,9 @@ MirEglApp::MirEglApp(MirConnection* const connection, MirPixelFormat pixel_forma
     if (eglctx == EGL_NO_CONTEXT)
         throw std::runtime_error("eglCreateContext failed");
 
+    if (!eglMakeCurrent(egldisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, eglctx))
+        throw std::runtime_error("Can't eglMakeCurrent");
+
     eglSwapInterval(egldisplay, swapinterval);
 }
 
@@ -149,7 +153,7 @@ EGLSurface MirEglApp::create_surface(MirSurface* surface)
 
 void MirEglApp::release_current()
 {
-    eglMakeCurrent(egldisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglMakeCurrent(egldisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, eglctx);
 }
 
 void MirEglApp::make_current(EGLSurface eglsurface) const
@@ -180,6 +184,7 @@ void MirEglApp::swap_buffers(EGLSurface eglsurface) const
 
 MirEglApp::~MirEglApp()
 {
+    eglMakeCurrent(egldisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     eglTerminate(egldisplay);
     mir_connection_release(connection);
 }
