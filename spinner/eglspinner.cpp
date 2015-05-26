@@ -352,7 +352,7 @@ try
     signal(SIGINT, shutdown);
     signal(SIGTERM, shutdown);
 
-    double pixelSize = (double) get_gu () * 11.18;
+    double pixelSize = get_gu() * 11.18;
     const GLfloat texCoordsSpinner[] =
     {
         -0.5f, 0.5f,
@@ -361,8 +361,8 @@ try
         0.5f, -0.5f,
     };
 
-    prog[0] = createShaderProgram (vShaderSrcSpinner, fShaderSrcGlow);
-    prog[1] = createShaderProgram (vShaderSrcSpinner, fShaderSrcLogo);
+    prog[0] = createShaderProgram(vShaderSrcSpinner, fShaderSrcGlow);
+    prog[1] = createShaderProgram(vShaderSrcSpinner, fShaderSrcLogo);
 
     glClearColor(BLACK, mir_eglapp_background_opacity);
 
@@ -397,22 +397,22 @@ try
     glActiveTexture(GL_TEXTURE0);
 
     AnimationValues anim = {0.0, 0.0, 1.0, 0.0, 0.0};
-    GTimer* timer = g_timer_new ();
+    GTimer* timer = g_timer_new();
 
     while (mir_eglapp_running())
     {
         for (auto const& surface : surfaces)
             surface->paint([&](unsigned int width, unsigned int height)
             {
-                double halfRealWidth = ((2.0 / (double) width) * pixelSize) / 2.0;
-                double halfRealHeight = ((2.0 / (double) height) * pixelSize) / 2.0;
+                GLfloat halfRealWidth = ((2.0 / width) * pixelSize) / 2.0;
+                GLfloat halfRealHeight = ((2.0 / height) * pixelSize) / 2.0;
 
                 const GLfloat vertices[] =
                     {
-                        (GLfloat)halfRealWidth, (GLfloat)halfRealHeight,
-                        (GLfloat)halfRealWidth, (GLfloat)-halfRealHeight,
-                        (GLfloat)-halfRealWidth,(GLfloat)halfRealHeight,
-                        (GLfloat)-halfRealWidth,(GLfloat)-halfRealHeight,
+                        halfRealWidth,  halfRealHeight,
+                        halfRealWidth, -halfRealHeight,
+                        -halfRealWidth, halfRealHeight,
+                        -halfRealWidth,-halfRealHeight,
                     };
 
                 glVertexAttribPointer(vpos[0], 2, GL_FLOAT, GL_FALSE, 0, vertices);
