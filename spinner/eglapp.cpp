@@ -67,6 +67,18 @@ void update_surfaceparm(
 
     const MirDisplayMode *mode = &output->modes[output->current_mode];
 
+    printf("Current active output is %dx%d %+d%+d\n",
+           mode->horizontal_resolution, mode->vertical_resolution,
+           output->position_x, output->position_y);
+
+    surfaceparm.width = *width > 0 ? *width : mode->horizontal_resolution;
+    surfaceparm.height = *height > 0 ? *height : mode->vertical_resolution;
+
+    mir_display_config_destroy(display_config);
+}
+
+void select_pixel_format(MirSurfaceParameters& surfaceparm, MirConnection* connection)
+{
     unsigned int format[mir_pixel_formats];
     unsigned int nformats;
 
@@ -77,15 +89,6 @@ void update_surfaceparm(
         &nformats);
 
     surfaceparm.pixel_format = (MirPixelFormat) format[0];
-
-    printf("Current active output is %dx%d %+d%+d\n",
-           mode->horizontal_resolution, mode->vertical_resolution,
-           output->position_x, output->position_y);
-
-    surfaceparm.width = *width > 0 ? *width : mode->horizontal_resolution;
-    surfaceparm.height = *height > 0 ? *height : mode->vertical_resolution;
-
-    mir_display_config_destroy(display_config);
 
     printf("Server supports %d of %d surface pixel formats. Using format: %d\n",
            nformats, mir_pixel_formats, surfaceparm.pixel_format);
@@ -228,9 +231,11 @@ std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv
     if (!mir_connection_is_valid(connection))
         throw std::runtime_error("Can't get connection");
 
-    update_surfaceparm(surfaceparm, connection, width, height);
+    select_pixel_format(surfaceparm, connection);
 
     auto const mir_egl_app = make_mir_eglapp(connection, surfaceparm.pixel_format, swapinterval);
+
+    update_surfaceparm(surfaceparm, connection, width, height);
 
     *width = surfaceparm.width;
     *height = surfaceparm.height;

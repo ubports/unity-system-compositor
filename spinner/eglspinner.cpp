@@ -439,10 +439,10 @@ try
                 glUniform1f(theta, anim.angle);
                 glUniform1f(fadeLogo, anim.fadeLogo);
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-                // update animation variable
-                updateAnimation(timer, &anim);
             });
+
+        // update animation variable
+        updateAnimation(timer, &anim);
     }
 
     glDeleteTextures(2, texture);
