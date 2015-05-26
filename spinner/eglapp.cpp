@@ -31,14 +31,6 @@ static const char appname[] = "eglspinner";
 
 static volatile sig_atomic_t running = 0;
 
-#define CHECK(_cond, _err) \
-    if (!(_cond)) \
-    { \
-        printf("%s\n", (_err)); \
-        return 0; \
-    }
-
-
 namespace
 {
 struct MirEglApp
