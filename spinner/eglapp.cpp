@@ -45,12 +45,12 @@ void for_each_active_output(
             output->num_modes &&
             output->current_mode < output->num_modes)
         {
-            const MirDisplayMode *mode = &output->modes[output->current_mode];
+            auto const& mode = output->modes[output->current_mode];
 
-            printf("Current active output is [%u] %dx%d %+d%+d\n",
+            printf("Active output [%u] at (%d, %d) is %dx%d\n",
                    output->output_id,
-                   mode->horizontal_resolution, mode->vertical_resolution,
-                   output->position_x, output->position_y);
+                   output->position_x, output->position_y,
+                   mode.horizontal_resolution, mode.vertical_resolution);
 
             handler(output->output_id);
         }
@@ -224,7 +224,7 @@ std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv
     }
 
     // If an output has been specified just do that
-    if (surfaceparm.output_id == mir_display_output_id_invalid)
+    if (surfaceparm.output_id != mir_display_output_id_invalid)
     {
         result.push_back(std::make_shared<MirEglSurface>(mir_egl_app, surfaceparm));
         return result;

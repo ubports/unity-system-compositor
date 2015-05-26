@@ -27,12 +27,8 @@
 #include <sys/stat.h>
 #if HAVE_PROPS
 #include <hybris/properties/properties.h>
-
-#include <signal.h>
-
-#include <iostream>
-
 #endif
+#include <signal.h>
 
 // this is needed for get_gu() to obtain the grid-unit value
 #define MAX_LENGTH       256
@@ -138,15 +134,14 @@ static GLuint load_shader(const char *src, GLenum type)
 
 cairo_surface_t* pngToSurface (const char* filename)
 {
-    // sanity check
-    if (!filename)
-        return NULL;
+    if (access(filename, F_OK & R_OK) != 0)
+        throw std::runtime_error("Failed to load png: " + std::string(filename) + "\n");
 
     // create surface from PNG
     cairo_surface_t* surface = NULL;
     surface = cairo_image_surface_create_from_png (filename);
     if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS)
-        return NULL;
+        throw std::runtime_error("Failed to load png: " + std::string(filename) + "\n");
 
     return surface;
 }
@@ -457,6 +452,6 @@ try
 }
 catch (std::exception const& x)
 {
-    std::cerr << x.what();
+    printf("%s\n", x.what());
     return EXIT_FAILURE;
 }
