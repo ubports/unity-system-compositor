@@ -348,6 +348,12 @@ try
 
     auto const surfaces = mir_eglapp_init(argc, argv);
 
+    if (!surfaces.size())
+    {
+        printf("No surfaces created\n");
+        return EXIT_SUCCESS;
+    }
+
     running = 1;
     signal(SIGINT, shutdown);
     signal(SIGTERM, shutdown);

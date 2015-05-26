@@ -27,9 +27,10 @@ static const char appname[] = "eglspinner";
 
 namespace
 {
-std::vector<uint32_t> active_outputs(MirConnection* const connection)
+template<typename ActiveOutputHandler>
+void for_each_active_output(
+    MirConnection* const connection, ActiveOutputHandler const& handler)
 {
-    std::vector<uint32_t> result;
     /* eglapps are interested in the screen size, so
     use mir_connection_create_display_config */
     MirDisplayConfiguration* display_config =
@@ -51,16 +52,11 @@ std::vector<uint32_t> active_outputs(MirConnection* const connection)
                    mode->horizontal_resolution, mode->vertical_resolution,
                    output->position_x, output->position_y);
 
-            result.push_back(output->output_id);
+            handler(output->output_id);
         }
     }
 
     mir_display_config_destroy(display_config);
-
-    if (result.empty())
-        throw std::runtime_error("No active outputs found.");
-
-    return result;
 }
 
 MirPixelFormat select_pixel_format(MirConnection* connection)
@@ -220,12 +216,23 @@ std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv
 
     std::vector<std::shared_ptr<MirEglSurface>> result;
 
-    for (auto const output_id : active_outputs(connection))
+    // If a size has been specified just do that
+    if (surfaceparm.width && surfaceparm.height)
     {
-        surfaceparm.output_id = output_id;
         result.push_back(std::make_shared<MirEglSurface>(mir_egl_app, surfaceparm));
-
+        printf("Surfaces created = %ld\n", result.size());
+        return result;
     }
+
+    // but normally, we're fullscreen on every active output
+    for_each_active_output(connection, [&](unsigned int output_id)
+        {
+            surfaceparm.output_id = output_id;
+            result.push_back(std::make_shared<MirEglSurface>(mir_egl_app, surfaceparm));
+        });
+
+    if (result.empty())
+        throw std::runtime_error("No active outputs found.");
 
     return result;
 }

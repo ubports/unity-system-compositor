@@ -67,6 +67,9 @@ MirSurface* create_surface(MirConnection* const connection, MirSurfaceParameters
     if (!mir_surface_is_valid(surface))
         throw std::runtime_error("Can't create a surface");
 
+    if (surfaceparm.output_id != mir_display_output_id_invalid)
+        mir_surface_set_state(surface, mir_surface_state_fullscreen);
+
     return surface;
 }
 }
