@@ -32,6 +32,7 @@ public:
     void swap_buffers(EGLSurface eglsurface) const;
 
     ~MirEglApp();
+
     MirConnection* const connection;
 private:
     EGLDisplay egldisplay;
@@ -40,39 +41,40 @@ private:
     EGLint neglconfigs;
 };
 
-std::shared_ptr<MirEglApp> make_mir_eglapp(MirConnection* const connection, MirPixelFormat const& pixel_format, EGLint swapinterval)
+std::shared_ptr<MirEglApp> make_mir_eglapp(
+    MirConnection* const connection, MirPixelFormat const& pixel_format, EGLint swapinterval)
 {
-return std::make_shared<MirEglApp>(connection, pixel_format, swapinterval);
+    return std::make_shared<MirEglApp>(connection, pixel_format, swapinterval);
 }
 
 namespace
 {
 MirSurface* create_surface(MirConnection* const connection, MirSurfaceParameters const& surfaceparm)
 {
-auto const spec = mir_connection_create_spec_for_normal_surface(
-    connection,
-    surfaceparm.width,
-    surfaceparm.height,
-    surfaceparm.pixel_format);
+    auto const spec = mir_connection_create_spec_for_normal_surface(
+        connection,
+        surfaceparm.width,
+        surfaceparm.height,
+        surfaceparm.pixel_format);
 
-mir_surface_spec_set_name(spec, surfaceparm.name);
-mir_surface_spec_set_buffer_usage(spec, surfaceparm.buffer_usage);
-mir_surface_spec_set_fullscreen_on_output(spec, surfaceparm.output_id);
+    mir_surface_spec_set_name(spec, surfaceparm.name);
+    mir_surface_spec_set_buffer_usage(spec, surfaceparm.buffer_usage);
+    mir_surface_spec_set_fullscreen_on_output(spec, surfaceparm.output_id);
 
-auto const surface = mir_surface_create_sync(spec);
-mir_surface_spec_release(spec);
+    auto const surface = mir_surface_create_sync(spec);
+    mir_surface_spec_release(spec);
 
-if (!mir_surface_is_valid(surface))
-throw std::runtime_error("Can't create a surface");
+    if (!mir_surface_is_valid(surface))
+        throw std::runtime_error("Can't create a surface");
 
-return surface;
+    return surface;
 }
 }
 
 MirEglSurface::MirEglSurface(std::shared_ptr<MirEglApp> const& mir_egl_app, MirSurfaceParameters const& surfaceparm) :
-mir_egl_app{mir_egl_app},
-surface{create_surface(mir_egl_app->connection, surfaceparm)},
-eglsurface{mir_egl_app->create_surface(surface)}
+    mir_egl_app{mir_egl_app},
+    surface{create_surface(mir_egl_app->connection, surfaceparm)},
+    eglsurface{mir_egl_app->create_surface(surface)}
 {
 }
 
@@ -93,43 +95,43 @@ void MirEglSurface::swap_buffers()
 }
 
 MirEglApp::MirEglApp(MirConnection* const connection, MirPixelFormat pixel_format, EGLint swapinterval) :
-connection{connection}
+    connection{connection}
 {
-unsigned int bpp = 8*MIR_BYTES_PER_PIXEL(pixel_format);
+    unsigned int bpp = 8*MIR_BYTES_PER_PIXEL(pixel_format);
 
-EGLint attribs[] =
-    {
-        EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-        EGL_COLOR_BUFFER_TYPE, EGL_RGB_BUFFER,
-        EGL_BUFFER_SIZE, (EGLint) bpp,
-        EGL_NONE
-    };
+    EGLint attribs[] =
+        {
+            EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+            EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+            EGL_COLOR_BUFFER_TYPE, EGL_RGB_BUFFER,
+            EGL_BUFFER_SIZE, (EGLint) bpp,
+            EGL_NONE
+        };
 
-egldisplay = eglGetDisplay((EGLNativeDisplayType) mir_connection_get_egl_native_display(connection));
-if (egldisplay == EGL_NO_DISPLAY)
-throw std::runtime_error("Can't eglGetDisplay");
+    egldisplay = eglGetDisplay((EGLNativeDisplayType) mir_connection_get_egl_native_display(connection));
+    if (egldisplay == EGL_NO_DISPLAY)
+        throw std::runtime_error("Can't eglGetDisplay");
 
-if (!eglInitialize(egldisplay, NULL, NULL))
-throw std::runtime_error("Can't eglInitialize");
+    if (!eglInitialize(egldisplay, NULL, NULL))
+        throw std::runtime_error("Can't eglInitialize");
 
-if (!eglChooseConfig(egldisplay, attribs, &eglconfig, 1, &neglconfigs))
-throw std::runtime_error("Could not eglChooseConfig");
+    if (!eglChooseConfig(egldisplay, attribs, &eglconfig, 1, &neglconfigs))
+        throw std::runtime_error("Could not eglChooseConfig");
 
-if (neglconfigs == 0)
-throw std::runtime_error("No EGL config available");
+    if (neglconfigs == 0)
+        throw std::runtime_error("No EGL config available");
 
-EGLint ctxattribs[] =
-    {
-        EGL_CONTEXT_CLIENT_VERSION, 2,
-        EGL_NONE
-    };
+    EGLint ctxattribs[] =
+        {
+            EGL_CONTEXT_CLIENT_VERSION, 2,
+            EGL_NONE
+        };
 
-eglctx = eglCreateContext(egldisplay, eglconfig, EGL_NO_CONTEXT, ctxattribs);
-if (eglctx == EGL_NO_CONTEXT)
-throw std::runtime_error("eglCreateContext failed");
+    eglctx = eglCreateContext(egldisplay, eglconfig, EGL_NO_CONTEXT, ctxattribs);
+    if (eglctx == EGL_NO_CONTEXT)
+        throw std::runtime_error("eglCreateContext failed");
 
-eglSwapInterval(egldisplay, swapinterval);
+    eglSwapInterval(egldisplay, swapinterval);
 }
 
 EGLSurface MirEglApp::create_surface(MirSurface* surface)
@@ -137,7 +139,7 @@ EGLSurface MirEglApp::create_surface(MirSurface* surface)
     auto const eglsurface = eglCreateWindowSurface(
         egldisplay,
         eglconfig,
-        (EGLNativeWindowType)mir_buffer_stream_get_egl_native_window(mir_surface_get_buffer_stream(surface)), NULL);
+        (EGLNativeWindowType) mir_buffer_stream_get_egl_native_window(mir_surface_get_buffer_stream(surface)), NULL);
 
     if (eglsurface == EGL_NO_SURFACE)
         throw std::runtime_error("eglCreateWindowSurface failed");

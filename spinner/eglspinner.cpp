@@ -22,15 +22,13 @@
 #include <assert.h>
 #include <cairo.h>
 #include <glib.h>
-#include <stdio.h>
 #include <string.h>
-#include <strings.h>
-#include <stdlib.h>
 #include <GLES2/gl2.h>
-#include <math.h>
 #include <sys/stat.h>
 #if HAVE_PROPS
 #include <hybris/properties/properties.h>
+#include <iostream>
+
 #endif
 
 // this is needed for get_gu() to obtain the grid-unit value
@@ -265,10 +263,10 @@ updateAnimation (GTimer* timer, AnimationValues* anim)
     //    anim->fadeLogo -= 1.6f * dt;
 }
 
-int main(int argc, char *argv[])
+namespace
 {
-    const char vShaderSrcSpinner[] =
-        "attribute vec4 vPosition;                       \n"
+const char vShaderSrcSpinner[] =
+    "attribute vec4 vPosition;                       \n"
         "attribute vec2 aTexCoords;                      \n"
         "uniform float theta;                            \n"
         "varying vec2 vTexCoords;                        \n"
@@ -283,8 +281,8 @@ int main(int argc, char *argv[])
         "    gl_Position = vec4(vPosition.xy, -1.0, 1.0); \n"
         "}                                               \n";
 
-    const char fShaderSrcGlow[] =
-        "precision mediump float;                             \n"
+const char fShaderSrcGlow[] =
+    "precision mediump float;                             \n"
         "varying vec2 vTexCoords;                             \n"
         "uniform sampler2D uSampler;                          \n"
         "uniform float uFadeGlow;                             \n"
@@ -299,8 +297,8 @@ int main(int argc, char *argv[])
         "    gl_FragColor = vec4(r, g, b, a);                 \n"
         "}                                                    \n";
 
-    const char fShaderSrcLogo[] =
-        "precision mediump float;                             \n"
+const char fShaderSrcLogo[] =
+    "precision mediump float;                             \n"
         "varying vec2 vTexCoords;                             \n"
         "uniform sampler2D uSampler;                          \n"
         "uniform float uFadeLogo;                             \n"
@@ -314,7 +312,11 @@ int main(int argc, char *argv[])
         "    float a = col.a * uFadeLogo;                     \n"
         "    gl_FragColor = vec4(r, g, b, a);                 \n"
         "}                                                    \n";
+}
 
+int main(int argc, char *argv[])
+try
+{
     GLuint prog[2];
     GLuint texture[2];
     GLint vpos[2];
@@ -421,5 +423,10 @@ int main(int argc, char *argv[])
     glDeleteTextures(2, texture);
     g_timer_destroy (timer);
 
-    return 0;
+    return EXIT_SUCCESS;
+}
+catch (std::exception const& x)
+{
+    std::cerr << x.what();
+    return EXIT_FAILURE;
 }
