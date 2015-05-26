@@ -151,6 +151,58 @@ struct MirEglApp
             throw std::runtime_error("eglCreateContext failed");
     }
 
+    EGLSurface create_surface(MirSurface* surface)
+    {
+        auto const eglsurface = eglCreateWindowSurface(
+            egldisplay,
+            eglconfig,
+            (EGLNativeWindowType)mir_buffer_stream_get_egl_native_window(mir_surface_get_buffer_stream(surface)), NULL);
+
+        if (eglsurface == EGL_NO_SURFACE)
+            throw std::runtime_error("eglCreateWindowSurface failed");
+
+        return eglsurface;
+    }
+
+    void release_current()
+    {
+        eglMakeCurrent(egldisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    }
+
+    void make_current(EGLSurface eglsurface) const
+    {
+        if (!eglMakeCurrent(egldisplay, eglsurface, eglsurface, eglctx))
+            throw std::runtime_error("Can't eglMakeCurrent");
+    }
+
+    void swap_buffers(EGLSurface eglsurface) const
+    {
+        EGLint width;
+        EGLint height;
+
+        if (!running)
+            return;
+
+        eglSwapBuffers(egldisplay, eglsurface);
+
+        /*
+         * Querying the surface (actually the current buffer) dimensions here is
+         * the only truly safe way to be sure that the dimensions we think we
+         * have are those of the buffer being rendered to. But this should be
+         * improved in future; https://bugs.launchpad.net/mir/+bug/1194384
+         */
+        if (eglQuerySurface(egldisplay, eglsurface, EGL_WIDTH, &width) &&
+            eglQuerySurface(egldisplay, eglsurface, EGL_HEIGHT, &height))
+        {
+            glViewport(0, 0, width, height);
+        }
+    }
+
+    void swap_interval(EGLint swapinterval)
+    {
+        eglSwapInterval(egldisplay, swapinterval);
+    }
+
     ~MirEglApp()
     {
         eglTerminate(egldisplay);
@@ -158,10 +210,10 @@ struct MirEglApp
     }
 
     MirConnection* const connection;
-    EGLDisplay egldisplay;
-    EGLConfig eglconfig;
-    EGLContext eglctx;
 private:
+    EGLDisplay egldisplay;
+    EGLContext eglctx;
+    EGLConfig eglconfig;
     EGLint neglconfigs;
 };
 
@@ -193,17 +245,13 @@ class MirEglSurface
 public:
     MirEglSurface(std::shared_ptr<MirEglApp> const& mir_egl_app, unsigned int */*width*/, unsigned int */*height*/) :
         surface{create_surface(mir_egl_app)},
-        eglsurface{eglCreateWindowSurface(
-            mir_egl_app->egldisplay, mir_egl_app->eglconfig,
-            (EGLNativeWindowType)mir_buffer_stream_get_egl_native_window(mir_surface_get_buffer_stream(surface)), NULL)}
+        eglsurface{mir_egl_app->create_surface(surface)}
     {
-        if (eglsurface == EGL_NO_SURFACE)
-            throw std::runtime_error("eglCreateWindowSurface failed");
     }
 
     ~MirEglSurface()
     {
-        eglMakeCurrent(mir_egl_app->egldisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+        mir_egl_app->release_current();
         mir_surface_release_sync(surface);
     }
 
@@ -211,31 +259,12 @@ public:
 
     void egl_make_current() const
     {
-        if (!eglMakeCurrent(mir_egl_app->egldisplay, eglsurface, eglsurface, mir_egl_app->eglctx))
-            throw std::runtime_error("Can't eglMakeCurrent");
+        mir_egl_app->make_current(eglsurface);
     }
 
     void swap_buffers()
     {
-        EGLint width;
-        EGLint height;
-
-        if (!running)
-            return;
-
-        eglSwapBuffers(mir_egl_app->egldisplay, eglsurface);
-
-        /*
-         * Querying the surface (actually the current buffer) dimensions here is
-         * the only truly safe way to be sure that the dimensions we think we
-         * have are those of the buffer being rendered to. But this should be
-         * improved in future; https://bugs.launchpad.net/mir/+bug/1194384
-         */
-        if (eglQuerySurface(mir_egl_app->egldisplay, eglsurface, EGL_WIDTH, &width) &&
-            eglQuerySurface(mir_egl_app->egldisplay, eglsurface, EGL_HEIGHT, &height))
-        {
-            glViewport(0, 0, width, height);
-        }
+        mir_egl_app->swap_buffers(eglsurface);
     }
 
 private:
@@ -406,10 +435,9 @@ bool mir_eglapp_init(int argc, char *argv[],
     *width = surfaceparm.width;
     *height = surfaceparm.height;
 
-    eglSwapInterval(mir_egl_app->egldisplay, swapinterval);
+    mir_egl_app->swap_interval(swapinterval);
 
     running = 1;
 
     return 1;
 }
-
