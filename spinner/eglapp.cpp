@@ -92,7 +92,7 @@ void update_surfaceparm(
 }
 }
 
-std::shared_ptr<MirEglSurface> mir_eglapp_init(int argc, char *argv[],
+std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv[],
                                 unsigned int *width, unsigned int *height)
 {
     MirSurfaceParameters surfaceparm =
@@ -219,7 +219,7 @@ std::shared_ptr<MirEglSurface> mir_eglapp_init(int argc, char *argv[],
                        "  -s WIDTHxHEIGHT  Force surface size\n"
                        "  -q               Quiet mode (no messages output)\n"
                        , argv[0]);
-                return 0;
+                return {};
             }
         }
     }
@@ -236,6 +236,6 @@ std::shared_ptr<MirEglSurface> mir_eglapp_init(int argc, char *argv[],
     *height = surfaceparm.height;
 
     auto const mir_egl_surface = std::make_shared<MirEglSurface>(mir_egl_app, surfaceparm);
-    return mir_egl_surface;
+    return {mir_egl_surface};
 }
 

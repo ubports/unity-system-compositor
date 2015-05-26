@@ -348,7 +348,7 @@ try
     unsigned int width = 0;
     unsigned int height = 0;
 
-    auto const surface = mir_eglapp_init(argc, argv, &width, &height);
+    auto const surfaces = mir_eglapp_init(argc, argv, &width, &height);
 
     running = 1;
     signal(SIGINT, shutdown);
@@ -418,30 +418,31 @@ try
 
     while (mir_eglapp_running())
     {
-        surface->paint([&]
-        {
-            glClearColor(BLACK, anim.fadeBackground);
-            glClear(GL_COLOR_BUFFER_BIT);
+        for (auto const& surface : surfaces)
+            surface->paint([&]
+            {
+                glClearColor(BLACK, anim.fadeBackground);
+                glClear(GL_COLOR_BUFFER_BIT);
 
-            // draw glow
-            glUseProgram(prog[0]);
-            glBindTexture(GL_TEXTURE_2D, texture[0]);
-            glUniform1i(sampler[0], 0);
-            glUniform1f(theta, anim.angle);
-            glUniform1f(fadeGlow, anim.fadeGlow);
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+                // draw glow
+                glUseProgram(prog[0]);
+                glBindTexture(GL_TEXTURE_2D, texture[0]);
+                glUniform1i(sampler[0], 0);
+                glUniform1f(theta, anim.angle);
+                glUniform1f(fadeGlow, anim.fadeGlow);
+                glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-            // draw logo
-            glUseProgram(prog[1]);
-            glBindTexture(GL_TEXTURE_2D, texture[1]);
-            glUniform1i(sampler[1], 0);
-            glUniform1f(theta, anim.angle);
-            glUniform1f(fadeLogo, anim.fadeLogo);
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+                // draw logo
+                glUseProgram(prog[1]);
+                glBindTexture(GL_TEXTURE_2D, texture[1]);
+                glUniform1i(sampler[1], 0);
+                glUniform1f(theta, anim.angle);
+                glUniform1f(fadeLogo, anim.fadeLogo);
+                glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-            // update animation variable
-            updateAnimation(timer, &anim);
-        });
+                // update animation variable
+                updateAnimation(timer, &anim);
+            });
     }
 
     glDeleteTextures(2, texture);

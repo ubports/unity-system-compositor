@@ -20,12 +20,13 @@
 #define __EGLAPP_H__
 
 #include <memory>
+#include <vector>
 
 class MirEglSurface;
 
 extern float mir_eglapp_background_opacity;
 
-std::shared_ptr<MirEglSurface> mir_eglapp_init(int argc, char *argv[],
+std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv[],
                                 unsigned int *width, unsigned int *height);
 
 #endif
