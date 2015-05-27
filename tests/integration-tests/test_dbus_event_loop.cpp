@@ -201,6 +201,8 @@ TEST_F(ADBusEventLoop, handles_reply_timeouts)
 
     static int const timeout_ms = 100;
 
+    auto const start = std::chrono::steady_clock::now();
+
     dbus_event_loop.enqueue(
         [this,&pending_promise]
         {
@@ -218,17 +220,12 @@ TEST_F(ADBusEventLoop, handles_reply_timeouts)
         });
 
     // No one is going to reply to the signal, so the notification should time out
-    auto const start = std::chrono::steady_clock::now();
     auto pending = pending_future.get();
     auto const end = std::chrono::steady_clock::now();
     auto const delay = end - start;
 
     ASSERT_THAT(pending, NotNull());
     dbus_pending_call_unref(pending);
-
-    std::cerr << "DEBUG delay=" << delay.count()
-        << " in ms=" << std::chrono::duration_cast<std::chrono::milliseconds>(delay).count()
-        << ", lbound=" << std::chrono::milliseconds{timeout_ms}.count() << std::endl;
 
     // Use a high upper bound for valgrind runs to succeed
     EXPECT_THAT(delay, Lt(std::chrono::milliseconds{timeout_ms * 10}));
