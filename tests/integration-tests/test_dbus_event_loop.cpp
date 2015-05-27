@@ -226,6 +226,10 @@ TEST_F(ADBusEventLoop, handles_reply_timeouts)
     ASSERT_THAT(pending, NotNull());
     dbus_pending_call_unref(pending);
 
+    std::cerr << "DEBUG delay=" << delay.count()
+        << " in ms=" << std::chrono::duration_cast<std::chrono::milliseconds>(delay).count()
+        << ", lbound=" << std::chrono::milliseconds{timeout_ms}.count() << std::endl;
+
     // Use a high upper bound for valgrind runs to succeed
     EXPECT_THAT(delay, Lt(std::chrono::milliseconds{timeout_ms * 10}));
     EXPECT_THAT(delay, Ge(std::chrono::milliseconds{timeout_ms}));
