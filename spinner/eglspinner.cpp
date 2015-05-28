@@ -364,8 +364,6 @@ try
     prog[0] = createShaderProgram(vShaderSrcSpinner, fShaderSrcGlow);
     prog[1] = createShaderProgram(vShaderSrcSpinner, fShaderSrcLogo);
 
-    glClearColor(BLACK, mir_eglapp_background_opacity);
-
     // setup proper GL-blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);

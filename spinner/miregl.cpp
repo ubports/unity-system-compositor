@@ -101,11 +101,6 @@ void MirEglSurface::swap_buffers()
     mir_egl_app->swap_buffers(eglsurface);
 }
 
-void MirEglSurface::egl_release_current()
-{
-    mir_egl_app->release_current();
-}
-
 unsigned int MirEglSurface::width() const
 {
     return buffer_package->width;
@@ -175,11 +170,6 @@ EGLSurface MirEglApp::create_surface(MirSurface* surface)
         throw std::runtime_error("eglCreateWindowSurface failed");
 
     return eglsurface;
-}
-
-void MirEglApp::release_current()
-{
-    eglMakeCurrent(egldisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 }
 
 void MirEglApp::make_current(EGLSurface eglsurface) const

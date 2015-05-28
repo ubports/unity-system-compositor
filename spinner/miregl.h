@@ -46,12 +46,11 @@ public:
         egl_make_current();
         functor(width(), height());
         swap_buffers();
-        egl_release_current();
     }
 
 private:
     void egl_make_current();
-    void egl_release_current();
+
     void swap_buffers();
     unsigned int width() const;
     unsigned int height() const;
@@ -60,7 +59,6 @@ private:
     MirSurface* const surface;
     MirBufferPackage* buffer_package;
     EGLSurface const eglsurface;
-
 };
 
 #endif //UNITYSYSTEMCOMPOSITOR_MIREGL_H

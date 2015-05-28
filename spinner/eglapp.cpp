@@ -45,14 +45,7 @@ void for_each_active_output(
             output->num_modes &&
             output->current_mode < output->num_modes)
         {
-            auto const& mode = output->modes[output->current_mode];
-
-            printf("Active output [%u] at (%d, %d) is %dx%d\n",
-                   output->output_id,
-                   output->position_x, output->position_y,
-                   mode.horizontal_resolution, mode.vertical_resolution);
-
-            handler(output->output_id);
+            handler(output);
         }
     }
 
@@ -231,9 +224,16 @@ std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv
     }
 
     // but normally, we're fullscreen on every active output
-    for_each_active_output(connection, [&](unsigned int output_id)
+    for_each_active_output(connection, [&](MirDisplayOutput const* output)
         {
-            surfaceparm.output_id = output_id;
+            auto const& mode = output->modes[output->current_mode];
+
+            printf("Active output [%u] at (%d, %d) is %dx%d\n",
+                   output->output_id,
+                   output->position_x, output->position_y,
+                   mode.horizontal_resolution, mode.vertical_resolution);
+
+            surfaceparm.output_id = output->output_id;
             result.push_back(std::make_shared<MirEglSurface>(mir_egl_app, surfaceparm));
         });
 
@@ -242,4 +242,3 @@ std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv
 
     return result;
 }
-
