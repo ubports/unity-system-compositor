@@ -180,22 +180,7 @@ void MirEglApp::make_current(EGLSurface eglsurface) const
 
 void MirEglApp::swap_buffers(EGLSurface eglsurface) const
 {
-    EGLint width;
-    EGLint height;
-
     eglSwapBuffers(egldisplay, eglsurface);
-
-    /*
-     * Querying the surface (actually the current buffer) dimensions here is
-     * the only truly safe way to be sure that the dimensions we think we
-     * have are those of the buffer being rendered to. But this should be
-     * improved in future; https://bugs.launchpad.net/mir/+bug/1194384
-     */
-    if (eglQuerySurface(egldisplay, eglsurface, EGL_WIDTH, &width) &&
-        eglQuerySurface(egldisplay, eglsurface, EGL_HEIGHT, &height))
-    {
-        glViewport(0, 0, width, height);
-    }
 }
 
 void MirEglApp::destroy_surface(EGLSurface eglsurface) const
