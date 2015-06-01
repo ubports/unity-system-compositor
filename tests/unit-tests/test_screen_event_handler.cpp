@@ -75,18 +75,21 @@ struct AScreenEventHandler : testing::Test
     static const int32_t POWER_KEY_CODE = 26;
     mir::EventUPtr power_key_down_event = mir::events::make_event(
         MirInputDeviceId{1}, std::chrono::nanoseconds(0),
-	mir_keyboard_action_down,
+	    mir_keyboard_action_down,
         POWER_KEY_CODE, 0, mir_input_event_modifier_none);
+
     mir::EventUPtr power_key_up_event = mir::events::make_event(
         MirInputDeviceId{1}, std::chrono::nanoseconds(0),
-	mir_keyboard_action_up,
+	    mir_keyboard_action_up,
         POWER_KEY_CODE, 0, mir_input_event_modifier_none);
+
     mir::EventUPtr touch_event = mir::events::make_event(
         MirInputDeviceId{1}, std::chrono::nanoseconds(0),
-	mir_input_event_modifier_none);
+	    mir_input_event_modifier_none);
+    
     mir::EventUPtr pointer_event = mir::events::make_event(
         MirInputDeviceId{1}, std::chrono::nanoseconds(0),
-	mir_input_event_modifier_none,
+	    mir_input_event_modifier_none,
         mir_pointer_action_motion,
         {}, 0.0f, 0.0f, 0.0f, 0.0f);
 
