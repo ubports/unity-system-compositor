@@ -88,11 +88,11 @@ usc::WindowManager::WindowManager(
     mir::shell::FocusController* focus_controller,
     std::shared_ptr<mir::shell::DisplayLayout> const& display_layout,
     std::shared_ptr<ms::SessionCoordinator> const& session_coordinator,
-    std::shared_ptr<SessionSwitcher> const& session_switcher) :
+    std::shared_ptr<SessionMonitor> const& session_monitor) :
     focus_controller{focus_controller},
     display_layout{display_layout},
     session_coordinator{session_coordinator},
-    session_switcher{session_switcher}
+    session_monitor{session_monitor}
 {
 }
 
@@ -104,7 +104,7 @@ void usc::WindowManager::add_session(std::shared_ptr<ms::Session> const& session
 
     auto const usc_session = std::make_shared<UscSession>(session, *focus_controller);
 
-    session_switcher->add(usc_session, session->process_id());
+    session_monitor->add(usc_session, session->process_id());
 }
 
 void usc::WindowManager::remove_session(std::shared_ptr<ms::Session> const& session)
@@ -117,7 +117,7 @@ void usc::WindowManager::remove_session(std::shared_ptr<ms::Session> const& sess
     else
         focus_controller->set_focus_to(next_session, {});
 
-    session_switcher->remove(session);
+    session_monitor->remove(session);
 }
 
 auto usc::WindowManager::add_surface(
@@ -146,7 +146,7 @@ auto usc::WindowManager::add_surface(
     auto const session_ready_observer = std::make_shared<msh::SurfaceReadyObserver>(
         [this](std::shared_ptr<ms::Session> const& session, std::shared_ptr<ms::Surface> const& surface)
         {
-            session_switcher->mark_ready(session.get());
+            session_monitor->mark_ready(session.get());
         },
         session,
         surface);

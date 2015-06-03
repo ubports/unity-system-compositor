@@ -47,14 +47,27 @@ protected:
     Session& operator=(Session const&) = delete;
 };
 
-class SessionSwitcher : public DMMessageHandler
+class SessionMonitor
+{
+public:
+    SessionMonitor() = default;
+    virtual ~SessionMonitor() = default;
+    SessionMonitor(SessionMonitor const&) = delete;
+    SessionMonitor& operator=(SessionMonitor const&) = delete;
+
+    virtual void add(std::shared_ptr<Session> const& session, pid_t pid) = 0;
+    virtual void remove(std::shared_ptr<mir::frontend::Session> const& session) = 0;
+    virtual void mark_ready(mir::frontend::Session const* session) = 0;
+};
+
+class SessionSwitcher : public DMMessageHandler, public SessionMonitor
 {
 public:
     explicit SessionSwitcher(std::shared_ptr<Spinner> const& spinner);
 
-    void add(std::shared_ptr<Session> const& session, pid_t pid);
-    void remove(std::shared_ptr<mir::frontend::Session> const& session);
-    void mark_ready(mir::frontend::Session const* session);
+    void add(std::shared_ptr<Session> const& session, pid_t pid) override;
+    void remove(std::shared_ptr<mir::frontend::Session> const& session) override;
+    void mark_ready(mir::frontend::Session const* session) override;
 
     /* From DMMessageHandler */
     void set_active_session(std::string const& name) override;
