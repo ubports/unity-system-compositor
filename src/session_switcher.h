@@ -34,6 +34,7 @@ class SessionSwitcher : public DMMessageHandler, public SessionMonitor
 public:
     explicit SessionSwitcher(std::shared_ptr<Spinner> const& spinner);
 
+    /* From SessionMonitor */
     void add(std::shared_ptr<Session> const& session, pid_t pid) override;
     void remove(std::shared_ptr<mir::frontend::Session> const& session) override;
     void mark_ready(mir::frontend::Session const* session) override;
