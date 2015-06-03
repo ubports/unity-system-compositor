@@ -18,7 +18,7 @@
 
 #include "window_manager.h"
 
-#include "session_switcher.h"
+#include "session_monitor.h"
 
 #include "mir/geometry/rectangle.h"
 #include "mir/shell/surface_ready_observer.h"

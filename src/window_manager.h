@@ -20,6 +20,7 @@
 #define USC_WINDOW_MANAGER_H_
 
 #include <mir/shell/window_manager.h>
+#include "session_monitor.h"
 
 namespace mir
 {
