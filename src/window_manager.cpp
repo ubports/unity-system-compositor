@@ -21,7 +21,7 @@
 #include "session_switcher.h"
 
 #include "mir/geometry/rectangle.h"
-#include "mir/scene/null_surface_observer.h"
+#include "mir/shell/surface_ready_observer.h"
 #include "mir/scene/session.h"
 #include "mir/scene/session_coordinator.h"
 #include "mir/scene/surface.h"
@@ -82,50 +82,6 @@ public:
     std::shared_ptr<ms::Session> const scene_session;
     msh::FocusController& focus_controller;
 };
-
-struct SurfaceReadyObserver : ms::NullSurfaceObserver,
-                              std::enable_shared_from_this<SurfaceReadyObserver>
-{
-    using ActivateFunction = std::function<void(
-        std::shared_ptr<ms::Session> const& session,
-        std::shared_ptr<ms::Surface> const& surface)>;
-
-    SurfaceReadyObserver(
-        ActivateFunction const& activate,
-        std::shared_ptr<ms::Session> const& session,
-        std::shared_ptr<ms::Surface> const& surface);
-
-    ~SurfaceReadyObserver();
-
-private:
-    void frame_posted(int) override;
-
-    ActivateFunction const activate;
-    std::weak_ptr<ms::Session> const session;
-    std::weak_ptr<ms::Surface> const surface;
-};
-
-SurfaceReadyObserver::SurfaceReadyObserver(
-    ActivateFunction const& activate,
-std::shared_ptr<ms::Session> const& session,
-    std::shared_ptr<ms::Surface> const& surface) :
-activate{activate},
-session{session},
-surface{surface}
-{
-}
-
-SurfaceReadyObserver::~SurfaceReadyObserver()
-= default;
-
-void SurfaceReadyObserver::frame_posted(int)
-{
-    if (auto const s = surface.lock())
-    {
-        activate(session.lock(), s);
-        s->remove_observer(shared_from_this());
-    }
-}
 }
 
 usc::WindowManager::WindowManager(
@@ -187,7 +143,7 @@ auto usc::WindowManager::add_surface(
     auto const result = build(session, placed_parameters);
     auto const surface = session->surface(result);
 
-    auto const session_ready_observer = std::make_shared<SurfaceReadyObserver>(
+    auto const session_ready_observer = std::make_shared<msh::SurfaceReadyObserver>(
         [this](std::shared_ptr<ms::Session> const& session, std::shared_ptr<ms::Surface> const& surface)
         {
             session_switcher->mark_ready(session.get());
