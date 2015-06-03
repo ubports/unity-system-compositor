@@ -96,6 +96,7 @@ struct ServerStatusListener : public mir::ServerStatusListener
 const char* const dm_from_fd = "from-dm-fd";
 const char* const dm_to_fd = "to-dm-fd";
 const char* const dm_stub = "debug-without-dm";
+const char* const dm_stub_active = "debug-active-session-name";
 }
 
 usc::Server::Server(int argc, char** argv)
@@ -104,7 +105,8 @@ usc::Server::Server(int argc, char** argv)
         mir::OptionType::integer);
     add_configuration_option(dm_to_fd, "File descriptor of write end of pipe to display manager [int]",
         mir::OptionType::integer);
-    add_configuration_option(dm_stub, "Allow running without a display manager (only useful when debugging)",  mir::OptionType::null);
+    add_configuration_option(dm_stub, "Run without a display manager (only useful when debugging)", mir::OptionType::null);
+    add_configuration_option(dm_stub_active, "Expected connection when run without a display manager (only useful when debugging)", "nested-mir@:/run/user/1000/mir_socket");
     add_configuration_option("blacklist", "Video blacklist regex to use",  mir::OptionType::string);
     add_configuration_option("version", "Show version of Unity System Compositor",  mir::OptionType::null);
     add_configuration_option("spinner", "Path to spinner executable",  mir::OptionType::string);
@@ -182,7 +184,22 @@ namespace
 {
 struct NullDMMessageHandler : usc::DMConnection
 {
-    void start() override {}
+    explicit NullDMMessageHandler(
+        std::shared_ptr<usc::DMMessageHandler> const& dm_message_handler,
+        std::string const& client_name) :
+        dm_message_handler{dm_message_handler},
+        client_name{client_name}
+    {}
+
+    ~NullDMMessageHandler() = default;
+
+    void start() override
+    {
+        dm_message_handler->set_active_session(client_name);
+    };
+
+    std::shared_ptr<usc::DMMessageHandler> const dm_message_handler;
+    std::string const client_name;
 };
 }
 
@@ -200,7 +217,9 @@ std::shared_ptr<usc::DMConnection> usc::Server::the_dm_connection()
             }
             else if (the_options()->is_set(dm_stub))
             {
-                return std::make_shared<NullDMMessageHandler>();
+                return std::make_shared<NullDMMessageHandler>(
+                    the_dm_message_handler(),
+                    the_options()->get<std::string>(dm_stub_active));
             }
 
             BOOST_THROW_EXCEPTION(mir::AbnormalExit("to and from FDs are required for display manager"));
