@@ -51,7 +51,7 @@ Package: ubuntu-desktop-mir
 Architecture: all
 Depends: lightdm (>= 1.9.4),
          unity-system-compositor,
-         xserver-xorg-xmir,
+         xmir,
          ${misc:Depends},
 Replaces: unity-system-compositor (<< 0.0.2),
 Breaks: unity-system-compositor (<< 0.0.2),
