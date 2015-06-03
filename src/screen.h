@@ -33,9 +33,9 @@ public:
     virtual ~Screen() = default;
 
     virtual void enable_inactivity_timers(bool enable) = 0;
-    virtual void toggle_screen_power_mode(PowerStateChangeReason reason) = 0;
     virtual void keep_display_on_temporarily() = 0;
 
+    virtual MirPowerMode get_screen_power_mode() = 0;
     virtual void set_screen_power_mode(MirPowerMode mode, PowerStateChangeReason reason) = 0;
     virtual void keep_display_on(bool on) = 0;
     virtual void set_brightness(int brightness) = 0;
