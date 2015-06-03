@@ -16,24 +16,30 @@
 
 set(USC_SRCS
   asio_dm_connection.cpp
-  dbus_screen.cpp
+  dbus_connection_handle.cpp
+  dbus_event_loop.cpp
+  dbus_message_handle.cpp
   external_spinner.cpp
+  mir_screen.cpp
   powerd_mediator.cpp
-  powerkey_handler.cpp
-  screen_state_handler.cpp
+  screen_event_handler.cpp
   server.cpp
-  session_coordinator.cpp
   session_switcher.cpp
-  surface_coordinator.cpp
   system_compositor.cpp
-  worker_thread.cpp
+  thread_name.cpp
+  unity_screen_service.cpp
+  unity_screen_service_introspection.h
+  window_manager.cpp
 )
 
-qt5_generate_dbus_interface(dbus_screen.h com.canonical.Unity.Screen.xml)
-qt5_add_dbus_adaptor(USC_SRCS
-                     ${CMAKE_CURRENT_BINARY_DIR}/com.canonical.Unity.Screen.xml
-                     dbus_screen.h DBusScreen
-                     dbus_screen_adaptor DBusScreenAdaptor)
+# Generate unity_screen_service_introspection.h from the introspection XML file
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unity_screen_service_introspection.h
+  COMMAND sh generate_header_with_string_from_file.sh ${CMAKE_CURRENT_BINARY_DIR}/unity_screen_service_introspection.h unity_screen_service_introspection com.canonical.Unity.Screen.xml
+  DEPENDS com.canonical.Unity.Screen.xml generate_header_with_string_from_file.sh
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  VERBATIM
+)
 
 # Compile system compositor
 add_library(
@@ -52,12 +58,11 @@ include_directories(
   ${Boost_INCLUDE_DIRS}
   ${GLESv2_INCLUDE_DIRS}
   ${MIRSERVER_INCLUDE_DIRS}
+  ${DBUS_INCLUDE_DIRS}
 )
 add_definitions(
   -DDEFAULT_SPINNER="${CMAKE_INSTALL_FULL_BINDIR}/unity-system-compositor-spinner"
 )
-
-qt5_use_modules(usc Core DBus)
 
 link_directories(${MIRSERVER_LIBRARY_DIRS})
 
@@ -66,6 +71,7 @@ target_link_libraries(usc
   pthread
   ${Boost_LIBRARIES}
   ${GLESv2_LIBRARIES}
+  ${DBUS_LIBRARIES}
 )
 
 target_link_libraries(unity-system-compositor
@@ -81,6 +87,6 @@ install(TARGETS unity-system-compositor
 install(FILES com.canonical.Unity.Screen.conf
   DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/dbus-1/system.d
 )
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/com.canonical.Unity.Screen.xml
+install(FILES com.canonical.Unity.Screen.xml
   DESTINATION ${CMAKE_INSTALL_DATADIR}/dbus-1/interfaces
 )

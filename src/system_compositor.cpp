@@ -17,30 +17,18 @@
  *              Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
-
 #include "system_compositor.h"
 #include "server.h"
 #include "dm_connection.h"
-#include "spinner.h"
-#include "screen_state_handler.h"
-#include "powerkey_handler.h"
-
-// Qt headers will introduce a #define of "signals"
-// but some mir headers use "signals" as a variable name in
-// method declarations
-#undef signals
 
 #include <mir/input/composite_event_filter.h>
 #include <mir/abnormal_exit.h>
-#include <mir/main_loop.h>
 
 #include <cerrno>
 #include <iostream>
 #include <sys/stat.h>
-#include <thread>
 #include <regex.h>
 #include <GLES2/gl2.h>
-#include <QCoreApplication>
 
 namespace
 {
@@ -99,31 +87,21 @@ void usc::SystemCompositor::run()
         return;
     }
 
-    struct ScopeGuard
-    {
-        ~ScopeGuard()
-        {
-            if (qt_thread.joinable())
-            {
-                QCoreApplication::quit();
-                qt_thread.join();
-            }
-        }
-
-        std::thread qt_thread;
-    } guard;
-
     server->add_init_callback([&]
         {
             auto vendor = (char *) glGetString(GL_VENDOR);
             auto renderer = (char *) glGetString (GL_RENDERER);
             auto version = (char *) glGetString (GL_VERSION);
+
             std::cerr << "GL_VENDOR = " << vendor << std::endl;
             std::cerr << "GL_RENDERER = " << renderer << std::endl;
             std::cerr << "GL_VERSION = " << version << std::endl;
 
             if (!check_blacklist(server->blacklist(), vendor, renderer, version))
-                throw mir::AbnormalExit ("Video driver is blacklisted, exiting");
+            {
+                BOOST_THROW_EXCEPTION(
+                    mir::AbnormalExit("Video driver is blacklisted, exiting"));
+            }
 
             dm_connection = server->the_dm_connection();
 
@@ -135,43 +113,17 @@ void usc::SystemCompositor::run()
 
             dm_connection->start();
 
-            guard.qt_thread = std::thread(&SystemCompositor::qt_main, this);
+            if (!server->disable_inactivity_policy())
+            {
+                screen = server->the_screen();
+                screen_event_handler = server->the_screen_event_handler();
+
+                auto composite_filter = server->the_composite_event_filter();
+                composite_filter->append(screen_event_handler);
+
+                unity_screen_service = server->the_unity_screen_service();
+            }
         });
 
     server->run();
-}
-
-void usc::SystemCompositor::qt_main()
-{
-    int argc{0};
-    QCoreApplication app(argc, nullptr);
-
-    if (!server->disable_inactivity_policy())
-    {
-        std::chrono::seconds inactivity_display_off_timeout{server->inactivity_display_off_timeout()};
-        std::chrono::seconds inactivity_display_dim_timeout{server->inactivity_display_dim_timeout()};
-        std::chrono::milliseconds power_key_ignore_timeout{server->power_key_ignore_timeout()};
-        std::chrono::milliseconds shutdown_timeout{server->shutdown_timeout()};
-
-        screen_state_handler = std::make_shared<ScreenStateHandler>(server,
-            std::chrono::duration_cast<std::chrono::milliseconds>(inactivity_display_off_timeout),
-            std::chrono::duration_cast<std::chrono::milliseconds>(inactivity_display_dim_timeout));
-
-        power_key_handler = std::make_shared<PowerKeyHandler>(*(server->the_main_loop()),
-            power_key_ignore_timeout,
-            shutdown_timeout,
-            *screen_state_handler);
-
-        auto composite_filter = server->the_composite_event_filter();
-        composite_filter->append(screen_state_handler);
-        composite_filter->append(power_key_handler);
-    }
-
-    app.exec();
-
-    // Destroy components that depend on Qt event handling inside the Qt thread,
-    // to silence warnings during shutdown
-
-    // ScreenStateHandler uses the Qt DBus infrastructure
-    screen_state_handler.reset();
 }

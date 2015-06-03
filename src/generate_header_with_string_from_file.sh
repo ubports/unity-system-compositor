@@ -1,4 +1,4 @@
-# Copyright © 2014 Canonical Ltd.
+# Copyright © 2015 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 3 as
@@ -14,30 +14,13 @@
 #
 # Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
 
-include_directories(
- ${CMAKE_SOURCE_DIR}
- ${MIRSERVER_INCLUDE_DIRS}
-)
+header=$1
+varname=$2
+filename=$3
 
-add_executable(
-  usc_unit_tests
+header_guard=$(echo "USC_$(basename $header)_" | tr '[a-z].' '[A-Z]_')
 
-  test_session_switcher.cpp
-  test_screen_event_handler.cpp
-  test_mir_screen.cpp
-
-  advanceable_timer.cpp
-)
-
-target_link_libraries(
-   usc_unit_tests
-
-   usc
-   ${GTEST_BOTH_LIBRARIES}
-   ${GMOCK_LIBRARY}
-   ${GMOCK_MAIN_LIBRARY}
-)
-
-add_test(usc_unit_tests ${EXECUTABLE_OUTPUT_PATH}/usc_unit_tests)
-
-add_dependencies(usc_unit_tests GMock)
+echo "#ifndef $header_guard
+#define $header_guard
+const char* const $varname = R\"($(cat $filename))\";
+#endif" > $header

@@ -1,3 +1,34 @@
+unity-system-compositor (0.0.5+15.04.20150430-0ubuntu1) vivid; urgency=medium
+
+  [ Ricardo Salveti de Araujo ]
+  * Check if the android.conf file is present which means we are on the
+    new way of defining device specific environment variables.
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Thu, 30 Apr 2015 16:23:53 +0000
+
+unity-system-compositor (0.0.5+15.04.20150227-0ubuntu1) vivid; urgency=medium
+
+  [ CI Train Bot ]
+  * New rebuild forced.
+
+  [ Kevin DuBois ]
+  * No change rebuild for Mir 0.12
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Fri, 27 Feb 2015 18:53:50 +0000
+
+unity-system-compositor (0.0.5+15.04.20150209-0ubuntu1) vivid; urgency=medium
+
+  [ Andreas Pokorny ]
+  * Port USC to event 2.0 API
+
+  [ Robert Carr ]
+  * Port USC to event 2.0 API
+
+  [ Alan Griffiths ]
+  * Port to the msh::Shell API in Mir
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 09 Feb 2015 16:26:35 +0000
+
 unity-system-compositor (0.0.5+15.04.20150126.1-0ubuntu1) vivid; urgency=low
 
   [ Ricardo Mendoza ]

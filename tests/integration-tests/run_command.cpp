@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014 Canonical Ltd.
+ * Copyright © 2015 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -16,36 +16,29 @@
  * Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
-#ifndef USC_EXTERNAL_SPINNER_H_
-#define USC_EXTERNAL_SPINNER_H_
+#include "run_command.h"
 
-#include "spinner.h"
+#include <stdexcept>
+#include <boost/throw_exception.hpp>
 
-#include <string>
-#include <sys/types.h>
-#include <mutex>
+#include <cstdio>
 
-namespace usc
+std::string usc::test::run_command(std::string const& cmd)
 {
+    auto fp = ::popen(cmd.c_str(), "r");
+    if (!fp)
+        BOOST_THROW_EXCEPTION(std::runtime_error("Failed to execute command: " + cmd));
 
-class ExternalSpinner : public Spinner
-{
-public:
-    ExternalSpinner(std::string const& executable,
-                    std::string const& mir_socket);
-    ~ExternalSpinner();
+    std::string output;
 
-    void ensure_running() override;
-    void kill() override;
-    pid_t pid() override;
+    char buffer[64];
+    while (!std::feof(fp))
+    {
+        auto nread = std::fread(buffer, 1, 64, fp);
+        output.append(buffer, nread);
+    }
 
-private:
-    std::string const executable;
-    std::string const mir_socket;
-    std::mutex mutex;
-    pid_t spinner_pid;
-};
+    ::pclose(fp);
 
+    return output;
 }
-
-#endif

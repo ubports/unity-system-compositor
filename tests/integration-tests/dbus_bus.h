@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014 Canonical Ltd.
+ * Copyright © 2015 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -16,32 +16,31 @@
  * Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
-#ifndef USC_SURFACE_COORDINATOR_H_
-#define USC_SURFACE_COORDINATOR_H_
+#ifndef USC_TEST_DBUS_BUS_H_
+#define USC_TEST_DBUS_BUS_H_
 
-#include <mir/shell/surface_coordinator_wrapper.h>
-
-#include <memory>
+#include <string>
+#include <sys/types.h>
 
 namespace usc
 {
-class SessionSwitcher;
+namespace test
+{
 
-class SurfaceCoordinator : public mir::shell::SurfaceCoordinatorWrapper
+class DBusBus
 {
 public:
-    SurfaceCoordinator(
-        std::shared_ptr<mir::scene::SurfaceCoordinator> const& wrapped,
-        std::shared_ptr<SessionSwitcher> const& session_switcher);
+    DBusBus();
+    ~DBusBus();
+
+    std::string address();
 
 private:
-    std::shared_ptr<mir::scene::Surface> add_surface(
-        mir::scene::SurfaceCreationParameters const& params,
-        mir::scene::Session* session) override;
-
-    std::shared_ptr<SessionSwitcher> const session_switcher;
+    std::string address_;
+    pid_t pid;
 };
 
+}
 }
 
 #endif

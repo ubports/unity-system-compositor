@@ -15,3 +15,4 @@
 # Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
 
 add_subdirectory(unit-tests/)
+add_subdirectory(integration-tests/)

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014 Canonical Ltd.
+ * Copyright © 2015 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -16,34 +16,40 @@
  * Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
-#ifndef USC_EXTERNAL_SPINNER_H_
-#define USC_EXTERNAL_SPINNER_H_
+#ifndef USC_SCOPED_DBUS_ERROR_H_
+#define USC_SCOPED_DBUS_ERROR_H_
 
-#include "spinner.h"
-
+#include <dbus/dbus.h>
 #include <string>
-#include <sys/types.h>
-#include <mutex>
 
 namespace usc
 {
 
-class ExternalSpinner : public Spinner
+struct ScopedDBusError : ::DBusError
 {
-public:
-    ExternalSpinner(std::string const& executable,
-                    std::string const& mir_socket);
-    ~ExternalSpinner();
+    ScopedDBusError()
+    {
+        dbus_error_init(this);
+    }
 
-    void ensure_running() override;
-    void kill() override;
-    pid_t pid() override;
+    ~ScopedDBusError()
+    {
+        if (dbus_error_is_set(this) == TRUE)
+            dbus_error_free(this);
+    }
 
-private:
-    std::string const executable;
-    std::string const mir_socket;
-    std::mutex mutex;
-    pid_t spinner_pid;
+    std::string message_str() const
+    {
+        return message;
+    }
+
+    operator bool() const
+    {
+        return dbus_error_is_set(this) == TRUE;
+    }
+
+    ScopedDBusError(ScopedDBusError const&) = delete;
+    ScopedDBusError& operator=(ScopedDBusError const&) = delete;
 };
 
 }

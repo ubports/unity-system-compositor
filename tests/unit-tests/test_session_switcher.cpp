@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014 Canonical Ltd.
+ * Copyright © 2014-2015 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -96,13 +96,13 @@ public:
         : name_{name}
     {}
 
-    mir::frontend::SurfaceId create_surface(mir::scene::SurfaceCreationParameters const&) override { return mir::frontend::SurfaceId{0}; }
-    void destroy_surface(mir::frontend::SurfaceId) override {}
     std::shared_ptr<mir::frontend::Surface> get_surface(mir::frontend::SurfaceId surface) const override { return nullptr; }
 
+    mir::frontend::BufferStreamId create_buffer_stream(mir::graphics::BufferProperties const& /*props*/) override { return {}; }
+    std::shared_ptr<mir::frontend::BufferStream> get_buffer_stream(mir::frontend::BufferStreamId /*stream*/) const override { return nullptr; }
+    void destroy_buffer_stream(mir::frontend::BufferStreamId /*stream*/) override {}
+
     std::string name() const override { return name_; }
-    void hide() override {}
-    void show() override {}
 
 private:
     std::string const name_;
