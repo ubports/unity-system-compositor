@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013 Canonical Ltd.
+ * Copyright © 2013-2015 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -15,6 +15,7 @@
  *
  * Authors: Daniel van Vugt <daniel.van.vugt@canonical.com>
  *          Mirco Müller <mirco.mueller@canonical.com>
+ *          Alan Griffiths <alan@octopull.co.uk>
  */
 
 #include "eglapp.h"
@@ -29,6 +30,9 @@
 #include <hybris/properties/properties.h>
 #endif
 #include <signal.h>
+
+#include "spinner_glow.h"
+#include "spinner_logo.h"
 
 // this is needed for get_gu() to obtain the grid-unit value
 #define MAX_LENGTH       256
@@ -132,42 +136,20 @@ static GLuint load_shader(const char *src, GLenum type)
 #define BLACK           0.0f,         0.0f,         0.0f
 //#define WHITE           1.0f,         1.0f,         1.0f
 
-cairo_surface_t* pngToSurface (const char* filename)
+template <typename Image>
+void uploadTexture (GLuint id, Image const& image)
 {
-    if (access(filename, F_OK & R_OK) != 0)
-        throw std::runtime_error("Failed to load png: " + std::string(filename) + "\n");
-
-    // create surface from PNG
-    cairo_surface_t* surface = NULL;
-    surface = cairo_image_surface_create_from_png (filename);
-    if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS)
-        throw std::runtime_error("Failed to load png: " + std::string(filename) + "\n");
-
-    return surface;
-}
-
-void uploadTexture (GLuint id, const char* filename)
-{
-    if (!id || !filename)
-        return;
-
-    cairo_surface_t* surface = pngToSurface (filename);
-
     glBindTexture(GL_TEXTURE_2D, id);
 
-    if (cairo_surface_status (surface) == CAIRO_STATUS_SUCCESS)
-    {
-        glTexImage2D(GL_TEXTURE_2D,
-                     0,
-                     cairo_image_surface_get_format (surface) == CAIRO_FORMAT_ARGB32 ? GL_RGBA : GL_RGB,
-                     cairo_image_surface_get_width (surface),
-                     cairo_image_surface_get_height (surface),
-                     0,
-                     cairo_image_surface_get_format (surface) == CAIRO_FORMAT_ARGB32 ? GL_RGBA : GL_RGB,
-                     GL_UNSIGNED_BYTE,
-                     cairo_image_surface_get_data (surface));
-        cairo_surface_destroy (surface);
-    }
+    glTexImage2D(GL_TEXTURE_2D,
+                 0,
+                 GL_RGBA,
+                 image.width,
+                 image.height,
+                 0,
+                 GL_RGBA,
+                 GL_UNSIGNED_BYTE,
+                 image.pixel_data);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -382,8 +364,8 @@ try
 
     // create and upload spinner-artwork
     glGenTextures(2, texture);
-    uploadTexture(texture[0], PKGDATADIR "/spinner-glow.png");
-    uploadTexture(texture[1], PKGDATADIR "/spinner-logo.png");
+    uploadTexture(texture[0], spinner_glow);
+    uploadTexture(texture[1], spinner_logo);
 
     // bunch of shader-attributes to enable
     glVertexAttribPointer(aTexCoords[0], 2, GL_FLOAT, GL_FALSE, 0, texCoordsSpinner);

@@ -43,6 +43,3 @@ target_link_libraries(unity-system-compositor-spinner
   ${MIRCLIENT_LDFLAGS}
 )
 install(TARGETS unity-system-compositor-spinner RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-
-install(FILES spinner-logo.png DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PACKAGE})
-install(FILES spinner-glow.png DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PACKAGE})
