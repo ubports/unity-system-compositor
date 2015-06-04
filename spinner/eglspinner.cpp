@@ -268,13 +268,11 @@ const char fShaderSrcGlow[] =
     "uniform float uFadeGlow;                             \n"
     "void main()                                          \n"
     "{                                                    \n"
-    "    // swizzle because texture was created with cairo\n"
-    "    vec4 col = texture2D(uSampler, vTexCoords).bgra; \n"
-    "    float r = col.r * uFadeGlow;                     \n"
-    "    float g = col.g * uFadeGlow;                     \n"
-    "    float b = col.b * uFadeGlow;                     \n"
-    "    float a = col.a * uFadeGlow;                     \n"
-    "    gl_FragColor = vec4(r, g, b, a);                 \n"
+    "    // gimp gave us unpremultiplied values           \n"
+    "    vec4 col = texture2D(uSampler, vTexCoords);      \n"
+    "    col = col * uFadeGlow;                           \n"
+    "    col.rgb = col.rgb * col.a;                       \n"
+    "    gl_FragColor = col;                              \n"
     "}                                                    \n";
 
 const char fShaderSrcLogo[] =
@@ -284,13 +282,11 @@ const char fShaderSrcLogo[] =
     "uniform float uFadeLogo;                             \n"
     "void main()                                          \n"
     "{                                                    \n"
-    "    // swizzle because texture was created with cairo\n"
-    "    vec4 col = texture2D(uSampler, vTexCoords).bgra; \n"
-    "    float r = col.r * uFadeLogo;                     \n"
-    "    float g = col.g * uFadeLogo;                     \n"
-    "    float b = col.b * uFadeLogo;                     \n"
-    "    float a = col.a * uFadeLogo;                     \n"
-    "    gl_FragColor = vec4(r, g, b, a);                 \n"
+    "    // gimp gave us unpremultiplied values           \n"
+    "    vec4 col = texture2D(uSampler, vTexCoords);      \n"
+    "    col = col * uFadeLogo;                           \n"
+    "    col.rgb = col.rgb * col.a;                       \n"
+    "    gl_FragColor = col;                              \n"
     "}                                                    \n";
 
 static volatile sig_atomic_t running = 0;
