@@ -51,9 +51,9 @@ public:
     ~MirScreen();
 
     void enable_inactivity_timers(bool enable) override;
-    void toggle_screen_power_mode(PowerStateChangeReason reason) override;
     void keep_display_on_temporarily() override;
 
+    MirPowerMode get_screen_power_mode() override;
     void set_screen_power_mode(MirPowerMode mode, PowerStateChangeReason reason) override;
     void keep_display_on(bool on) override;
     void set_brightness(int brightness) override;

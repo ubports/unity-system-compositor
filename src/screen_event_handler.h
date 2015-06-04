@@ -65,6 +65,7 @@ private:
     std::function<void()> const shutdown;
 
     std::atomic<bool> long_press_detected;
+    std::atomic<MirPowerMode> mode_at_press_start;
     std::unique_ptr<mir::time::Alarm> shutdown_alarm;
     std::unique_ptr<mir::time::Alarm> long_press_alarm;
 };

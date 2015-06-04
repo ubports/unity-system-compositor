@@ -40,9 +40,9 @@ namespace
 struct MockScreen : usc::Screen
 {
     MOCK_METHOD1(enable_inactivity_timers, void(bool enable));
-    MOCK_METHOD1(toggle_screen_power_mode, void(PowerStateChangeReason reason));
     MOCK_METHOD0(keep_display_on_temporarily, void());
 
+    MOCK_METHOD0(get_screen_power_mode, MirPowerMode());
     MOCK_METHOD2(set_screen_power_mode, void(MirPowerMode mode, PowerStateChangeReason reason));
     MOCK_METHOD1(keep_display_on, void(bool on));
     MOCK_METHOD1(set_brightness, void(int brightness));
