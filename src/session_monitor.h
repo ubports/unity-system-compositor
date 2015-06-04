@@ -48,20 +48,15 @@ protected:
 class SessionMonitor
 {
 public:
-    SessionMonitor() = default;
-
-    virtual ~SessionMonitor() = default;
-
-    SessionMonitor(SessionMonitor const&) = delete;
-
-    SessionMonitor& operator=(SessionMonitor const&) = delete;
-
     virtual void add(std::shared_ptr<Session> const& session, pid_t pid) = 0;
-
-    virtual void remove(
-        std::shared_ptr<mir::frontend::Session> const& session) = 0;
-
+    virtual void remove(std::shared_ptr<mir::frontend::Session> const& session) = 0;
     virtual void mark_ready(mir::frontend::Session const* session) = 0;
+
+protected:
+    SessionMonitor() = default;
+    SessionMonitor(SessionMonitor const&) = delete;
+    SessionMonitor& operator=(SessionMonitor const&) = delete;
+    virtual ~SessionMonitor() = default;
 };
 }
 
