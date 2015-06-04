@@ -20,41 +20,24 @@
 #define USC_SESSION_SWITCHER_H_
 
 #include "dm_connection.h"
+#include "session_monitor.h"
 
 #include <map>
-#include <memory>
 #include <mutex>
 
-namespace mir { namespace frontend { class Session; }};
 namespace usc
 {
 class Spinner;
 
-class Session
-{
-public:
-    virtual ~Session() = default;
-
-    virtual std::string name() = 0;
-    virtual void show() = 0;
-    virtual void hide() = 0;
-    virtual void raise_and_focus() = 0;
-    virtual bool corresponds_to(mir::frontend::Session const*) = 0;
-
-protected:
-    Session() = default;
-    Session(Session const&) = delete;
-    Session& operator=(Session const&) = delete;
-};
-
-class SessionSwitcher : public DMMessageHandler
+class SessionSwitcher : public DMMessageHandler, public SessionMonitor
 {
 public:
     explicit SessionSwitcher(std::shared_ptr<Spinner> const& spinner);
 
-    void add(std::shared_ptr<Session> const& session, pid_t pid);
-    void remove(std::shared_ptr<mir::frontend::Session> const& session);
-    void mark_ready(mir::frontend::Session const* session);
+    /* From SessionMonitor */
+    void add(std::shared_ptr<Session> const& session, pid_t pid) override;
+    void remove(std::shared_ptr<mir::frontend::Session> const& session) override;
+    void mark_ready(mir::frontend::Session const* session) override;
 
     /* From DMMessageHandler */
     void set_active_session(std::string const& name) override;

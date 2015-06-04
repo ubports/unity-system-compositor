@@ -20,6 +20,7 @@
 #define USC_WINDOW_MANAGER_H_
 
 #include <mir/shell/window_manager.h>
+#include "session_monitor.h"
 
 namespace mir
 {
@@ -29,7 +30,7 @@ namespace shell { class FocusController; class DisplayLayout; }
 
 namespace usc
 {
-class SessionSwitcher;
+class SessionMonitor;
 
 class WindowManager : public mir::shell::WindowManager
 {
@@ -38,7 +39,7 @@ public:
         mir::shell::FocusController* focus_controller,
         std::shared_ptr<mir::shell::DisplayLayout> const& display_layout,
         std::shared_ptr<mir::scene::SessionCoordinator> const& session_coordinator,
-        std::shared_ptr<SessionSwitcher> const& session_switcher);
+        std::shared_ptr<SessionMonitor> const& session_switcher);
 
     void add_session(std::shared_ptr<mir::scene::Session> const& session) override;
 
@@ -78,7 +79,7 @@ private:
     mir::shell::FocusController* const focus_controller;
     std::shared_ptr<mir::shell::DisplayLayout> const display_layout;
     std::shared_ptr<mir::scene::SessionCoordinator> const session_coordinator;
-    std::shared_ptr<SessionSwitcher> const session_switcher;
+    std::shared_ptr<SessionMonitor> const session_monitor;
 };
 }
 
