@@ -137,14 +137,14 @@ static GLuint load_shader(const char *src, GLenum type)
 //#define WHITE           1.0f,         1.0f,         1.0f
 
 template <typename Image>
-void uploadTexture (GLuint id, Image const& image)
+void uploadTexture (GLuint id, Image& image)
 {
-    // Premultiply alpha
+    // Premultiply alpha (we only load once, so overwriting our input is "OK")
     for (auto pixel = std::begin(image.pixel_data); pixel != std::end(image.pixel_data)-1; pixel += image.bytes_per_pixel)
     {
-        const_cast<guint8&>(pixel[0]) *= float(pixel[3])/0xFF;
-        const_cast<guint8&>(pixel[1]) *= float(pixel[3])/0xFF;
-        const_cast<guint8&>(pixel[2]) *= float(pixel[3])/0xFF;
+        pixel[0] *= pixel[3]/255.0;
+        pixel[1] *= pixel[3]/255.0;
+        pixel[2] *= pixel[3]/255.0;
     }
 
     glBindTexture(GL_TEXTURE_2D, id);
@@ -277,11 +277,8 @@ const char fShaderSrcGlow[] =
     "void main()                                          \n"
     "{                                                    \n"
     "    vec4 col = texture2D(uSampler, vTexCoords);      \n"
-    "    float r = col.r * uFadeGlow;                     \n"
-    "    float g = col.g * uFadeGlow;                     \n"
-    "    float b = col.b * uFadeGlow;                     \n"
-    "    float a = col.a * uFadeGlow;                     \n"
-    "    gl_FragColor = vec4(r, g, b, a);                 \n"
+    "    col = col * uFadeGlow;                           \n"
+    "    gl_FragColor = col;                              \n"
     "}                                                    \n";
 
 const char fShaderSrcLogo[] =
@@ -292,10 +289,7 @@ const char fShaderSrcLogo[] =
     "void main()                                          \n"
     "{                                                    \n"
     "    vec4 col = texture2D(uSampler, vTexCoords);      \n"
-    "    float r = col.r * uFadeLogo;                     \n"
-    "    float g = col.g * uFadeLogo;                     \n"
-    "    float b = col.b * uFadeLogo;                     \n"
-    "    float a = col.a * uFadeLogo;                     \n"
+    "    col = col * uFadeLogo;                           \n"
     "    gl_FragColor = col;                              \n"
     "}                                                    \n";
 
