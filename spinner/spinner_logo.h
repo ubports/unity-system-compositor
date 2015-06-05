@@ -1,6 +1,6 @@
 /* GIMP RGBA C-Source image dump (spinner-logo.h) */
 
-static const struct {
+static struct {
   guint  	 width;
   guint  	 height;
   guint  	 bytes_per_pixel; /* 2:RGB16, 3:RGB, 4:RGBA */ 
