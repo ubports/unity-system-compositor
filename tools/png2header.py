@@ -60,7 +60,7 @@ def bytes_per_pixel(image):
 
 def export(image, variable_name):
     image_info = (image.size[0], image.size[1], bytes_per_pixel(image))
-    print "static struct {"
+    print "static const struct {"
     print "    unsigned int width;"
     print "    unsigned int height;"
     print "    unsigned int bytes_per_pixel; /* 3:RGB, 4:RGBA */"
