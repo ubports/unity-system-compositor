@@ -30,13 +30,15 @@ class MirEglSurface;
 
 std::shared_ptr<MirEglApp> make_mir_eglapp(
     MirConnection* const connection,
-    MirPixelFormat const& pixel_format,
-    EGLint swapinterval);
+    MirPixelFormat const& pixel_format);
 
 class MirEglSurface
 {
 public:
-    MirEglSurface(std::shared_ptr<MirEglApp> const& mir_egl_app, MirSurfaceParameters const& surfaceparm);
+    MirEglSurface(
+        std::shared_ptr<MirEglApp> const& mir_egl_app,
+        MirSurfaceParameters const& surfaceparm,
+        int swapinterval);
 
     ~MirEglSurface();
 
@@ -57,8 +59,9 @@ private:
 
     std::shared_ptr<MirEglApp> const mir_egl_app;
     MirSurface* const surface;
-    MirBufferPackage* buffer_package;
     EGLSurface const eglsurface;
+    int width_;
+    int height_;
 };
 
 #endif //UNITYSYSTEMCOMPOSITOR_MIREGL_H
