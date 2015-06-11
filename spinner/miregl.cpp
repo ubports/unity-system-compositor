@@ -16,12 +16,14 @@
 
 #include "miregl.h"
 
+#include <cstring>
+
 #include <GLES2/gl2.h>
 
 class MirEglApp
 {
 public:
-    MirEglApp(MirConnection* const connection, MirPixelFormat pixel_format, EGLint swapinterval);
+    MirEglApp(MirConnection* const connection, MirPixelFormat pixel_format);
 
     EGLSurface create_surface(MirSurface* surface);
 
@@ -33,6 +35,12 @@ public:
 
     void destroy_surface(EGLSurface eglsurface) const;
 
+    void get_surface_size(EGLSurface eglsurface, int* width, int* height) const;
+
+    void set_swap_interval(EGLSurface eglsurface, int interval) const;
+
+    bool supports_surfaceless_context();
+
     ~MirEglApp();
 
     MirConnection* const connection;
@@ -41,12 +49,13 @@ private:
     EGLContext eglctx;
     EGLConfig eglconfig;
     EGLint neglconfigs;
+    EGLSurface dummy_surface;
 };
 
 std::shared_ptr<MirEglApp> make_mir_eglapp(
-    MirConnection* const connection, MirPixelFormat const& pixel_format, EGLint swapinterval)
+    MirConnection* const connection, MirPixelFormat const& pixel_format)
 {
-    return std::make_shared<MirEglApp>(connection, pixel_format, swapinterval);
+    return std::make_shared<MirEglApp>(connection, pixel_format);
 }
 
 namespace
@@ -67,7 +76,7 @@ MirSurface* create_surface(MirConnection* const connection, MirSurfaceParameters
     mir_surface_spec_release(spec);
 
     if (!mir_surface_is_valid(surface))
-        throw std::runtime_error("Can't create a surface");
+        throw std::runtime_error(std::string("Can't create a surface ") + mir_surface_get_error_message(surface));
 
     if (surfaceparm.output_id != mir_display_output_id_invalid)
         mir_surface_set_state(surface, mir_surface_state_fullscreen);
@@ -76,11 +85,14 @@ MirSurface* create_surface(MirConnection* const connection, MirSurfaceParameters
 }
 }
 
-MirEglSurface::MirEglSurface(std::shared_ptr<MirEglApp> const& mir_egl_app, MirSurfaceParameters const& surfaceparm) :
+MirEglSurface::MirEglSurface(std::shared_ptr<MirEglApp> const& mir_egl_app, MirSurfaceParameters const& surfaceparm, int swapinterval) :
     mir_egl_app{mir_egl_app},
     surface{create_surface(mir_egl_app->connection, surfaceparm)},
-    eglsurface{mir_egl_app->create_surface(surface)}
+    eglsurface{mir_egl_app->create_surface(surface)},
+    width_{0},
+    height_{0}
 {
+    mir_egl_app->set_swap_interval(eglsurface, swapinterval);
 }
 
 MirEglSurface::~MirEglSurface()
@@ -91,8 +103,7 @@ MirEglSurface::~MirEglSurface()
 
 void MirEglSurface::egl_make_current()
 {
-    auto const buffer_stream = mir_surface_get_buffer_stream(surface);
-    mir_buffer_stream_get_current_buffer(buffer_stream, &buffer_package);
+    mir_egl_app->get_surface_size(eglsurface, &width_, &height_);
     mir_egl_app->make_current(eglsurface);
 }
 
@@ -103,16 +114,17 @@ void MirEglSurface::swap_buffers()
 
 unsigned int MirEglSurface::width() const
 {
-    return buffer_package->width;
+    return width_;
 }
 
 unsigned int MirEglSurface::height() const
 {
-    return buffer_package->height;
+    return height_;
 }
 
-MirEglApp::MirEglApp(MirConnection* const connection, MirPixelFormat pixel_format, EGLint swapinterval) :
-    connection{connection}
+MirEglApp::MirEglApp(MirConnection* const connection, MirPixelFormat pixel_format) :
+    connection{connection},
+    dummy_surface{EGL_NO_SURFACE}
 {
     unsigned int bpp = 8*MIR_BYTES_PER_PIXEL(pixel_format);
 
@@ -153,10 +165,21 @@ MirEglApp::MirEglApp(MirConnection* const connection, MirPixelFormat pixel_forma
     if (eglctx == EGL_NO_CONTEXT)
         throw std::runtime_error("eglCreateContext failed");
 
-    if (!eglMakeCurrent(egldisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, eglctx))
-        throw std::runtime_error("Can't eglMakeCurrent");
+    if (!supports_surfaceless_context())
+    {
+        static EGLint const dummy_pbuffer_attribs[] =
+        {
+             EGL_WIDTH, 1,
+             EGL_HEIGHT, 1,
+             EGL_NONE
+        };
+     
+        dummy_surface = eglCreatePbufferSurface(egldisplay, eglconfig, dummy_pbuffer_attribs);
+        if (dummy_surface == EGL_NO_SURFACE)
+            throw std::runtime_error("eglCreatePbufferSurface failed");
+    }
 
-    eglSwapInterval(egldisplay, swapinterval);
+    make_current(dummy_surface);
 }
 
 EGLSurface MirEglApp::create_surface(MirSurface* surface)
@@ -188,10 +211,36 @@ void MirEglApp::destroy_surface(EGLSurface eglsurface) const
     eglDestroySurface(egldisplay, eglsurface);
 }
 
+void MirEglApp::get_surface_size(EGLSurface eglsurface, int* width, int* height) const
+{
+    eglQuerySurface(egldisplay, eglsurface, EGL_WIDTH, width);
+    eglQuerySurface(egldisplay, eglsurface, EGL_HEIGHT, height);
+}
+
+void MirEglApp::set_swap_interval(EGLSurface eglsurface, int interval) const
+{
+    auto const previous_surface = eglGetCurrentSurface(EGL_DRAW);
+
+    make_current(eglsurface);
+    eglSwapInterval(egldisplay, interval);
+
+    if (previous_surface != EGL_NO_SURFACE)
+        make_current(previous_surface);
+}
+
+bool MirEglApp::supports_surfaceless_context()
+{
+    auto const extensions = eglQueryString(egldisplay, EGL_EXTENSIONS);
+    if (!extensions)
+        return false;
+    return std::strstr(extensions, "EGL_KHR_surfaceless_context") != nullptr;
+}
 
 MirEglApp::~MirEglApp()
 {
     eglMakeCurrent(egldisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    if (dummy_surface != EGL_NO_SURFACE)
+        destroy_surface(dummy_surface);
     eglDestroyContext(egldisplay, eglctx);
     eglTerminate(egldisplay);
     mir_connection_release(connection);

@@ -205,21 +205,30 @@ std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv
     auto const pixel_format = select_pixel_format(connection);
     surfaceparm.pixel_format = pixel_format;
 
-    auto const mir_egl_app = make_mir_eglapp(connection, pixel_format, swapinterval);
+    auto const mir_egl_app = make_mir_eglapp(connection, pixel_format);
 
     std::vector<std::shared_ptr<MirEglSurface>> result;
 
     // If a size has been specified just do that
     if (surfaceparm.width && surfaceparm.height)
     {
-        result.push_back(std::make_shared<MirEglSurface>(mir_egl_app, surfaceparm));
+        result.push_back(std::make_shared<MirEglSurface>(mir_egl_app, surfaceparm, swapinterval));
         return result;
     }
 
     // If an output has been specified just do that
     if (surfaceparm.output_id != mir_display_output_id_invalid)
     {
-        result.push_back(std::make_shared<MirEglSurface>(mir_egl_app, surfaceparm));
+        for_each_active_output(connection, [&](MirDisplayOutput const* output)
+            {
+                if (output->output_id == surfaceparm.output_id)
+                {
+                    auto const& mode = output->modes[output->current_mode];
+                    surfaceparm.width = mode.horizontal_resolution;
+                    surfaceparm.height = mode.vertical_resolution;
+                }
+            });
+        result.push_back(std::make_shared<MirEglSurface>(mir_egl_app, surfaceparm, swapinterval));
         return result;
     }
 
@@ -233,8 +242,10 @@ std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv
                    output->position_x, output->position_y,
                    mode.horizontal_resolution, mode.vertical_resolution);
 
+            surfaceparm.width = mode.horizontal_resolution;
+            surfaceparm.height = mode.vertical_resolution;
             surfaceparm.output_id = output->output_id;
-            result.push_back(std::make_shared<MirEglSurface>(mir_egl_app, surfaceparm));
+            result.push_back(std::make_shared<MirEglSurface>(mir_egl_app, surfaceparm, swapinterval));
         });
 
     if (result.empty())
