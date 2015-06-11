@@ -139,14 +139,6 @@ static GLuint load_shader(const char *src, GLenum type)
 template <typename Image>
 void uploadTexture (GLuint id, Image& image)
 {
-    // Premultiply alpha (we only load once, so overwriting our input is "OK")
-    for (auto pixel = std::begin(image.pixel_data); pixel != std::end(image.pixel_data)-1; pixel += image.bytes_per_pixel)
-    {
-        pixel[0] *= pixel[3]/255.0;
-        pixel[1] *= pixel[3]/255.0;
-        pixel[2] *= pixel[3]/255.0;
-    }
-
     glBindTexture(GL_TEXTURE_2D, id);
 
     glTexImage2D(GL_TEXTURE_2D,
@@ -363,6 +355,7 @@ try
     fadeLogo = glGetUniformLocation(prog[1], "uFadeLogo");
 
     // create and upload spinner-artwork
+    // note that the embedded image data has pre-multiplied alpha
     glGenTextures(2, texture);
     uploadTexture(texture[0], spinner_glow);
     uploadTexture(texture[1], spinner_logo);
