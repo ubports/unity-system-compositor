@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014 Canonical Ltd.
+ * Copyright © 2014-2015 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 3,
@@ -16,37 +16,70 @@
  * Authored By: Alan Griffiths <alan@octopull.co.uk>
  */
 
-#include "server_example_display_configuration_policy.h"
+#include "display_configuration_policy.h"
 
-#include "mir/graphics/display_configuration.h"
-#include "mir/server.h"
-#include "mir/options/option.h"
+#include <mir/graphics/display_configuration_policy.h>
+#include <mir/graphics/display_configuration.h>
+#include <mir/server.h>
+#include <mir/options/option.h>
 
 #include <algorithm>
 #include <unordered_map>
 #include <stdexcept>
 
-namespace geom = mir::geometry;
-namespace me = mir::examples;
 namespace mg = mir::graphics;
+namespace geom = mir::geometry;
 
-///\example server_example_display_configuration_policy.cpp
-/// Demonstrate custom display configuration policies for "sidebyside" and "single"
+namespace
+{
+char const* const display_config_opt = "display-config";
+char const* const display_config_descr = "Display configuration [{clone,sidebyside,single}]";
 
-char const* const me::display_config_opt = "display-config";
-char const* const me::display_config_descr = "Display configuration [{clone,sidebyside,single}]";
+char const* const clone_opt_val = "clone";
+char const* const sidebyside_opt_val = "sidebyside";
+char const* const single_opt_val = "single";
 
-char const* const me::clone_opt_val = "clone";
-char const* const me::sidebyside_opt_val = "sidebyside";
-char const* const me::single_opt_val = "single";
+char const* const display_alpha_opt = "translucent";
+char const* const display_alpha_descr = "Select a display mode with alpha[{on,off}]";
 
-char const* const me::display_alpha_opt = "translucent";
-char const* const me::display_alpha_descr = "Select a display mode with alpha[{on,off}]";
+char const* const display_alpha_off = "off";
+char const* const display_alpha_on = "on";
 
-char const* const me::display_alpha_off = "off";
-char const* const me::display_alpha_on = "on";
+class SideBySideDisplayConfigurationPolicy
+    : public mg::DisplayConfigurationPolicy
+{
+public:
+    void apply_to(mg::DisplayConfiguration& conf);
+};
 
-void me::SideBySideDisplayConfigurationPolicy::apply_to(graphics::DisplayConfiguration& conf)
+class SingleDisplayConfigurationPolicy : public mg::DisplayConfigurationPolicy
+{
+public:
+    void apply_to(mg::DisplayConfiguration& conf);
+};
+
+/**
+ * \brief Example of a DisplayConfigurationPolicy that tries to find
+ * an opaque or transparent pixel format, or falls back to the default
+ * if not found.
+ */
+class PixelFormatSelector : public mg::DisplayConfigurationPolicy
+{
+public:
+    PixelFormatSelector(
+        std::shared_ptr <mg::DisplayConfigurationPolicy> const& base_policy,
+        bool with_alpha);
+
+    virtual void apply_to(mg::DisplayConfiguration& conf);
+
+private:
+    std::shared_ptr <mg::DisplayConfigurationPolicy> const base_policy;
+    bool const with_alpha;
+};
+}
+
+
+void SideBySideDisplayConfigurationPolicy::apply_to(mg::DisplayConfiguration& conf)
 {
     size_t const preferred_mode_index{0};
     int max_x = 0;
@@ -81,7 +114,7 @@ void me::SideBySideDisplayConfigurationPolicy::apply_to(graphics::DisplayConfigu
 }
 
 
-void me::SingleDisplayConfigurationPolicy::apply_to(graphics::DisplayConfiguration& conf)
+void SingleDisplayConfigurationPolicy::apply_to(mg::DisplayConfiguration& conf)
 {
     size_t const preferred_mode_index{0};
     bool done{false};
@@ -114,17 +147,17 @@ bool contains_alpha(MirPixelFormat format)
 }
 }
 
-me::PixelFormatSelector::PixelFormatSelector(std::shared_ptr<DisplayConfigurationPolicy> const& base_policy,
+PixelFormatSelector::PixelFormatSelector(std::shared_ptr<DisplayConfigurationPolicy> const& base_policy,
                                          bool with_alpha)
     : base_policy{base_policy},
     with_alpha{with_alpha}
 {}
 
-void me::PixelFormatSelector::apply_to(graphics::DisplayConfiguration & conf)
+void PixelFormatSelector::apply_to(mg::DisplayConfiguration & conf)
 {
     base_policy->apply_to(conf);
     conf.for_each_output(
-        [&](graphics::UserDisplayConfigurationOutput& conf_output)
+        [&](mg::UserDisplayConfigurationOutput& conf_output)
         {
             if (!conf_output.connected || !conf_output.used) return;
 
@@ -144,30 +177,30 @@ void me::PixelFormatSelector::apply_to(graphics::DisplayConfiguration & conf)
         });
 }
 
-void me::add_display_configuration_options_to(mir::Server& server)
+void add_display_configuration_options_to(mir::Server& server)
 {
     // Add choice of monitor configuration
     server.add_configuration_option(
-        me::display_config_opt, me::display_config_descr,   me::clone_opt_val);
+        display_config_opt, display_config_descr,   sidebyside_opt_val);
     server.add_configuration_option(
-        me::display_alpha_opt,  me::display_alpha_descr,    me::display_alpha_off);
+        display_alpha_opt,  display_alpha_descr,    display_alpha_off);
 
     server.wrap_display_configuration_policy(
         [&](std::shared_ptr<mg::DisplayConfigurationPolicy> const& wrapped)
         -> std::shared_ptr<mg::DisplayConfigurationPolicy>
         {
             auto const options = server.get_options();
-            auto display_layout = options->get<std::string>(me::display_config_opt);
-            auto with_alpha = options->get<std::string>(me::display_alpha_opt) == me::display_alpha_on;
+            auto display_layout = options->get<std::string>(display_config_opt);
+            auto with_alpha = options->get<std::string>(display_alpha_opt) == display_alpha_on;
 
             auto layout_selector = wrapped;
 
-            if (display_layout == me::sidebyside_opt_val)
-                layout_selector = std::make_shared<me::SideBySideDisplayConfigurationPolicy>();
-            else if (display_layout == me::single_opt_val)
-                layout_selector = std::make_shared<me::SingleDisplayConfigurationPolicy>();
+            if (display_layout == sidebyside_opt_val)
+                layout_selector = std::make_shared<SideBySideDisplayConfigurationPolicy>();
+            else if (display_layout == single_opt_val)
+                layout_selector = std::make_shared<SingleDisplayConfigurationPolicy>();
 
             // Whatever the layout select a pixel format with requested alpha
-            return std::make_shared<me::PixelFormatSelector>(layout_selector, with_alpha);
+            return std::make_shared<PixelFormatSelector>(layout_selector, with_alpha);
         });
 }

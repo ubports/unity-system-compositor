@@ -19,6 +19,7 @@ set(USC_SRCS
   dbus_connection_handle.cpp
   dbus_event_loop.cpp
   dbus_message_handle.cpp
+  display_configuration_policy.cpp
   external_spinner.cpp
   mir_screen.cpp
   powerd_mediator.cpp
