@@ -46,18 +46,6 @@ png2header(
   orange_dot
 )
 
-png2header(
-  ${CMAKE_CURRENT_SOURCE_DIR}/spinner-glow.png
-  ${CMAKE_CURRENT_BINARY_DIR}/spinner_glow.h
-  spinner_glow
-)
-
-png2header(
-  ${CMAKE_CURRENT_SOURCE_DIR}/spinner-logo.png
-  ${CMAKE_CURRENT_BINARY_DIR}/spinner_logo.h
-  spinner_logo
-)
-
 include_directories(
   ${GLIB_INCLUDE_DIRS}
   ${ANDROIDPROPS_INCLUDE_DIRS}
@@ -82,8 +70,6 @@ add_executable(unity-system-compositor-spinner
   ${CMAKE_CURRENT_BINARY_DIR}/logo.h
   ${CMAKE_CURRENT_BINARY_DIR}/white_dot.h
   ${CMAKE_CURRENT_BINARY_DIR}/orange_dot.h
-  ${CMAKE_CURRENT_BINARY_DIR}/spinner_logo.h
-  ${CMAKE_CURRENT_BINARY_DIR}/spinner_glow.h
 )
 
 target_link_libraries(unity-system-compositor-spinner
