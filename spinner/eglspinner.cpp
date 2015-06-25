@@ -279,10 +279,10 @@ try
     //double pixelSize = get_gu() * 11.18;
     const GLfloat texCoordsSpinner[] =
     {
-        -0.5f, 0.5f,
+         0.5f, -0.5f,
+         0.5f,  0.5f,
         -0.5f, -0.5f,
-        0.5f, 0.5f,
-        0.5f, -0.5f,
+        -0.5f,  0.5f,
     };
 
     prog[WALLPAPER] = createShaderProgram(vShaderSrcPlain, fShaderSrcPlain);
