@@ -33,6 +33,10 @@
 
 #include "spinner_glow.h"
 #include "spinner_logo.h"
+#include "wallpaper.h"
+#include "logo.h"
+#include "white_dot.h"
+#include "orange_dot.h"
 
 // this is needed for get_gu() to obtain the grid-unit value
 #define MAX_LENGTH       256
@@ -42,6 +46,16 @@
 #define DEFAULT_FILE     "/etc/ubuntu-touch-session.d/android.conf"
 #define FILE_BASE        "/etc/ubuntu-touch-session.d/"
 #define FILE_EXTENSION   ".conf"
+
+enum TextureIds {
+    SPINNER_GLOW = 0,
+    SPINNER_LOGO,
+    WALLPAPER,
+    LOGO,
+    WHITE_DOT,
+    ORANGE_DOT,
+    MAX_TEXTURES
+};
 
 int get_gu ()
 {
@@ -305,14 +319,14 @@ bool mir_eglapp_running()
 int main(int argc, char *argv[])
 try
 {
-    GLuint prog[2];
-    GLuint texture[2];
-    GLint vpos[2];
+    GLuint prog[MAX_TEXTURES];
+    GLuint texture[MAX_TEXTURES];
+    GLint vpos[MAX_TEXTURES];
     GLint theta;
     GLint fadeGlow;
     GLint fadeLogo;
-    GLint aTexCoords[2];
-    GLint sampler[2];
+    GLint aTexCoords[MAX_TEXTURES];
+    GLint sampler[MAX_TEXTURES];
 
     auto const surfaces = mir_eglapp_init(argc, argv);
 
@@ -356,9 +370,13 @@ try
 
     // create and upload spinner-artwork
     // note that the embedded image data has pre-multiplied alpha
-    glGenTextures(2, texture);
-    uploadTexture(texture[0], spinner_glow);
-    uploadTexture(texture[1], spinner_logo);
+    glGenTextures(MAX_TEXTURES, texture);    
+    uploadTexture(texture[SPINNER_GLOW], spinner_glow);
+    uploadTexture(texture[SPINNER_LOGO], spinner_logo);
+    uploadTexture(texture[WALLPAPER], wallpaper);
+    uploadTexture(texture[LOGO], logo);
+    uploadTexture(texture[WHITE_DOT], white_dot);
+    uploadTexture(texture[ORANGE_DOT], orange_dot);
 
     // bunch of shader-attributes to enable
     glVertexAttribPointer(aTexCoords[0], 2, GL_FLOAT, GL_FALSE, 0, texCoordsSpinner);
