@@ -205,6 +205,7 @@ typedef struct _AnimationValues
 {
     double lastTimeStamp;
     GLfloat fadeBackground;
+    int dot_mask;
 } AnimationValues;
 
 void
@@ -213,7 +214,20 @@ updateAnimation (GTimer* timer, AnimationValues* anim)
     if (!timer || !anim)
         return;
 
+    static const int sequence[] = {0, 1, 3, 7, 15, 31};
+    static int counter = 0;
+    static double second = 0.0f;
+
     double elapsed = g_timer_elapsed (timer, NULL);
+
+    if (second >= 1.0f) {
+        second = 0.0f;
+        counter++;
+    } else {
+        second += elapsed - anim->lastTimeStamp;
+    }
+    anim->dot_mask = sequence[counter%6];
+
     anim->lastTimeStamp = elapsed;
 }
 
@@ -330,7 +344,7 @@ try
     glEnableVertexAttribArray(aTexCoords[WHITE_DOT]);
     glActiveTexture(GL_TEXTURE0);
 
-    AnimationValues anim = {0.0, 0.0};
+    AnimationValues anim = {0.0, 0.0, 0};
     GTimer* timer = g_timer_new();
 
     while (mir_eglapp_running())
@@ -393,9 +407,9 @@ try
                 // draw white dots
                 glVertexAttribPointer(vpos[WHITE_DOT], 2, GL_FLOAT, GL_FALSE, 0, dot);
                 glUseProgram(prog[WHITE_DOT]);
-                glBindTexture(GL_TEXTURE_2D, texture[WHITE_DOT]);
                 glUniform1i(sampler[WHITE_DOT], 0);
                 for (int i = -2; i < 3; i++) {
+                    glBindTexture(GL_TEXTURE_2D, texture[anim.dot_mask >> (i + 2) ? ORANGE_DOT : WHITE_DOT]);
                     glUniform2f(offset[WHITE_DOT], i * 0.07f, -0.15f);
                     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);                    
                 }
