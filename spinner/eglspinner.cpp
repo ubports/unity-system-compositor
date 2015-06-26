@@ -223,10 +223,11 @@ const char vShaderSrcPlain[] =
     "attribute vec4 vPosition;                       \n"
     "attribute vec2 aTexCoords;                      \n"
     "varying vec2 vTexCoords;                        \n"
+    "uniform vec2 uOffset;                           \n"
     "void main()                                     \n"
     "{                                               \n"
     "    vTexCoords = aTexCoords + vec2 (0.5, 0.5);  \n"
-    "    gl_Position = vec4(vPosition.xy, -1.0, 1.0);\n"
+    "    gl_Position = vec4(vPosition.xy + uOffset.xy, -1.0, 1.0);\n"
     "}                                               \n";
 
 const char fShaderSrcPlain[] =
@@ -260,9 +261,10 @@ try
 {
     GLuint prog[3];
     GLuint texture[MAX_TEXTURES];
-    GLint vpos[3];
+    GLint vpos[MAX_TEXTURES];
     GLint aTexCoords[MAX_TEXTURES];
     GLint sampler[MAX_TEXTURES];
+    GLint offset[MAX_TEXTURES];
 
     auto const surfaces = mir_eglapp_init(argc, argv);
 
@@ -276,8 +278,8 @@ try
     signal(SIGINT, shutdown);
     signal(SIGTERM, shutdown);
 
-    //double pixelSize = get_gu() * 11.18;
-    const GLfloat texCoordsSpinner[] =
+    double pixelSize = get_gu() * 11.18;
+    const GLfloat texCoords[] =
     {
          0.5f, -0.5f,
          0.5f,  0.5f,
@@ -286,6 +288,8 @@ try
     };
 
     prog[WALLPAPER] = createShaderProgram(vShaderSrcPlain, fShaderSrcPlain);
+    prog[LOGO] = createShaderProgram(vShaderSrcPlain, fShaderSrcPlain);
+    prog[WHITE_DOT] = createShaderProgram(vShaderSrcPlain, fShaderSrcPlain);
 
     // setup proper GL-blending
     glEnable(GL_BLEND);
@@ -296,6 +300,15 @@ try
     vpos[WALLPAPER] = glGetAttribLocation(prog[WALLPAPER], "vPosition");
     aTexCoords[WALLPAPER] = glGetAttribLocation(prog[WALLPAPER], "aTexCoords");
     sampler[WALLPAPER] = glGetUniformLocation(prog[WALLPAPER], "uSampler");
+    offset[WALLPAPER] = glGetUniformLocation(prog[WALLPAPER], "uOffset");
+    vpos[LOGO] = glGetAttribLocation(prog[LOGO], "vPosition");
+    aTexCoords[LOGO] = glGetAttribLocation(prog[LOGO], "aTexCoords");
+    sampler[LOGO] = glGetUniformLocation(prog[LOGO], "uSampler");
+    offset[LOGO] = glGetUniformLocation(prog[LOGO], "uOffset");
+    vpos[WHITE_DOT] = glGetAttribLocation(prog[WHITE_DOT], "vPosition");
+    aTexCoords[WHITE_DOT] = glGetAttribLocation(prog[WHITE_DOT], "aTexCoords");
+    sampler[WHITE_DOT] = glGetUniformLocation(prog[WHITE_DOT], "uSampler");
+    offset[WHITE_DOT] = glGetUniformLocation(prog[WHITE_DOT], "uOffset");
 
     // create and upload spinner-artwork
     // note that the embedded image data has pre-multiplied alpha
@@ -306,9 +319,15 @@ try
     uploadTexture(texture[ORANGE_DOT], orange_dot);
 
     // bunch of shader-attributes to enable
-    glVertexAttribPointer(aTexCoords[WALLPAPER], 2, GL_FLOAT, GL_FALSE, 0, texCoordsSpinner);
+    glVertexAttribPointer(aTexCoords[WALLPAPER], 2, GL_FLOAT, GL_FALSE, 0, texCoords);
     glEnableVertexAttribArray(vpos[WALLPAPER]);
     glEnableVertexAttribArray(aTexCoords[WALLPAPER]);
+    glVertexAttribPointer(aTexCoords[LOGO], 2, GL_FLOAT, GL_FALSE, 0, texCoords);
+    glEnableVertexAttribArray(vpos[LOGO]);
+    glEnableVertexAttribArray(aTexCoords[LOGO]);
+    glVertexAttribPointer(aTexCoords[WHITE_DOT], 2, GL_FLOAT, GL_FALSE, 0, texCoords);
+    glEnableVertexAttribArray(vpos[WHITE_DOT]);
+    glEnableVertexAttribArray(aTexCoords[WHITE_DOT]);
     glActiveTexture(GL_TEXTURE0);
 
     AnimationValues anim = {0.0, 0.0};
@@ -319,15 +338,36 @@ try
         for (auto const& surface : surfaces)
             surface->paint([&](unsigned int width, unsigned int height)
             {
-                const GLfloat fullscreen[] =
-                    {
-                        1.0,  1.0,
-                        1.0, -1.0,
-                        -1.0, 1.0,
-                        -1.0,-1.0,
-                    };
+                GLfloat aspect;
+                if (width > height) {
+                    aspect = (GLfloat) width / (GLfloat) height;
+                } else {
+                    aspect = (GLfloat) height / (GLfloat) width;
+                }
+                GLfloat logoWidth = (39.1 / pixelSize);
+                GLfloat logoHeight = (8.7 / pixelSize);
+                GLfloat dotSize = (1.5 / pixelSize);
 
-                glVertexAttribPointer(vpos[WALLPAPER], 2, GL_FLOAT, GL_FALSE, 0, fullscreen);
+                const GLfloat fullscreen[] = {
+                    1.0, 1.0,
+                    1.0,-1.0,
+                   -1.0, 1.0,
+                   -1.0,-1.0
+                };
+
+                const GLfloat logo[] = {
+                    logoWidth / aspect, logoHeight,
+                    logoWidth / aspect,-logoHeight,
+                   -logoWidth / aspect, logoHeight,
+                   -logoWidth / aspect,-logoHeight
+                };
+
+                const GLfloat dot[] = {
+                    dotSize / aspect, dotSize,
+                    dotSize / aspect,-dotSize,
+                   -dotSize / aspect, dotSize,
+                   -dotSize / aspect,-dotSize
+                };
 
                 glViewport(0, 0, width, height);
 
@@ -335,10 +375,30 @@ try
                 glClear(GL_COLOR_BUFFER_BIT);
 
                 // draw wallpaper backdrop
+                glVertexAttribPointer(vpos[WALLPAPER], 2, GL_FLOAT, GL_FALSE, 0, fullscreen);
                 glUseProgram(prog[WALLPAPER]);
                 glBindTexture(GL_TEXTURE_2D, texture[WALLPAPER]);
                 glUniform1i(sampler[WALLPAPER], 0);
+                glUniform2f(offset[WALLPAPER], 0.0f, 0.0f);
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+                // draw logo
+                glVertexAttribPointer(vpos[LOGO], 2, GL_FLOAT, GL_FALSE, 0, logo);
+                glUseProgram(prog[LOGO]);
+                glBindTexture(GL_TEXTURE_2D, texture[LOGO]);
+                glUniform1i(sampler[LOGO], 0);
+                glUniform2f(offset[LOGO], 0.025f, 0.0f);
+                glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+                // draw white dots
+                glVertexAttribPointer(vpos[WHITE_DOT], 2, GL_FLOAT, GL_FALSE, 0, dot);
+                glUseProgram(prog[WHITE_DOT]);
+                glBindTexture(GL_TEXTURE_2D, texture[WHITE_DOT]);
+                glUniform1i(sampler[WHITE_DOT], 0);
+                for (int i = -2; i < 3; i++) {
+                    glUniform2f(offset[WHITE_DOT], i * 0.07f, -0.15f);
+                    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);                    
+                }
             });
 
         // update animation variable
