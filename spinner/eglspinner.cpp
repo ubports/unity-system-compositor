@@ -208,6 +208,44 @@ typedef struct _AnimationValues
     int dot_mask;
 } AnimationValues;
 
+void ortho(GLfloat* mat,
+           GLfloat left,
+           GLfloat right,
+           GLfloat top,
+           GLfloat bottom,
+           GLfloat near,
+           GLfloat far)
+{
+    if (right == left ||
+        top == bottom ||
+        far == near ||
+        mat == NULL)
+    {
+        return;
+   }
+
+    mat[0]  = 2.0f / (right - left);
+    mat[1]  = 0.0f;
+    mat[2]  = 0.0f;
+    mat[3]  = -(right + left) / (right - left);
+
+    mat[4]  = 0.0f;
+    mat[5]  = 2.0f / (top - bottom);
+    mat[6]  = 0.0f;
+    mat[7]  = -(top + bottom) / (top - bottom);
+
+    mat[8]  = 0.0f;
+    mat[9]  = 0.0f;
+    mat[10] = -2.0f / (far - near);
+    mat[11] = -(far + near) / (far - near);
+
+    mat[12] = 0.0f;
+    mat[13] = 0.0f;
+    mat[14] = 0.0f;
+    mat[15] = 1.0f;
+}
+
+
 void
 updateAnimation (GTimer* timer, AnimationValues* anim)
 {
@@ -234,15 +272,16 @@ updateAnimation (GTimer* timer, AnimationValues* anim)
 namespace
 {
 const char vShaderSrcPlain[] =
-    "attribute vec4 vPosition;                       \n"
-    "attribute vec2 aTexCoords;                      \n"
-    "varying vec2 vTexCoords;                        \n"
-    "uniform vec2 uOffset;                           \n"
-    "void main()                                     \n"
-    "{                                               \n"
-    "    vTexCoords = aTexCoords + vec2 (0.5, 0.5);  \n"
-    "    gl_Position = vec4(vPosition.xy + uOffset.xy, -1.0, 1.0);\n"
-    "}                                               \n";
+    "attribute vec4 aPosition;                                               \n"
+    "attribute vec2 aTexCoords;                                              \n"
+    "uniform vec2 uOffset;                                                   \n"
+    "varying vec2 vTexCoords;                                                \n"
+    "uniform mat4 uProjMat;                                                  \n"
+    "void main()                                                             \n"
+    "{                                                                       \n"
+    "    vTexCoords = aTexCoords + vec2 (0.5, 0.5);                          \n"
+    "    gl_Position = uProjMat * vec4(aPosition.xy + uOffset.xy, -1.0, 1.0);\n"
+    "}                                                                       \n";
 
 const char fShaderSrcPlain[] =
     "precision mediump float;                           \n"
@@ -279,6 +318,7 @@ try
     GLint aTexCoords[MAX_TEXTURES];
     GLint sampler[MAX_TEXTURES];
     GLint offset[MAX_TEXTURES];
+    GLint projMat[MAX_TEXTURES];
 
     auto const surfaces = mir_eglapp_init(argc, argv);
 
@@ -311,18 +351,23 @@ try
     glBlendEquation(GL_FUNC_ADD);
 
     // get locations of shader-attributes/uniforms
-    vpos[WALLPAPER] = glGetAttribLocation(prog[WALLPAPER], "vPosition");
-    aTexCoords[WALLPAPER] = glGetAttribLocation(prog[WALLPAPER], "aTexCoords");
-    sampler[WALLPAPER] = glGetUniformLocation(prog[WALLPAPER], "uSampler");
-    offset[WALLPAPER] = glGetUniformLocation(prog[WALLPAPER], "uOffset");
-    vpos[LOGO] = glGetAttribLocation(prog[LOGO], "vPosition");
-    aTexCoords[LOGO] = glGetAttribLocation(prog[LOGO], "aTexCoords");
-    sampler[LOGO] = glGetUniformLocation(prog[LOGO], "uSampler");
-    offset[LOGO] = glGetUniformLocation(prog[LOGO], "uOffset");
-    vpos[WHITE_DOT] = glGetAttribLocation(prog[WHITE_DOT], "vPosition");
-    aTexCoords[WHITE_DOT] = glGetAttribLocation(prog[WHITE_DOT], "aTexCoords");
-    sampler[WHITE_DOT] = glGetUniformLocation(prog[WHITE_DOT], "uSampler");
-    offset[WHITE_DOT] = glGetUniformLocation(prog[WHITE_DOT], "uOffset");
+    vpos[WALLPAPER]         = glGetAttribLocation(prog[WALLPAPER],  "aPosition");
+    aTexCoords[WALLPAPER]   = glGetAttribLocation(prog[WALLPAPER],  "aTexCoords");
+    sampler[WALLPAPER]      = glGetUniformLocation(prog[WALLPAPER], "uSampler");
+    offset[WALLPAPER]       = glGetUniformLocation(prog[WALLPAPER], "uOffset");
+    projMat[WALLPAPER]      = glGetUniformLocation(prog[WALLPAPER], "uProjMat");
+
+    vpos[LOGO]         = glGetAttribLocation(prog[LOGO],  "aPosition");
+    aTexCoords[LOGO]   = glGetAttribLocation(prog[LOGO],  "aTexCoords");
+    sampler[LOGO]      = glGetUniformLocation(prog[LOGO], "uSampler");
+    offset[LOGO]       = glGetUniformLocation(prog[LOGO], "uOffset");
+    projMat[LOGO]      = glGetUniformLocation(prog[LOGO], "uProjMat");
+
+    vpos[WHITE_DOT]         = glGetAttribLocation(prog[WHITE_DOT],  "aPosition");
+    aTexCoords[WHITE_DOT]   = glGetAttribLocation(prog[WHITE_DOT],  "aTexCoords");
+    sampler[WHITE_DOT]      = glGetUniformLocation(prog[WHITE_DOT], "uSampler");
+    offset[WHITE_DOT]       = glGetUniformLocation(prog[WHITE_DOT], "uOffset");
+    projMat[WHITE_DOT]      = glGetUniformLocation(prog[WHITE_DOT], "uProjMat");
 
     // create and upload spinner-artwork
     // note that the embedded image data has pre-multiplied alpha
@@ -382,6 +427,9 @@ try
                    -dotSize / aspect, dotSize,
                    -dotSize / aspect,-dotSize
                 };
+                GLfloat projMatrix[16];
+                //ortho(&projMatrix[0], 0.0f, (GLfloat) width, 0.0f, (GLfloat) height, -1.0f, 1.0f);
+                ortho(&projMatrix[0], -1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f);
 
                 glViewport(0, 0, width, height);
 
@@ -394,6 +442,7 @@ try
                 glBindTexture(GL_TEXTURE_2D, texture[WALLPAPER]);
                 glUniform1i(sampler[WALLPAPER], 0);
                 glUniform2f(offset[WALLPAPER], 0.0f, 0.0f);
+                glUniformMatrix4fv(projMat[WALLPAPER], 1, GL_FALSE,  projMatrix);
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
                 // draw logo
@@ -402,12 +451,14 @@ try
                 glBindTexture(GL_TEXTURE_2D, texture[LOGO]);
                 glUniform1i(sampler[LOGO], 0);
                 glUniform2f(offset[LOGO], 0.025f, 0.0f);
+                glUniformMatrix4fv(projMat[LOGO], 1, GL_FALSE,  projMatrix);
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
                 // draw white dots
                 glVertexAttribPointer(vpos[WHITE_DOT], 2, GL_FLOAT, GL_FALSE, 0, dot);
                 glUseProgram(prog[WHITE_DOT]);
                 glUniform1i(sampler[WHITE_DOT], 0);
+                glUniformMatrix4fv(projMat[WHITE_DOT], 1, GL_FALSE,  projMatrix);
                 for (int i = -2; i < 3; i++) {
                     glBindTexture(GL_TEXTURE_2D, texture[anim.dot_mask >> (i + 2) ? ORANGE_DOT : WHITE_DOT]);
                     glUniform2f(offset[WHITE_DOT], i * 0.07f, -0.15f);
