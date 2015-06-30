@@ -403,8 +403,9 @@ try
             {
                 GLfloat logoWidth = gu2px (14.5f);
                 GLfloat logoHeight = gu2px (3.0f);
+                GLfloat logoXOffset = gu2px (1.0f);
                 GLfloat dotSize = gu2px (0.5f);
-                GLfloat dotXGap = gu2px (5.0f);
+                GLfloat dotXGap = gu2px (2.5f);
                 GLfloat dotYGap = gu2px (2.0f);
 
                 const GLfloat fullscreen[] = {
@@ -450,18 +451,18 @@ try
                 glUseProgram(prog[LOGO]);
                 glBindTexture(GL_TEXTURE_2D, texture[LOGO]);
                 glUniform1i(sampler[LOGO], 0);
-                glUniform2f(offset[LOGO], width/2.0f - logoWidth / 2.0f, height / 2.0f - logoHeight / 2.0f);
+                glUniform2f(offset[LOGO], width/2.0f - logoWidth / 2.0f + logoXOffset, height / 2.0f - logoHeight * 0.75f);
                 glUniformMatrix4fv(projMat[LOGO], 1, GL_FALSE,  projMatrix);
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-                // draw white dots
+                // draw white/orange dots
                 glVertexAttribPointer(vpos[WHITE_DOT], 2, GL_FLOAT, GL_FALSE, 0, dot);
                 glUseProgram(prog[WHITE_DOT]);
                 glUniform1i(sampler[WHITE_DOT], 0);
                 glUniformMatrix4fv(projMat[WHITE_DOT], 1, GL_FALSE,  projMatrix);
                 for (int i = -2; i < 3; i++) {
                     glBindTexture(GL_TEXTURE_2D, texture[anim.dot_mask >> (i + 2) ? ORANGE_DOT : WHITE_DOT]);
-                    glUniform2f(offset[WHITE_DOT], width/2.0f + i * dotXGap, height / 2.0f + logoHeight / 2.0f + dotYGap);
+                    glUniform2f(offset[WHITE_DOT], width/2.0f + i * dotXGap, height / 2.0f + logoHeight / 2.0f + dotYGap - logoHeight * 0.25f);
                     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);                    
                 }
             });
