@@ -245,6 +245,11 @@ void ortho(GLfloat* mat,
     mat[15] = 1.0f;
 }
 
+GLfloat gu2px(GLfloat gu) {
+    static GLfloat pixelsPerGU = get_gu();
+
+    return gu * pixelsPerGU;
+}
 
 void
 updateAnimation (GTimer* timer, AnimationValues* anim)
@@ -332,7 +337,6 @@ try
     signal(SIGINT, shutdown);
     signal(SIGTERM, shutdown);
 
-    //double pixelSize = get_gu() * 11.18;
     const GLfloat texCoords[] =
     {
          0.5f, -0.5f,
@@ -397,9 +401,11 @@ try
         for (auto const& surface : surfaces)
             surface->paint([&](unsigned int width, unsigned int height)
             {
-                GLfloat logoWidth = 391.0f;
-                GLfloat logoHeight = 87.0f;
-                GLfloat dotSize = 17.0f;
+                GLfloat logoWidth = gu2px (14.5f);
+                GLfloat logoHeight = gu2px (3.0f);
+                GLfloat dotSize = gu2px (0.5f);
+                GLfloat dotXGap = gu2px (5.0f);
+                GLfloat dotYGap = gu2px (2.0f);
 
                 const GLfloat fullscreen[] = {
                     (GLfloat) width, 0.0f,
@@ -418,8 +424,8 @@ try
                 const GLfloat dot[] = {
                     dotSize, 0.0f,
                     dotSize, dotSize,
-                    0.0f,      0.0f,
-                    0.0f, dotSize
+                    0.0f,    0.0f,
+                    0.0f,    dotSize
                 };
 
                 GLfloat projMatrix[16];
@@ -444,7 +450,7 @@ try
                 glUseProgram(prog[LOGO]);
                 glBindTexture(GL_TEXTURE_2D, texture[LOGO]);
                 glUniform1i(sampler[LOGO], 0);
-                glUniform2f(offset[LOGO], width/2.0f - logoWidth/2.0f, height/2.0f - logoHeight/2.0f);
+                glUniform2f(offset[LOGO], width/2.0f - logoWidth / 2.0f, height / 2.0f - logoHeight / 2.0f);
                 glUniformMatrix4fv(projMat[LOGO], 1, GL_FALSE,  projMatrix);
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -455,7 +461,7 @@ try
                 glUniformMatrix4fv(projMat[WHITE_DOT], 1, GL_FALSE,  projMatrix);
                 for (int i = -2; i < 3; i++) {
                     glBindTexture(GL_TEXTURE_2D, texture[anim.dot_mask >> (i + 2) ? ORANGE_DOT : WHITE_DOT]);
-                    glUniform2f(offset[WHITE_DOT], width/2.0f + i * 75.0f, height/2.0f + logoHeight/2.0f + 5.0f);
+                    glUniform2f(offset[WHITE_DOT], width/2.0f + i * dotXGap, height / 2.0f + logoHeight / 2.0f + dotYGap);
                     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);                    
                 }
             });
