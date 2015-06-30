@@ -211,8 +211,8 @@ typedef struct _AnimationValues
 void ortho(GLfloat* mat,
            GLfloat left,
            GLfloat right,
-           GLfloat top,
            GLfloat bottom,
+           GLfloat top,
            GLfloat near,
            GLfloat far)
 {
@@ -222,26 +222,26 @@ void ortho(GLfloat* mat,
         mat == NULL)
     {
         return;
-   }
+    }
 
     mat[0]  = 2.0f / (right - left);
     mat[1]  = 0.0f;
     mat[2]  = 0.0f;
-    mat[3]  = -(right + left) / (right - left);
+    mat[3]  = 0.0f;
 
     mat[4]  = 0.0f;
     mat[5]  = 2.0f / (top - bottom);
     mat[6]  = 0.0f;
-    mat[7]  = -(top + bottom) / (top - bottom);
+    mat[7]  = 0.0f;
 
     mat[8]  = 0.0f;
     mat[9]  = 0.0f;
     mat[10] = -2.0f / (far - near);
-    mat[11] = -(far + near) / (far - near);
+    mat[11] = 0.0f;
 
-    mat[12] = 0.0f;
-    mat[13] = 0.0f;
-    mat[14] = 0.0f;
+    mat[12] = -(right + left) / (right - left);
+    mat[13] = -(top + bottom) / (top - bottom);
+    mat[14] = -(far + near) / (far - near);
     mat[15] = 1.0f;
 }
 
@@ -280,7 +280,7 @@ const char vShaderSrcPlain[] =
     "void main()                                                             \n"
     "{                                                                       \n"
     "    vTexCoords = aTexCoords + vec2 (0.5, 0.5);                          \n"
-    "    gl_Position = uProjMat * vec4(aPosition.xy + uOffset.xy, -1.0, 1.0);\n"
+    "    gl_Position = uProjMat * vec4(aPosition.xy + uOffset.xy, 0.0, 1.0);\n"
     "}                                                                       \n";
 
 const char fShaderSrcPlain[] =
@@ -332,7 +332,7 @@ try
     signal(SIGINT, shutdown);
     signal(SIGTERM, shutdown);
 
-    double pixelSize = get_gu() * 11.18;
+    //double pixelSize = get_gu() * 11.18;
     const GLfloat texCoords[] =
     {
          0.5f, -0.5f,
@@ -397,39 +397,33 @@ try
         for (auto const& surface : surfaces)
             surface->paint([&](unsigned int width, unsigned int height)
             {
-                GLfloat aspect;
-                if (width > height) {
-                    aspect = (GLfloat) width / (GLfloat) height;
-                } else {
-                    aspect = (GLfloat) height / (GLfloat) width;
-                }
-                GLfloat logoWidth = (39.1 / pixelSize);
-                GLfloat logoHeight = (8.7 / pixelSize);
-                GLfloat dotSize = (1.5 / pixelSize);
+                GLfloat logoWidth = 391.0f;
+                GLfloat logoHeight = 87.0f;
+                GLfloat dotSize = 17.0f;
 
                 const GLfloat fullscreen[] = {
-                    1.0, 1.0,
-                    1.0,-1.0,
-                   -1.0, 1.0,
-                   -1.0,-1.0
+                    (GLfloat) width, 0.0f,
+                    (GLfloat) width, (GLfloat) height,
+                    0.0f,            0.0f,
+                    0.0f,            (GLfloat) height
                 };
 
                 const GLfloat logo[] = {
-                    logoWidth / aspect, logoHeight,
-                    logoWidth / aspect,-logoHeight,
-                   -logoWidth / aspect, logoHeight,
-                   -logoWidth / aspect,-logoHeight
+                    logoWidth, 0.0f,
+                    logoWidth, logoHeight,
+                    0.0f,      0.0f,
+                    0.0f,      logoHeight
                 };
 
                 const GLfloat dot[] = {
-                    dotSize / aspect, dotSize,
-                    dotSize / aspect,-dotSize,
-                   -dotSize / aspect, dotSize,
-                   -dotSize / aspect,-dotSize
+                    dotSize, 0.0f,
+                    dotSize, dotSize,
+                    0.0f,      0.0f,
+                    0.0f, dotSize
                 };
+
                 GLfloat projMatrix[16];
-                //ortho(&projMatrix[0], 0.0f, (GLfloat) width, 0.0f, (GLfloat) height, -1.0f, 1.0f);
-                ortho(&projMatrix[0], -1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f);
+                ortho(&projMatrix[0], 0.0f, (GLfloat) width, (GLfloat) height, 0.0f, -1.0f, 1.0f);
 
                 glViewport(0, 0, width, height);
 
@@ -450,7 +444,7 @@ try
                 glUseProgram(prog[LOGO]);
                 glBindTexture(GL_TEXTURE_2D, texture[LOGO]);
                 glUniform1i(sampler[LOGO], 0);
-                glUniform2f(offset[LOGO], 0.025f, 0.0f);
+                glUniform2f(offset[LOGO], width/2.0f - logoWidth/2.0f, height/2.0f - logoHeight/2.0f);
                 glUniformMatrix4fv(projMat[LOGO], 1, GL_FALSE,  projMatrix);
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -461,7 +455,7 @@ try
                 glUniformMatrix4fv(projMat[WHITE_DOT], 1, GL_FALSE,  projMatrix);
                 for (int i = -2; i < 3; i++) {
                     glBindTexture(GL_TEXTURE_2D, texture[anim.dot_mask >> (i + 2) ? ORANGE_DOT : WHITE_DOT]);
-                    glUniform2f(offset[WHITE_DOT], i * 0.07f, -0.15f);
+                    glUniform2f(offset[WHITE_DOT], width/2.0f + i * 75.0f, height/2.0f + logoHeight/2.0f + 5.0f);
                     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);                    
                 }
             });
