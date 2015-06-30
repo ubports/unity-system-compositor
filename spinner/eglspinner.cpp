@@ -55,7 +55,7 @@ enum TextureIds {
 
 int get_gu ()
 {
-    int   gu           = 10; // use 10 as a default value
+    int   gu           = 13; // use 13 as a default value
     FILE* handle       = NULL;
     int   i            = 0;
     int   j            = 0;
