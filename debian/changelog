@@ -1,3 +1,41 @@
+unity-system-compositor (0.0.5+15.10.20150506.1-0ubuntu1) wily; urgency=medium
+
+  [ Alan Griffiths ]
+  * Release in step with Mir 0.13.0 (LP: #1355609)
+
+  [ Alexandros Frantzis ]
+  * Release in step with Mir 0.13.0 (LP: #1355609)
+
+  [ CI Train Bot ]
+  * Release in step with Mir 0.13.0 (LP: #1355609)
+
+  [ Ricardo Mendoza ]
+  * Release in step with Mir 0.13.0 (LP: #1355609)
+
+  [ Ricardo Salveti de Araujo ]
+  * Release in step with Mir 0.13.0 (LP: #1355609)
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Wed, 06 May 2015 16:15:31 +0000
+
+unity-system-compositor (0.0.5+15.04.20150506.1-0ubuntu1) vivid; urgency=medium
+
+  [ Alan Griffiths ]
+  * Release in step with Mir 0.13.0 (LP: #1355609)
+
+  [ Alexandros Frantzis ]
+  * Release in step with Mir 0.13.0 (LP: #1355609)
+
+  [ CI Train Bot ]
+  * Release in step with Mir 0.13.0 (LP: #1355609)
+
+  [ Ricardo Mendoza ]
+  * Release in step with Mir 0.13.0 (LP: #1355609)
+
+  [ Ricardo Salveti de Araujo ]
+  * Release in step with Mir 0.13.0 (LP: #1355609)
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Wed, 06 May 2015 16:15:31 +0000
+
 unity-system-compositor (0.0.5+15.04.20150430-0ubuntu1) vivid; urgency=medium
 
   [ Ricardo Salveti de Araujo ]
