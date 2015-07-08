@@ -305,6 +305,8 @@ void usc::UnityScreenService::dbus_removeDisplayOnRequest(
 {
     std::lock_guard<std::mutex> lock{keep_display_on_mutex};
 
+    bool id_removed{false};
+
     auto range = keep_display_on_ids.equal_range(sender);
     for (auto iter = range.first;
          iter != range.second;
@@ -313,11 +315,12 @@ void usc::UnityScreenService::dbus_removeDisplayOnRequest(
         if (iter->second == id)
         {
             keep_display_on_ids.erase(iter);
+            id_removed = true;
             break;
         }
     }
 
-    if (keep_display_on_ids.empty())
+    if (id_removed && keep_display_on_ids.empty())
         screen->keep_display_on(false);
 }
 
@@ -329,9 +332,14 @@ void usc::UnityScreenService::dbus_NameOwnerChanged(
     if (new_owner.empty() && old_owner == name)
     {
         std::lock_guard<std::mutex> lock{keep_display_on_mutex};
-        keep_display_on_ids.erase(name);
-        if (keep_display_on_ids.empty())
+        // If the disconnected client had issued keepDisplayOn requests
+        // and after removing them there are now no more requests left,
+        // tell the screen we don't need to keep the display on.
+        if (keep_display_on_ids.erase(name) > 0 &&
+            keep_display_on_ids.empty())
+        {
             screen->keep_display_on(false);
+        }
     }
 }
 
