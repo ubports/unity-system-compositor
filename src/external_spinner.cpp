@@ -20,6 +20,18 @@
 
 #include <unistd.h>
 #include <signal.h>
+#include <sys/wait.h>
+
+namespace
+{
+
+void wait_for_child(int)
+{
+    while (waitpid(-1, nullptr, WNOHANG) > 0)
+        continue;
+}
+
+}
 
 usc::ExternalSpinner::ExternalSpinner(
     std::string const& executable,
@@ -28,6 +40,11 @@ usc::ExternalSpinner::ExternalSpinner(
       mir_socket{mir_socket},
       spinner_pid{0}
 {
+    struct sigaction sa;
+    sigfillset(&sa.sa_mask);
+    sa.sa_handler = wait_for_child;
+    sa.sa_flags = 0;
+    sigaction(SIGCHLD, &sa, nullptr);
 }
 
 usc::ExternalSpinner::~ExternalSpinner()
