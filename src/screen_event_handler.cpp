@@ -80,7 +80,7 @@ void usc::ScreenEventHandler::power_key_down()
     std::lock_guard<std::mutex> lock{guard};
 
     mode_at_press_start = screen->get_screen_power_mode();
-    if (mode_at_press_start == MirPowerMode::mir_power_mode_off)
+    if (mode_at_press_start != MirPowerMode::mir_power_mode_on)
     {
         screen->set_screen_power_mode(
             MirPowerMode::mir_power_mode_on, PowerStateChangeReason::power_key);
@@ -98,10 +98,17 @@ void usc::ScreenEventHandler::power_key_up()
     shutdown_alarm->cancel();
     long_press_alarm->cancel();
 
-    if (mode_at_press_start == MirPowerMode::mir_power_mode_on && !long_press_detected)
+    if (!long_press_detected)
     {
-        screen->set_screen_power_mode(
-            MirPowerMode::mir_power_mode_off, PowerStateChangeReason::power_key);
+        if (mode_at_press_start == MirPowerMode::mir_power_mode_on)
+        {
+            screen->set_screen_power_mode(
+                MirPowerMode::mir_power_mode_off, PowerStateChangeReason::power_key);
+        }
+        else
+        {
+            screen->enable_inactivity_timers(true);
+        }
     }
 }
 
