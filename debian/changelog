@@ -1,3 +1,11 @@
+unity-system-compositor (0.0.5+15.04.20150713-0ubuntu1) vivid; urgency=medium
+
+  [ Alexandros Frantzis ]
+  * Don't restart the inactivity timers when receiving invalid dbus
+    calls or uninteresting dbus events
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Mon, 13 Jul 2015 14:17:04 +0000
+
 unity-system-compositor (0.0.5+15.04.20150506.1-0ubuntu1) vivid; urgency=medium
 
   [ Alan Griffiths ]
