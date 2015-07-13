@@ -365,6 +365,32 @@ TEST_F(AUnityScreenService, disables_keep_display_on_when_all_clients_disconnect
     EXPECT_TRUE(request_processed.woken());
 }
 
+TEST_F(AUnityScreenService, ignores_invalid_display_on_removal_request)
+{
+    ut::WaitCondition request_processed;
+
+    int32_t const invalid_id{-1};
+    EXPECT_CALL(*mock_screen, keep_display_on(false)).Times(0);
+
+    client.request_remove_display_on_request(invalid_id);
+    client.disconnect();
+
+    // Allow some time for dbus calls to reach UnityScreenService
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+}
+
+TEST_F(AUnityScreenService, ignores_disconnects_from_clients_without_display_on_request)
+{
+    ut::WaitCondition request_processed;
+
+    EXPECT_CALL(*mock_screen, keep_display_on(false)).Times(0);
+
+    client.disconnect();
+
+    // Allow some time for disconnect notification to reach UnityScreenService
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+}
+
 TEST_F(AUnityScreenService, emits_power_state_change_signal)
 {
     using namespace testing;
