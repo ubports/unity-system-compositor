@@ -98,6 +98,7 @@ struct AScreenEventHandler : testing::Test
     AdvanceableTimer timer;
     std::chrono::milliseconds const power_key_ignore_timeout{5000};
     std::chrono::milliseconds const shutdown_timeout{10000};
+    std::chrono::milliseconds const normal_press_duration{100};
     testing::NiceMock<MockScreen> mock_screen;
     std::atomic<bool> shutdown_called{false};
     usc::ScreenEventHandler screen_event_handler{
@@ -168,8 +169,6 @@ TEST_F(AScreenEventHandler, keeps_display_on_temporarily_on_pointer_event)
 
 TEST_F(AScreenEventHandler, sets_screen_mode_off_normal_press_release)
 {
-    std::chrono::milliseconds const normal_press_duration{100};
-
     EXPECT_CALL(mock_screen,
                 set_screen_power_mode(MirPowerMode::mir_power_mode_off,
                                       PowerStateChangeReason::power_key));
@@ -207,4 +206,20 @@ TEST_F(AScreenEventHandler, passes_through_all_handled_events)
     EXPECT_FALSE(screen_event_handler.handle(*power_key_up_event));
     EXPECT_FALSE(screen_event_handler.handle(*touch_event));
     EXPECT_FALSE(screen_event_handler.handle(*pointer_event));
+}
+
+TEST_F(AScreenEventHandler, disables_inactivity_timers_on_power_key_down)
+{
+    EXPECT_CALL(mock_screen, enable_inactivity_timers(false));
+
+    press_power_key();
+}
+
+TEST_F(AScreenEventHandler, enables_inactivity_timers_on_power_key_up_when_turning_screen_on)
+{
+    press_power_key();
+    timer.advance_by(normal_press_duration);
+
+    EXPECT_CALL(mock_screen, enable_inactivity_timers(true));
+    release_power_key();
 }
