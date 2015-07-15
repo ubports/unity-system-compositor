@@ -37,6 +37,7 @@ usc::MirScreen::MirScreen(
     std::shared_ptr<mir::graphics::Display> const& display,
     std::shared_ptr<mir::input::TouchVisualizer> const& touch_visualizer,
     std::shared_ptr<mir::time::AlarmFactory> const& alarm_factory,
+    std::shared_ptr<usc::Clock> const& clock,
     std::chrono::milliseconds power_off_timeout,
     std::chrono::milliseconds dimmer_timeout)
     : screen_hardware{screen_hardware},
@@ -44,6 +45,7 @@ usc::MirScreen::MirScreen(
       display{display},
       touch_visualizer{touch_visualizer},
       alarm_factory{alarm_factory},
+      clock{clock},
       power_off_alarm{alarm_factory->create_alarm(
               std::bind(&usc::MirScreen::power_off_alarm_notification, this))},
       dimmer_alarm{alarm_factory->create_alarm(

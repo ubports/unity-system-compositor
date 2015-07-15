@@ -37,6 +37,7 @@ namespace usc
 {
 class Server;
 class ScreenHardware;
+class Clock;
 
 class MirScreen: public Screen
 {
@@ -46,6 +47,7 @@ public:
               std::shared_ptr<mir::graphics::Display> const& display,
               std::shared_ptr<mir::input::TouchVisualizer> const& touch_visualizer,
               std::shared_ptr<mir::time::AlarmFactory> const& alarm_factory,
+              std::shared_ptr<usc::Clock> const& clock,
               std::chrono::milliseconds power_off_timeout,
               std::chrono::milliseconds dimmer_timeout);
     ~MirScreen();
@@ -88,6 +90,7 @@ private:
     std::shared_ptr<mir::graphics::Display> const display;
     std::shared_ptr<mir::input::TouchVisualizer> const touch_visualizer;
     std::shared_ptr<mir::time::AlarmFactory> const alarm_factory;
+    std::shared_ptr<usc::Clock> const clock;
     std::unique_ptr<mir::time::Alarm> const power_off_alarm;
     std::unique_ptr<mir::time::Alarm> const dimmer_alarm;
 

@@ -25,6 +25,7 @@
 #include "screen_event_handler.h"
 #include "powerd_mediator.h"
 #include "unity_screen_service.h"
+#include "steady_clock.h"
 
 #include <mir/input/cursor_listener.h>
 #include <mir/server_status_listener.h>
@@ -237,6 +238,7 @@ std::shared_ptr<usc::Screen> usc::Server::the_screen()
                 the_display(),
                 the_touch_visualizer(),
                 the_main_loop(),
+                the_clock(),
                 inactivity_display_off_timeout(),
                 inactivity_display_dim_timeout());
         });
@@ -273,6 +275,15 @@ std::shared_ptr<usc::UnityScreenService> usc::Server::the_unity_screen_service()
             return std::make_shared<UnityScreenService>(
                     dbus_bus_address(),
                     the_screen());
+        });
+}
+
+std::shared_ptr<usc::Clock> usc::Server::the_clock()
+{
+    return clock(
+        [this]
+        {
+            return std::make_shared<SteadyClock>();
         });
 }
 

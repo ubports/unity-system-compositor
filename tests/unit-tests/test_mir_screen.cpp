@@ -201,6 +201,7 @@ struct AMirScreen : testing::Test
         display,
         touch_visualizer,
         timer,
+        timer,
         power_off_timeout,
         dimmer_timeout};
 };
