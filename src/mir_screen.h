@@ -18,6 +18,7 @@
 #define USC_MIR_SCREEN_H_
 
 #include "screen.h"
+#include <mir/time/types.h>
 
 #include <chrono>
 #include <memory>
@@ -97,6 +98,8 @@ private:
     std::mutex guard;
     std::chrono::milliseconds power_off_timeout;
     std::chrono::milliseconds dimming_timeout;
+    mir::time::Timestamp next_power_off{};
+    mir::time::Timestamp next_dimming{};
     MirPowerMode current_power_mode;
     bool restart_timers;
     PowerStateChangeHandler power_state_change_handler;

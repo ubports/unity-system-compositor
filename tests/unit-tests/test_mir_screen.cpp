@@ -132,6 +132,13 @@ struct AMirScreen : testing::Test
     std::chrono::seconds power_off_timeout{60};
     std::chrono::seconds dimmer_timeout{50};
 
+    std::chrono::seconds const five_seconds{5};
+    std::chrono::seconds const ten_seconds{10};
+    std::chrono::seconds const fifteen_seconds{15};
+    std::chrono::seconds const thirty_seconds{30};
+    std::chrono::seconds const fourty_seconds{40};
+    std::chrono::seconds const fifty_seconds{50};
+
     void expect_screen_is_turned_off()
     {
         using namespace testing;
@@ -371,7 +378,7 @@ TEST_F(AMirScreen, invokes_handler_when_power_state_changes)
 
 TEST_F(AMirScreen, turns_screen_off_after_15s_for_notification)
 {
-    std::chrono::seconds const notification_power_off_timeout{15};
+    auto const notification_power_off_timeout = fifteen_seconds;
 
     turn_screen_off();
 
@@ -386,9 +393,6 @@ TEST_F(AMirScreen, turns_screen_off_after_15s_for_notification)
 
 TEST_F(AMirScreen, keep_display_on_temporarily_overrides_notification_timeout)
 {
-    std::chrono::seconds const ten_seconds{10};
-    std::chrono::seconds const fifty_seconds{50};
-
     turn_screen_off();
 
     expect_screen_is_turned_on();
@@ -411,4 +415,90 @@ TEST_F(AMirScreen, keep_display_on_temporarily_overrides_notification_timeout)
     // inactivity timeout
     expect_screen_is_turned_off();
     timer->advance_by(fifty_seconds);
+}
+
+TEST_F(AMirScreen, notification_timeout_extends_active_timeout)
+{
+    // At T=0 we turn the screen on, and normal inactivity timeouts
+    // are reset
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                     PowerStateChangeReason::power_key);
+
+    // At T=50 we get a notification
+    timer->advance_by(fifty_seconds);
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                     PowerStateChangeReason::notification);
+    verify_and_clear_expectations();
+
+    // At T=60 the screen should still be active because the notification
+    // has extended the timeout.
+    expect_no_reconfiguration();
+    timer->advance_by(ten_seconds);
+    verify_and_clear_expectations();
+
+    // At T=65 (50 + 15) the screen should turn off due to the notification
+    // inactivity timeout
+    expect_screen_is_turned_off();
+    timer->advance_by(five_seconds);
+}
+
+TEST_F(AMirScreen, notification_timeout_does_not_reduce_active_timeout)
+{
+    // At T=0 we turn the screen on, and normal inactivity timeouts
+    // are reset
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                     PowerStateChangeReason::power_key);
+
+
+    // At T=30 we get a notification
+    timer->advance_by(thirty_seconds);
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                     PowerStateChangeReason::notification);
+    verify_and_clear_expectations();
+
+    // At T=45 the screen should still be active because the notification
+    // has not reduced the active timeout.
+    expect_no_reconfiguration();
+    timer->advance_by(fifteen_seconds);
+    verify_and_clear_expectations();
+
+    // At T=50 the screen should be dimmed
+    expect_screen_is_turned_dim();
+    timer->advance_by(five_seconds);
+    verify_and_clear_expectations();
+
+    // At T=60 the screen should turn off due to the normal
+    // inactivity timeout
+    expect_screen_is_turned_off();
+    timer->advance_by(ten_seconds);
+}
+
+TEST_F(AMirScreen, notification_timeout_can_extend_only_dimming)
+{
+    // At T=0 we turn the screen on, and normal inactivity timeouts
+    // are reset
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                     PowerStateChangeReason::power_key);
+
+    // At T=40 we get a notification
+    timer->advance_by(fourty_seconds);
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                     PowerStateChangeReason::notification);
+    verify_and_clear_expectations();
+
+    // At T=50 nothing should happen since the notification has
+    // extended the dimming timeout
+    expect_no_reconfiguration();
+    timer->advance_by(ten_seconds);
+    verify_and_clear_expectations();
+
+    // At T=55 screen should be dimmed
+    expect_screen_is_turned_dim();
+    timer->advance_by(five_seconds);
+    verify_and_clear_expectations();
+
+    // At T=60 the screen should turn off due to the normal
+    // inactivity timeout
+    expect_screen_is_turned_off();
+    timer->advance_by(five_seconds);
 }

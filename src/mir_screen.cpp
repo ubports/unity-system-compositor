@@ -15,6 +15,7 @@
  */
 
 #include "mir_screen.h"
+#include "clock.h"
 
 #include <mir/main_loop.h>
 #include <mir/time/alarm_factory.h>
@@ -196,6 +197,8 @@ void usc::MirScreen::cancel_timers_l()
 {
     power_off_alarm->cancel();
     dimmer_alarm->cancel();
+    next_power_off = {};
+    next_dimming = {};
 }
 
 void usc::MirScreen::reset_timers_l(PowerStateChangeReason reason)
@@ -203,11 +206,27 @@ void usc::MirScreen::reset_timers_l(PowerStateChangeReason reason)
     if (restart_timers && current_power_mode != MirPowerMode::mir_power_mode_off)
     {
         auto const timeouts = timeouts_for(reason);
+        auto const now = clock->now();
+
         if (timeouts.power_off_timeout.count() > 0)
-            power_off_alarm->reschedule_in(timeouts.power_off_timeout);
+        {
+            auto const new_next_power_off = now + timeouts.power_off_timeout;
+            if (new_next_power_off > next_power_off)
+            {
+                power_off_alarm->reschedule_in(timeouts.power_off_timeout);
+                next_power_off = new_next_power_off;
+            }
+        }
 
         if (timeouts.dimming_timeout.count() > 0)
-            dimmer_alarm->reschedule_in(timeouts.dimming_timeout);
+        {
+            auto const new_next_dimming = now + timeouts.dimming_timeout;
+            if (new_next_dimming > next_dimming)
+            {
+                dimmer_alarm->reschedule_in(timeouts.dimming_timeout);
+                next_dimming = new_next_dimming;
+            }
+        }
     }
 }
 
@@ -231,12 +250,14 @@ void usc::MirScreen::power_off_alarm_notification()
 {
     std::lock_guard<std::mutex> lock{guard};
     configure_display_l(MirPowerMode::mir_power_mode_off, PowerStateChangeReason::inactivity);
+    next_power_off = {};
 }
 
 void usc::MirScreen::dimmer_alarm_notification()
 {
     std::lock_guard<std::mutex> lock{guard};
     screen_hardware->set_dim_backlight();
+    next_dimming = {};
 }
 
 void usc::MirScreen::set_touch_visualization_enabled(bool enabled)
