@@ -39,7 +39,8 @@ usc::MirScreen::MirScreen(
     std::shared_ptr<mir::input::TouchVisualizer> const& touch_visualizer,
     std::shared_ptr<mir::time::AlarmFactory> const& alarm_factory,
     std::shared_ptr<usc::Clock> const& clock,
-    Timeouts inactivity_timeouts)
+    Timeouts inactivity_timeouts,
+    Timeouts notification_timeouts)
     : screen_hardware{screen_hardware},
       compositor{compositor},
       display{display},
@@ -51,6 +52,7 @@ usc::MirScreen::MirScreen(
       dimmer_alarm{alarm_factory->create_alarm(
               std::bind(&usc::MirScreen::dimmer_alarm_notification, this))},
       inactivity_timeouts(inactivity_timeouts),
+      notification_timeouts(notification_timeouts),
       current_power_mode{MirPowerMode::mir_power_mode_on},
       restart_timers{true},
       power_state_change_handler{[](MirPowerMode,PowerStateChangeReason){}}
@@ -239,7 +241,7 @@ void usc::MirScreen::enable_inactivity_timers_l(bool enable)
 usc::MirScreen::Timeouts usc::MirScreen::timeouts_for(PowerStateChangeReason reason)
 {
     if (reason == PowerStateChangeReason::notification)
-        return {std::chrono::seconds{15}, std::chrono::seconds{15}};
+        return notification_timeouts;
     else
         return inactivity_timeouts;
 }

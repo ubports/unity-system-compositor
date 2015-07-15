@@ -112,6 +112,20 @@ private:
             seconds{the_options()->get("inactivity-display-dim-timeout", 45)});
     }
 
+    std::chrono::milliseconds notification_display_off_timeout()
+    {
+        using namespace std::chrono;
+        return duration_cast<milliseconds>(
+            seconds{the_options()->get("notification-display-off-timeout", 15)});
+    }
+
+    std::chrono::milliseconds notification_display_dim_timeout()
+    {
+        using namespace std::chrono;
+        return duration_cast<milliseconds>(
+            seconds{the_options()->get("notification-display-dim-timeout", 12)});
+    }
+
     std::chrono::milliseconds shutdown_timeout()
     {
         return std::chrono::milliseconds{

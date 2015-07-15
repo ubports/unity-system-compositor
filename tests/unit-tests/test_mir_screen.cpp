@@ -129,8 +129,10 @@ struct MockTouchVisualizer : mir::input::TouchVisualizer
 
 struct AMirScreen : testing::Test
 {
-    std::chrono::seconds power_off_timeout{60};
-    std::chrono::seconds dimmer_timeout{50};
+    std::chrono::seconds const power_off_timeout{60};
+    std::chrono::seconds const dimmer_timeout{50};
+    std::chrono::seconds const notification_power_off_timeout{15};
+    std::chrono::seconds const notification_dimmer_timeout{12};
 
     std::chrono::seconds const five_seconds{5};
     std::chrono::seconds const ten_seconds{10};
@@ -209,7 +211,8 @@ struct AMirScreen : testing::Test
         touch_visualizer,
         timer,
         timer,
-        {power_off_timeout, dimmer_timeout}};
+        {power_off_timeout, dimmer_timeout},
+        {notification_power_off_timeout, notification_dimmer_timeout}};
 };
 
 }
@@ -377,8 +380,6 @@ TEST_F(AMirScreen, invokes_handler_when_power_state_changes)
 
 TEST_F(AMirScreen, turns_screen_off_after_15s_for_notification)
 {
-    auto const notification_power_off_timeout = fifteen_seconds;
-
     turn_screen_off();
 
     expect_screen_is_turned_on();
@@ -474,6 +475,9 @@ TEST_F(AMirScreen, notification_timeout_does_not_reduce_active_timeout)
 
 TEST_F(AMirScreen, notification_timeout_can_extend_only_dimming)
 {
+    std::chrono::seconds const two_seconds{2};
+    std::chrono::seconds const eight_seconds{8};
+
     // At T=0 we turn the screen on, and normal inactivity timeouts
     // are reset
     mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
@@ -491,13 +495,14 @@ TEST_F(AMirScreen, notification_timeout_can_extend_only_dimming)
     timer->advance_by(ten_seconds);
     verify_and_clear_expectations();
 
-    // At T=55 screen should be dimmed
+    // At T=52 (40 + 12) screen should be dimmed due to the notification
+    // dimming timeout
     expect_screen_is_turned_dim();
-    timer->advance_by(five_seconds);
+    timer->advance_by(two_seconds);
     verify_and_clear_expectations();
 
     // At T=60 the screen should turn off due to the normal
     // inactivity timeout
     expect_screen_is_turned_off();
-    timer->advance_by(five_seconds);
+    timer->advance_by(eight_seconds);
 }

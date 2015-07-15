@@ -55,7 +55,8 @@ public:
               std::shared_ptr<mir::input::TouchVisualizer> const& touch_visualizer,
               std::shared_ptr<mir::time::AlarmFactory> const& alarm_factory,
               std::shared_ptr<usc::Clock> const& clock,
-              Timeouts inactivity_timeouts);
+              Timeouts inactivity_timeouts,
+              Timeouts notification_timeouts);
     ~MirScreen();
 
     void enable_inactivity_timers(bool enable) override;
@@ -96,6 +97,7 @@ private:
 
     std::mutex guard;
     Timeouts inactivity_timeouts;
+    Timeouts notification_timeouts;
     mir::time::Timestamp next_power_off{};
     mir::time::Timestamp next_dimming{};
     MirPowerMode current_power_mode;
