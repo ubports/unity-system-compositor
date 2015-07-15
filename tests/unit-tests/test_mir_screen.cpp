@@ -129,8 +129,8 @@ struct MockTouchVisualizer : mir::input::TouchVisualizer
 
 struct AMirScreen : testing::Test
 {
-    std::chrono::milliseconds power_off_timeout{5000};
-    std::chrono::milliseconds dimmer_timeout{4000};
+    std::chrono::seconds power_off_timeout{60};
+    std::chrono::seconds dimmer_timeout{50};
 
     void expect_screen_is_turned_off()
     {
@@ -259,31 +259,31 @@ TEST_F(AMirScreen, does_not_turn_on_screen_temporarily_when_off)
 TEST_F(AMirScreen, keeps_screen_on_temporarily_when_already_on)
 {
     using namespace testing;
-    std::chrono::seconds const three_seconds{3};
-    std::chrono::seconds const one_second{1};
+    std::chrono::seconds const fourty_seconds{40};
+    std::chrono::seconds const ten_seconds{10};
 
     expect_no_reconfiguration();
 
     // After keep_display_on_temporarily the timeouts should
     // be reset...
-    timer->advance_by(three_seconds);
+    timer->advance_by(fourty_seconds);
     mir_screen.keep_display_on_temporarily();
 
-    // ... so 3 seconds after the reset (total 6 from start)
+    // ... so 40 seconds after the reset (total 80 from start)
     // should trigger neither dim nor power off
-    timer->advance_by(three_seconds);
+    timer->advance_by(fourty_seconds);
 
     verify_and_clear_expectations();
 
-    // A second more, 4 seconds from reset, the screen should dim
+    // Tens seconds more, 50 seconds from reset, the screen should dim
     expect_screen_is_turned_dim();
-    timer->advance_by(one_second);
+    timer->advance_by(ten_seconds);
 
     verify_and_clear_expectations();
 
-    // A second more, 5 seconds from reset, the screen should power off
+    // Ten seconds second more, 60 seconds from reset, the screen should power off
     expect_screen_is_turned_off();
-    timer->advance_by(one_second);
+    timer->advance_by(ten_seconds);
 
     verify_and_clear_expectations();
 }
@@ -366,4 +366,48 @@ TEST_F(AMirScreen, invokes_handler_when_power_state_changes)
 
     EXPECT_THAT(handler_reason, Eq(toggle_reason));
     EXPECT_THAT(handler_mode, Eq(MirPowerMode::mir_power_mode_off));
+}
+
+TEST_F(AMirScreen, turns_screen_off_after_15s_for_notification)
+{
+    std::chrono::seconds const notification_power_off_timeout{15};
+
+    turn_screen_off();
+
+    expect_screen_is_turned_on();
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                     PowerStateChangeReason::notification);
+    verify_and_clear_expectations();
+
+    expect_screen_is_turned_off();
+    timer->advance_by(notification_power_off_timeout);
+}
+
+TEST_F(AMirScreen, keep_display_on_temporarily_overrides_notification_timeout)
+{
+    std::chrono::seconds const ten_seconds{10};
+    std::chrono::seconds const fifty_seconds{50};
+
+    turn_screen_off();
+
+    expect_screen_is_turned_on();
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                     PowerStateChangeReason::notification);
+    verify_and_clear_expectations();
+
+    // At T=10 we request a temporary keep display on (e.g. user has touched
+    // the screen)
+    timer->advance_by(ten_seconds);
+    mir_screen.keep_display_on_temporarily();
+
+    // At T=20 nothing should happen since keep display on temporarily
+    // has reset the timers (so the notification timeout of 15s is overriden).
+    expect_no_reconfiguration();
+    timer->advance_by(ten_seconds);
+    verify_and_clear_expectations();
+
+    // At T=70 (10 + 60) the screen should turn off due to the normal
+    // inactivity timeout
+    expect_screen_is_turned_off();
+    timer->advance_by(fifty_seconds);
 }

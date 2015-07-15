@@ -65,12 +65,19 @@ public:
             PowerStateChangeHandler const& power_state_change_handler) override;
 
 private:
+    struct Timeouts
+    {
+        std::chrono::milliseconds power_off_timeout;
+        std::chrono::milliseconds dimming_timeout;
+    };
+
     void set_screen_power_mode_l(MirPowerMode mode, PowerStateChangeReason reason);
     void configure_display_l(MirPowerMode mode, PowerStateChangeReason reason);
 
     void cancel_timers_l();
-    void reset_timers_l();
+    void reset_timers_l(PowerStateChangeReason reason);
     void enable_inactivity_timers_l(bool flag);
+    Timeouts timeouts_for(PowerStateChangeReason reason);
 
     void power_off_alarm_notification();
     void dimmer_alarm_notification();

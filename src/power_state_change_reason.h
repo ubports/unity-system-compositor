@@ -22,7 +22,8 @@ enum class PowerStateChangeReason
     unknown = 0,
     inactivity = 1,
     power_key = 2,
-    proximity = 3
+    proximity = 3,
+    notification = 4
 };
 
 #endif

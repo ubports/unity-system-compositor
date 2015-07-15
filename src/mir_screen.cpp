@@ -60,7 +60,7 @@ usc::MirScreen::MirScreen(
      * to this point. See bug #1410381.
      */
     compositor->start();
-    reset_timers_l();
+    reset_timers_l(PowerStateChangeReason::inactivity);
 }
 
 usc::MirScreen::~MirScreen() = default;
@@ -68,7 +68,7 @@ usc::MirScreen::~MirScreen() = default;
 void usc::MirScreen::keep_display_on_temporarily()
 {
     std::lock_guard<std::mutex> lock{guard};
-    reset_timers_l();
+    reset_timers_l(PowerStateChangeReason::inactivity);
     if (current_power_mode == MirPowerMode::mir_power_mode_on)
         screen_hardware->set_normal_backlight();
 }
@@ -127,7 +127,7 @@ void usc::MirScreen::set_inactivity_timeouts(int raw_poweroff_timeout, int raw_d
         dimming_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(the_dimming_timeout);
 
     cancel_timers_l();
-    reset_timers_l();
+    reset_timers_l(PowerStateChangeReason::inactivity);
 }
 
 void usc::MirScreen::set_screen_power_mode_l(MirPowerMode mode, PowerStateChangeReason reason)
@@ -138,7 +138,7 @@ void usc::MirScreen::set_screen_power_mode_l(MirPowerMode mode, PowerStateChange
         if (current_power_mode == MirPowerMode::mir_power_mode_on)
             screen_hardware->set_normal_backlight();
         configure_display_l(mode, reason);
-        reset_timers_l();
+        reset_timers_l(reason);
     }
     else
     {
@@ -196,24 +196,33 @@ void usc::MirScreen::cancel_timers_l()
     dimmer_alarm->cancel();
 }
 
-void usc::MirScreen::reset_timers_l()
+void usc::MirScreen::reset_timers_l(PowerStateChangeReason reason)
 {
     if (restart_timers && current_power_mode != MirPowerMode::mir_power_mode_off)
     {
-        if (power_off_timeout.count() > 0)
-            power_off_alarm->reschedule_in(power_off_timeout);
+        auto const timeouts = timeouts_for(reason);
+        if (timeouts.power_off_timeout.count() > 0)
+            power_off_alarm->reschedule_in(timeouts.power_off_timeout);
 
-        if (dimming_timeout.count() > 0)
-            dimmer_alarm->reschedule_in(dimming_timeout);
+        if (timeouts.dimming_timeout.count() > 0)
+            dimmer_alarm->reschedule_in(timeouts.dimming_timeout);
     }
 }
 
 void usc::MirScreen::enable_inactivity_timers_l(bool enable)
 {
     if (enable)
-        reset_timers_l();
+        reset_timers_l(PowerStateChangeReason::inactivity);
     else
         cancel_timers_l();
+}
+
+usc::MirScreen::Timeouts usc::MirScreen::timeouts_for(PowerStateChangeReason reason)
+{
+    if (reason == PowerStateChangeReason::notification)
+        return {std::chrono::seconds{15}, std::chrono::seconds{15}};
+    else
+        return {power_off_timeout, dimming_timeout};
 }
 
 void usc::MirScreen::power_off_alarm_notification()
