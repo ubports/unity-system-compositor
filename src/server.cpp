@@ -239,8 +239,9 @@ std::shared_ptr<usc::Screen> usc::Server::the_screen()
                 the_touch_visualizer(),
                 the_main_loop(),
                 the_clock(),
-                inactivity_display_off_timeout(),
-                inactivity_display_dim_timeout());
+                MirScreen::Timeouts{
+                    inactivity_display_off_timeout(),
+                    inactivity_display_dim_timeout()});
         });
 }
 

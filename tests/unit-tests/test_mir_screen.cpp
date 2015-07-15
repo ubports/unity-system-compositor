@@ -209,8 +209,7 @@ struct AMirScreen : testing::Test
         touch_visualizer,
         timer,
         timer,
-        power_off_timeout,
-        dimmer_timeout};
+        {power_off_timeout, dimmer_timeout}};
 };
 
 }

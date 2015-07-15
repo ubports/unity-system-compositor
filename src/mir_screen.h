@@ -43,14 +43,19 @@ class Clock;
 class MirScreen: public Screen
 {
 public:
+    struct Timeouts
+    {
+        std::chrono::milliseconds power_off_timeout;
+        std::chrono::milliseconds dimming_timeout;
+    };
+
     MirScreen(std::shared_ptr<usc::ScreenHardware> const& screen_hardware,
               std::shared_ptr<mir::compositor::Compositor> const& compositor,
               std::shared_ptr<mir::graphics::Display> const& display,
               std::shared_ptr<mir::input::TouchVisualizer> const& touch_visualizer,
               std::shared_ptr<mir::time::AlarmFactory> const& alarm_factory,
               std::shared_ptr<usc::Clock> const& clock,
-              std::chrono::milliseconds power_off_timeout,
-              std::chrono::milliseconds dimmer_timeout);
+              Timeouts inactivity_timeouts);
     ~MirScreen();
 
     void enable_inactivity_timers(bool enable) override;
@@ -68,12 +73,6 @@ public:
             PowerStateChangeHandler const& power_state_change_handler) override;
 
 private:
-    struct Timeouts
-    {
-        std::chrono::milliseconds power_off_timeout;
-        std::chrono::milliseconds dimming_timeout;
-    };
-
     void set_screen_power_mode_l(MirPowerMode mode, PowerStateChangeReason reason);
     void configure_display_l(MirPowerMode mode, PowerStateChangeReason reason);
 
@@ -96,8 +95,7 @@ private:
     std::unique_ptr<mir::time::Alarm> const dimmer_alarm;
 
     std::mutex guard;
-    std::chrono::milliseconds power_off_timeout;
-    std::chrono::milliseconds dimming_timeout;
+    Timeouts inactivity_timeouts;
     mir::time::Timestamp next_power_off{};
     mir::time::Timestamp next_dimming{};
     MirPowerMode current_power_mode;

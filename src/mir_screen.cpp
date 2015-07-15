@@ -39,8 +39,7 @@ usc::MirScreen::MirScreen(
     std::shared_ptr<mir::input::TouchVisualizer> const& touch_visualizer,
     std::shared_ptr<mir::time::AlarmFactory> const& alarm_factory,
     std::shared_ptr<usc::Clock> const& clock,
-    std::chrono::milliseconds power_off_timeout,
-    std::chrono::milliseconds dimmer_timeout)
+    Timeouts inactivity_timeouts)
     : screen_hardware{screen_hardware},
       compositor{compositor},
       display{display},
@@ -51,8 +50,7 @@ usc::MirScreen::MirScreen(
               std::bind(&usc::MirScreen::power_off_alarm_notification, this))},
       dimmer_alarm{alarm_factory->create_alarm(
               std::bind(&usc::MirScreen::dimmer_alarm_notification, this))},
-      power_off_timeout{power_off_timeout},
-      dimming_timeout{dimmer_timeout},
+      inactivity_timeouts(inactivity_timeouts),
       current_power_mode{MirPowerMode::mir_power_mode_on},
       restart_timers{true},
       power_state_change_handler{[](MirPowerMode,PowerStateChangeReason){}}
@@ -124,10 +122,10 @@ void usc::MirScreen::set_inactivity_timeouts(int raw_poweroff_timeout, int raw_d
     std::chrono::seconds the_dimming_timeout{raw_dimmer_timeout};
 
     if (raw_poweroff_timeout >= 0)
-        power_off_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(the_power_off_timeout);
+        inactivity_timeouts.power_off_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(the_power_off_timeout);
 
     if (raw_dimmer_timeout >= 0)
-        dimming_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(the_dimming_timeout);
+        inactivity_timeouts.dimming_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(the_dimming_timeout);
 
     cancel_timers_l();
     reset_timers_l(PowerStateChangeReason::inactivity);
@@ -243,7 +241,7 @@ usc::MirScreen::Timeouts usc::MirScreen::timeouts_for(PowerStateChangeReason rea
     if (reason == PowerStateChangeReason::notification)
         return {std::chrono::seconds{15}, std::chrono::seconds{15}};
     else
-        return {power_off_timeout, dimming_timeout};
+        return inactivity_timeouts;
 }
 
 void usc::MirScreen::power_off_alarm_notification()
