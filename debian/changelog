@@ -4,7 +4,7 @@ unity-system-compositor (0.0.5-0ubuntu1) UNRELEASED; urgency=medium
 
  -- Kevin Gunn <kevin.gunn@canonical.com>  Thu, 16 Jul 2015 15:14:22 -0500
 
-unity-system-compositor (0.0.5+15.04.20150713.2-0ubuntu1) vivid; urgency=medium
+unity-system-compositor (0.0.5+15.10.20150506.2-0ubuntu1) vivid; urgency=medium
 
   [ Alexandros Frantzis ]
   * Don't restart the inactivity timers when receiving invalid dbus
