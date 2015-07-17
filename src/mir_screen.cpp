@@ -55,7 +55,8 @@ usc::MirScreen::MirScreen(
       notification_timeouts(notification_timeouts),
       current_power_mode{MirPowerMode::mir_power_mode_on},
       restart_timers{true},
-      power_state_change_handler{[](MirPowerMode,PowerStateChangeReason){}}
+      power_state_change_handler{[](MirPowerMode,PowerStateChangeReason){}},
+      allow_proximity_to_turn_on_screen{false}
 {
     /*
      * Make sure the compositor is running as certain conditions can
@@ -73,7 +74,10 @@ void usc::MirScreen::keep_display_on_temporarily()
     std::lock_guard<std::mutex> lock{guard};
     reset_timers_l(PowerStateChangeReason::inactivity);
     if (current_power_mode == MirPowerMode::mir_power_mode_on)
+    {
         screen_hardware->set_normal_backlight();
+        screen_hardware->enable_proximity(false);
+    }
 }
 
 void usc::MirScreen::enable_inactivity_timers(bool enable)
@@ -129,12 +133,25 @@ void usc::MirScreen::set_inactivity_timeouts(int raw_poweroff_timeout, int raw_d
     if (raw_dimmer_timeout >= 0)
         inactivity_timeouts.dimming_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(the_dimming_timeout);
 
-    cancel_timers_l();
+    cancel_timers_l(PowerStateChangeReason::inactivity);
     reset_timers_l(PowerStateChangeReason::inactivity);
 }
 
 void usc::MirScreen::set_screen_power_mode_l(MirPowerMode mode, PowerStateChangeReason reason)
 {
+    if (!is_screen_change_allowed(mode, reason))
+        return;
+
+    // Notifications don't turn on the screen directly, they rely on proximity events
+    if (mode == MirPowerMode::mir_power_mode_on &&
+        reason == PowerStateChangeReason::notification)
+    {
+        allow_proximity_to_turn_on_screen = true;
+        screen_hardware->enable_proximity(true);
+        reset_timers_ignoring_power_mode_l(reason);
+        return;
+    }
+
     if (mode == MirPowerMode::mir_power_mode_on)
     {
         /* The screen may be dim, but on - make sure to reset backlight */
@@ -145,15 +162,25 @@ void usc::MirScreen::set_screen_power_mode_l(MirPowerMode mode, PowerStateChange
     }
     else
     {
-        cancel_timers_l();
+        cancel_timers_l(reason);
         configure_display_l(mode, reason);
     }
 }
 
 void usc::MirScreen::configure_display_l(MirPowerMode mode, PowerStateChangeReason reason)
 {
+    if (reason != PowerStateChangeReason::proximity)
+    {
+        screen_hardware->enable_proximity(false);
+        allow_proximity_to_turn_on_screen = false;
+    }
+
     if (current_power_mode == mode)
         return;
+
+    allow_proximity_to_turn_on_screen =
+        mode == mir_power_mode_off &&
+        reason == PowerStateChangeReason::proximity;
 
     std::shared_ptr<mg::DisplayConfiguration> displayConfig = display->configuration();
 
@@ -193,8 +220,11 @@ void usc::MirScreen::configure_display_l(MirPowerMode mode, PowerStateChangeReas
         screen_hardware->allow_suspend();
 }
 
-void usc::MirScreen::cancel_timers_l()
+void usc::MirScreen::cancel_timers_l(PowerStateChangeReason reason)
 {
+    if (reason == PowerStateChangeReason::proximity)
+        return;
+
     power_off_alarm->cancel();
     dimmer_alarm->cancel();
     next_power_off = {};
@@ -203,29 +233,35 @@ void usc::MirScreen::cancel_timers_l()
 
 void usc::MirScreen::reset_timers_l(PowerStateChangeReason reason)
 {
-    if (restart_timers && current_power_mode != MirPowerMode::mir_power_mode_off)
+    if (current_power_mode != MirPowerMode::mir_power_mode_off)
+        reset_timers_ignoring_power_mode_l(reason);
+}
+
+void usc::MirScreen::reset_timers_ignoring_power_mode_l(PowerStateChangeReason reason)
+{
+    if (!restart_timers || reason == PowerStateChangeReason::proximity)
+        return;
+
+    auto const timeouts = timeouts_for(reason);
+    auto const now = clock->now();
+
+    if (timeouts.power_off_timeout.count() > 0)
     {
-        auto const timeouts = timeouts_for(reason);
-        auto const now = clock->now();
-
-        if (timeouts.power_off_timeout.count() > 0)
+        auto const new_next_power_off = now + timeouts.power_off_timeout;
+        if (new_next_power_off > next_power_off)
         {
-            auto const new_next_power_off = now + timeouts.power_off_timeout;
-            if (new_next_power_off > next_power_off)
-            {
-                power_off_alarm->reschedule_in(timeouts.power_off_timeout);
-                next_power_off = new_next_power_off;
-            }
+            power_off_alarm->reschedule_in(timeouts.power_off_timeout);
+            next_power_off = new_next_power_off;
         }
+    }
 
-        if (timeouts.dimming_timeout.count() > 0)
+    if (timeouts.dimming_timeout.count() > 0)
+    {
+        auto const new_next_dimming = now + timeouts.dimming_timeout;
+        if (new_next_dimming > next_dimming)
         {
-            auto const new_next_dimming = now + timeouts.dimming_timeout;
-            if (new_next_dimming > next_dimming)
-            {
-                dimmer_alarm->reschedule_in(timeouts.dimming_timeout);
-                next_dimming = new_next_dimming;
-            }
+            dimmer_alarm->reschedule_in(timeouts.dimming_timeout);
+            next_dimming = new_next_dimming;
         }
     }
 }
@@ -235,7 +271,7 @@ void usc::MirScreen::enable_inactivity_timers_l(bool enable)
     if (enable)
         reset_timers_l(PowerStateChangeReason::inactivity);
     else
-        cancel_timers_l();
+        cancel_timers_l(PowerStateChangeReason::inactivity);
 }
 
 usc::MirScreen::Timeouts usc::MirScreen::timeouts_for(PowerStateChangeReason reason)
@@ -244,6 +280,18 @@ usc::MirScreen::Timeouts usc::MirScreen::timeouts_for(PowerStateChangeReason rea
         return notification_timeouts;
     else
         return inactivity_timeouts;
+}
+
+bool usc::MirScreen::is_screen_change_allowed(MirPowerMode mode, PowerStateChangeReason reason)
+{
+    if (mode == MirPowerMode::mir_power_mode_on &&
+        reason == PowerStateChangeReason::proximity &&
+        !allow_proximity_to_turn_on_screen)
+    {
+        return false;
+    }
+
+    return true;
 }
 
 void usc::MirScreen::power_off_alarm_notification()
