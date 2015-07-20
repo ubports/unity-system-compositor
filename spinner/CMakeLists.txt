@@ -23,15 +23,27 @@ function(png2header png header varname)
 endfunction()
 
 png2header(
-  ${CMAKE_CURRENT_SOURCE_DIR}/spinner-glow.png
-  ${CMAKE_CURRENT_BINARY_DIR}/spinner_glow.h
-  spinner_glow
+  ${CMAKE_CURRENT_SOURCE_DIR}/wallpaper.png
+  ${CMAKE_CURRENT_BINARY_DIR}/wallpaper.h
+  wallpaper
 )
 
 png2header(
-  ${CMAKE_CURRENT_SOURCE_DIR}/spinner-logo.png
-  ${CMAKE_CURRENT_BINARY_DIR}/spinner_logo.h
-  spinner_logo
+  ${CMAKE_CURRENT_SOURCE_DIR}/logo.png
+  ${CMAKE_CURRENT_BINARY_DIR}/logo.h
+  logo
+)
+
+png2header(
+  ${CMAKE_CURRENT_SOURCE_DIR}/white-dot.png
+  ${CMAKE_CURRENT_BINARY_DIR}/white_dot.h
+  white_dot
+)
+
+png2header(
+  ${CMAKE_CURRENT_SOURCE_DIR}/orange-dot.png
+  ${CMAKE_CURRENT_BINARY_DIR}/orange_dot.h
+  orange_dot
 )
 
 include_directories(
@@ -54,8 +66,10 @@ add_executable(unity-system-compositor-spinner
   eglspinner.cpp
   miregl.h
   miregl.cpp
-  ${CMAKE_CURRENT_BINARY_DIR}/spinner_logo.h
-  ${CMAKE_CURRENT_BINARY_DIR}/spinner_glow.h
+  ${CMAKE_CURRENT_BINARY_DIR}/wallpaper.h
+  ${CMAKE_CURRENT_BINARY_DIR}/logo.h
+  ${CMAKE_CURRENT_BINARY_DIR}/white_dot.h
+  ${CMAKE_CURRENT_BINARY_DIR}/orange_dot.h
 )
 
 target_link_libraries(unity-system-compositor-spinner

@@ -31,8 +31,10 @@
 #endif
 #include <signal.h>
 
-#include "spinner_glow.h"
-#include "spinner_logo.h"
+#include "wallpaper.h"
+#include "logo.h"
+#include "white_dot.h"
+#include "orange_dot.h"
 
 // this is needed for get_gu() to obtain the grid-unit value
 #define MAX_LENGTH       256
@@ -43,9 +45,17 @@
 #define FILE_BASE        "/etc/ubuntu-touch-session.d/"
 #define FILE_EXTENSION   ".conf"
 
+enum TextureIds {
+    WALLPAPER = 0,
+    LOGO,
+    WHITE_DOT,
+    ORANGE_DOT,
+    MAX_TEXTURES
+};
+
 int get_gu ()
 {
-    int   gu           = 10; // use 10 as a default value
+    int   gu           = 13; // use 13 as a default value
     FILE* handle       = NULL;
     int   i            = 0;
     int   j            = 0;
@@ -151,9 +161,10 @@ void uploadTexture (GLuint id, Image& image)
                  GL_UNSIGNED_BYTE,
                  image.pixel_data);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glGenerateMipmap(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -194,11 +205,52 @@ GLuint createShaderProgram(const char* vertexShaderSrc, const char* fragmentShad
 typedef struct _AnimationValues
 {
     double lastTimeStamp;
-    GLfloat angle;
     GLfloat fadeBackground;
-    GLfloat fadeLogo;
-    GLfloat fadeGlow;
+    int dot_mask;
 } AnimationValues;
+
+void ortho(GLfloat* mat,
+           GLfloat left,
+           GLfloat right,
+           GLfloat bottom,
+           GLfloat top,
+           GLfloat near,
+           GLfloat far)
+{
+    if (right == left ||
+        top == bottom ||
+        far == near ||
+        mat == NULL)
+    {
+        return;
+    }
+
+    mat[0]  = 2.0f / (right - left);
+    mat[1]  = 0.0f;
+    mat[2]  = 0.0f;
+    mat[3]  = 0.0f;
+
+    mat[4]  = 0.0f;
+    mat[5]  = 2.0f / (top - bottom);
+    mat[6]  = 0.0f;
+    mat[7]  = 0.0f;
+
+    mat[8]  = 0.0f;
+    mat[9]  = 0.0f;
+    mat[10] = -2.0f / (far - near);
+    mat[11] = 0.0f;
+
+    mat[12] = -(right + left) / (right - left);
+    mat[13] = -(top + bottom) / (top - bottom);
+    mat[14] = -(far + near) / (far - near);
+    mat[15] = 1.0f;
+}
+
+GLfloat gu2px(GLfloat gu) {
+    static GLfloat pixelsPerGU = get_gu();
+
+    return gu * pixelsPerGU;
+}
 
 void
 updateAnimation (GTimer* timer, AnimationValues* anim)
@@ -206,84 +258,45 @@ updateAnimation (GTimer* timer, AnimationValues* anim)
     if (!timer || !anim)
         return;
 
-    //1.) 0.0   - 0.6:   logo fades in fully
-    //2.) 0.0   - 6.0:   logo does one full spin 360°
-    //3.) 6.0   - 6.833: glow fades in fully, black-background fades out to 50%
-    //4.) 6.833 - 7.666: glow fades out fully, black-background fades out to 0% 
-    //5.) 7.666 - 8.266: logo fades out fully
-    //8.266..:       now spinner can be closed as all its elements are faded out
+    static const int sequence[] = {0, 1, 3, 7, 15, 31};
+    static int counter = 0;
+    static double second = 0.0f;
 
     double elapsed = g_timer_elapsed (timer, NULL);
-    double dt = elapsed - anim->lastTimeStamp;
+
+    if (second >= 1.0f) {
+        second = 0.0f;
+        counter++;
+    } else {
+        second += elapsed - anim->lastTimeStamp;
+    }
+    anim->dot_mask = sequence[counter%6];
+
     anim->lastTimeStamp = elapsed;
-
-    // step 1.)
-    if (elapsed < 0.6f)
-        anim->fadeLogo += 1.6f * dt;
-
-    // step 2.)
-    anim->angle -= (0.017453292519943f * 360.0f / 6.0f) * dt;
-
-    // step 3.) glow
-    if (elapsed > 6.0f && elapsed < 6.833f)
-        anim->fadeGlow += 1.2f * dt;
-
-    // Ignore the following three until we can synchronize with greeter
-
-    // step 3.) background
-    //if (elapsed > 6.0f && elapsed < 6.833f)
-    //    anim->fadeBackground -= 0.6f * dt;
-
-    // step 4.) background
-    //if (elapsed > 7.0f)
-    //    anim->fadeBackground -= 0.6f * dt;
-
-    // step 5.)
-    //if (elapsed > 6.833f)
-    //    anim->fadeLogo -= 1.6f * dt;
 }
 
 namespace
 {
-const char vShaderSrcSpinner[] =
-    "attribute vec4 vPosition;                       \n"
-    "attribute vec2 aTexCoords;                      \n"
-    "uniform float theta;                            \n"
-    "varying vec2 vTexCoords;                        \n"
-    "void main()                                     \n"
-    "{                                               \n"
-    "    float c = cos(theta);                       \n"
-    "    float s = sin(theta);                       \n"
-    "    mat2 m;                                     \n"
-    "    m[0] = vec2(c, s);                          \n"
-    "    m[1] = vec2(-s, c);                         \n"
-    "    vTexCoords = m * aTexCoords + vec2 (0.5, 0.5); \n"
-    "    gl_Position = vec4(vPosition.xy, -1.0, 1.0); \n"
-    "}                                               \n";
+const char vShaderSrcPlain[] =
+    "attribute vec4 aPosition;                                               \n"
+    "attribute vec2 aTexCoords;                                              \n"
+    "uniform vec2 uOffset;                                                   \n"
+    "varying vec2 vTexCoords;                                                \n"
+    "uniform mat4 uProjMat;                                                  \n"
+    "void main()                                                             \n"
+    "{                                                                       \n"
+    "    vTexCoords = aTexCoords + vec2 (0.5, 0.5);                          \n"
+    "    gl_Position = uProjMat * vec4(aPosition.xy + uOffset.xy, 0.0, 1.0);\n"
+    "}                                                                       \n";
 
-const char fShaderSrcGlow[] =
-    "precision mediump float;                             \n"
-    "varying vec2 vTexCoords;                             \n"
-    "uniform sampler2D uSampler;                          \n"
-    "uniform float uFadeGlow;                             \n"
-    "void main()                                          \n"
-    "{                                                    \n"
-    "    vec4 col = texture2D(uSampler, vTexCoords);      \n"
-    "    col = col * uFadeGlow;                           \n"
-    "    gl_FragColor = col;                              \n"
-    "}                                                    \n";
-
-const char fShaderSrcLogo[] =
-    "precision mediump float;                             \n"
-    "varying vec2 vTexCoords;                             \n"
-    "uniform sampler2D uSampler;                          \n"
-    "uniform float uFadeLogo;                             \n"
-    "void main()                                          \n"
-    "{                                                    \n"
-    "    vec4 col = texture2D(uSampler, vTexCoords);      \n"
-    "    col = col * uFadeLogo;                           \n"
-    "    gl_FragColor = col;                              \n"
-    "}                                                    \n";
+const char fShaderSrcPlain[] =
+    "precision mediump float;                           \n"
+    "varying vec2 vTexCoords;                           \n"
+    "uniform sampler2D uSampler;                        \n"
+    "void main()                                        \n"
+    "{                                                  \n"
+    "    gl_FragColor = texture2D(uSampler, vTexCoords);\n"
+    "}                                                  \n";
 
 static volatile sig_atomic_t running = 0;
 
@@ -305,14 +318,13 @@ bool mir_eglapp_running()
 int main(int argc, char *argv[])
 try
 {
-    GLuint prog[2];
-    GLuint texture[2];
-    GLint vpos[2];
-    GLint theta;
-    GLint fadeGlow;
-    GLint fadeLogo;
-    GLint aTexCoords[2];
-    GLint sampler[2];
+    GLuint prog[3];
+    GLuint texture[MAX_TEXTURES];
+    GLint vpos[MAX_TEXTURES];
+    GLint aTexCoords[MAX_TEXTURES];
+    GLint sampler[MAX_TEXTURES];
+    GLint offset[MAX_TEXTURES];
+    GLint projMat[MAX_TEXTURES];
 
     auto const surfaces = mir_eglapp_init(argc, argv);
 
@@ -326,17 +338,17 @@ try
     signal(SIGINT, shutdown);
     signal(SIGTERM, shutdown);
 
-    double pixelSize = get_gu() * 11.18;
-    const GLfloat texCoordsSpinner[] =
+    const GLfloat texCoords[] =
     {
-        -0.5f, 0.5f,
+         0.5f, -0.5f,
+         0.5f,  0.5f,
         -0.5f, -0.5f,
-        0.5f, 0.5f,
-        0.5f, -0.5f,
+        -0.5f,  0.5f,
     };
 
-    prog[0] = createShaderProgram(vShaderSrcSpinner, fShaderSrcGlow);
-    prog[1] = createShaderProgram(vShaderSrcSpinner, fShaderSrcLogo);
+    prog[WALLPAPER] = createShaderProgram(vShaderSrcPlain, fShaderSrcPlain);
+    prog[LOGO] = createShaderProgram(vShaderSrcPlain, fShaderSrcPlain);
+    prog[WHITE_DOT] = createShaderProgram(vShaderSrcPlain, fShaderSrcPlain);
 
     // setup proper GL-blending
     glEnable(GL_BLEND);
@@ -344,32 +356,45 @@ try
     glBlendEquation(GL_FUNC_ADD);
 
     // get locations of shader-attributes/uniforms
-    vpos[0] = glGetAttribLocation(prog[0], "vPosition");
-    aTexCoords[0] = glGetAttribLocation(prog[0], "aTexCoords");
-    theta = glGetUniformLocation(prog[0], "theta");
-    sampler[0] = glGetUniformLocation(prog[0], "uSampler");
-    fadeGlow = glGetUniformLocation(prog[0], "uFadeGlow");
-    vpos[1] = glGetAttribLocation(prog[1], "vPosition");
-    aTexCoords[1] = glGetAttribLocation(prog[1], "aTexCoords");
-    sampler[1] = glGetUniformLocation(prog[1], "uSampler");
-    fadeLogo = glGetUniformLocation(prog[1], "uFadeLogo");
+    vpos[WALLPAPER]         = glGetAttribLocation(prog[WALLPAPER],  "aPosition");
+    aTexCoords[WALLPAPER]   = glGetAttribLocation(prog[WALLPAPER],  "aTexCoords");
+    sampler[WALLPAPER]      = glGetUniformLocation(prog[WALLPAPER], "uSampler");
+    offset[WALLPAPER]       = glGetUniformLocation(prog[WALLPAPER], "uOffset");
+    projMat[WALLPAPER]      = glGetUniformLocation(prog[WALLPAPER], "uProjMat");
+
+    vpos[LOGO]         = glGetAttribLocation(prog[LOGO],  "aPosition");
+    aTexCoords[LOGO]   = glGetAttribLocation(prog[LOGO],  "aTexCoords");
+    sampler[LOGO]      = glGetUniformLocation(prog[LOGO], "uSampler");
+    offset[LOGO]       = glGetUniformLocation(prog[LOGO], "uOffset");
+    projMat[LOGO]      = glGetUniformLocation(prog[LOGO], "uProjMat");
+
+    vpos[WHITE_DOT]         = glGetAttribLocation(prog[WHITE_DOT],  "aPosition");
+    aTexCoords[WHITE_DOT]   = glGetAttribLocation(prog[WHITE_DOT],  "aTexCoords");
+    sampler[WHITE_DOT]      = glGetUniformLocation(prog[WHITE_DOT], "uSampler");
+    offset[WHITE_DOT]       = glGetUniformLocation(prog[WHITE_DOT], "uOffset");
+    projMat[WHITE_DOT]      = glGetUniformLocation(prog[WHITE_DOT], "uProjMat");
 
     // create and upload spinner-artwork
     // note that the embedded image data has pre-multiplied alpha
-    glGenTextures(2, texture);
-    uploadTexture(texture[0], spinner_glow);
-    uploadTexture(texture[1], spinner_logo);
+    glGenTextures(MAX_TEXTURES, texture);
+    uploadTexture(texture[WALLPAPER], wallpaper);
+    uploadTexture(texture[LOGO], logo);
+    uploadTexture(texture[WHITE_DOT], white_dot);
+    uploadTexture(texture[ORANGE_DOT], orange_dot);
 
     // bunch of shader-attributes to enable
-    glVertexAttribPointer(aTexCoords[0], 2, GL_FLOAT, GL_FALSE, 0, texCoordsSpinner);
-    glVertexAttribPointer(aTexCoords[1], 2, GL_FLOAT, GL_FALSE, 0, texCoordsSpinner);
-    glEnableVertexAttribArray(vpos[0]);
-    glEnableVertexAttribArray(vpos[1]);
-    glEnableVertexAttribArray(aTexCoords[0]);
-    glEnableVertexAttribArray(aTexCoords[1]);
+    glVertexAttribPointer(aTexCoords[WALLPAPER], 2, GL_FLOAT, GL_FALSE, 0, texCoords);
+    glEnableVertexAttribArray(vpos[WALLPAPER]);
+    glEnableVertexAttribArray(aTexCoords[WALLPAPER]);
+    glVertexAttribPointer(aTexCoords[LOGO], 2, GL_FLOAT, GL_FALSE, 0, texCoords);
+    glEnableVertexAttribArray(vpos[LOGO]);
+    glEnableVertexAttribArray(aTexCoords[LOGO]);
+    glVertexAttribPointer(aTexCoords[WHITE_DOT], 2, GL_FLOAT, GL_FALSE, 0, texCoords);
+    glEnableVertexAttribArray(vpos[WHITE_DOT]);
+    glEnableVertexAttribArray(aTexCoords[WHITE_DOT]);
     glActiveTexture(GL_TEXTURE0);
 
-    AnimationValues anim = {0.0, 0.0, 1.0, 0.0, 0.0};
+    AnimationValues anim = {0.0, 0.0, 0};
     GTimer* timer = g_timer_new();
 
     while (mir_eglapp_running())
@@ -377,47 +402,77 @@ try
         for (auto const& surface : surfaces)
             surface->paint([&](unsigned int width, unsigned int height)
             {
-                GLfloat halfRealWidth = ((2.0 / width) * pixelSize) / 2.0;
-                GLfloat halfRealHeight = ((2.0 / height) * pixelSize) / 2.0;
+                GLfloat logoWidth = gu2px (14.5f);
+                GLfloat logoHeight = gu2px (3.0f);
+                GLfloat logoXOffset = gu2px (1.0f);
+                GLfloat dotSize = gu2px (0.5f);
+                GLfloat dotXGap = gu2px (2.5f);
+                GLfloat dotYGap = gu2px (2.0f);
 
-                const GLfloat vertices[] =
-                    {
-                        halfRealWidth,  halfRealHeight,
-                        halfRealWidth, -halfRealHeight,
-                        -halfRealWidth, halfRealHeight,
-                        -halfRealWidth,-halfRealHeight,
-                    };
+                const GLfloat fullscreen[] = {
+                    (GLfloat) width, 0.0f,
+                    (GLfloat) width, (GLfloat) height,
+                    0.0f,            0.0f,
+                    0.0f,            (GLfloat) height
+                };
 
-                glVertexAttribPointer(vpos[0], 2, GL_FLOAT, GL_FALSE, 0, vertices);
-                glVertexAttribPointer(vpos[1], 2, GL_FLOAT, GL_FALSE, 0, vertices);
+                const GLfloat logo[] = {
+                    logoWidth, 0.0f,
+                    logoWidth, logoHeight,
+                    0.0f,      0.0f,
+                    0.0f,      logoHeight
+                };
+
+                const GLfloat dot[] = {
+                    dotSize, 0.0f,
+                    dotSize, dotSize,
+                    0.0f,    0.0f,
+                    0.0f,    dotSize
+                };
+
+                GLfloat projMatrix[16];
+                ortho(&projMatrix[0], 0.0f, (GLfloat) width, (GLfloat) height, 0.0f, -1.0f, 1.0f);
 
                 glViewport(0, 0, width, height);
 
                 glClearColor(BLACK, anim.fadeBackground);
                 glClear(GL_COLOR_BUFFER_BIT);
 
-                // draw glow
-                glUseProgram(prog[0]);
-                glBindTexture(GL_TEXTURE_2D, texture[0]);
-                glUniform1i(sampler[0], 0);
-                glUniform1f(theta, anim.angle);
-                glUniform1f(fadeGlow, anim.fadeGlow);
+                // draw wallpaper backdrop
+                glVertexAttribPointer(vpos[WALLPAPER], 2, GL_FLOAT, GL_FALSE, 0, fullscreen);
+                glUseProgram(prog[WALLPAPER]);
+                glBindTexture(GL_TEXTURE_2D, texture[WALLPAPER]);
+                glUniform1i(sampler[WALLPAPER], 0);
+                glUniform2f(offset[WALLPAPER], 0.0f, 0.0f);
+                glUniformMatrix4fv(projMat[WALLPAPER], 1, GL_FALSE,  projMatrix);
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
                 // draw logo
-                glUseProgram(prog[1]);
-                glBindTexture(GL_TEXTURE_2D, texture[1]);
-                glUniform1i(sampler[1], 0);
-                glUniform1f(theta, anim.angle);
-                glUniform1f(fadeLogo, anim.fadeLogo);
+                glVertexAttribPointer(vpos[LOGO], 2, GL_FLOAT, GL_FALSE, 0, logo);
+                glUseProgram(prog[LOGO]);
+                glBindTexture(GL_TEXTURE_2D, texture[LOGO]);
+                glUniform1i(sampler[LOGO], 0);
+                glUniform2f(offset[LOGO], width/2.0f - logoWidth / 2.0f + logoXOffset, height / 2.0f - logoHeight * 0.75f);
+                glUniformMatrix4fv(projMat[LOGO], 1, GL_FALSE,  projMatrix);
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+                // draw white/orange dots
+                glVertexAttribPointer(vpos[WHITE_DOT], 2, GL_FLOAT, GL_FALSE, 0, dot);
+                glUseProgram(prog[WHITE_DOT]);
+                glUniform1i(sampler[WHITE_DOT], 0);
+                glUniformMatrix4fv(projMat[WHITE_DOT], 1, GL_FALSE,  projMatrix);
+                for (int i = -2; i < 3; i++) {
+                    glBindTexture(GL_TEXTURE_2D, texture[anim.dot_mask >> (i + 2) ? ORANGE_DOT : WHITE_DOT]);
+                    glUniform2f(offset[WHITE_DOT], width/2.0f + i * dotXGap, height / 2.0f + logoHeight / 2.0f + dotYGap - logoHeight * 0.25f);
+                    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);                    
+                }
             });
 
         // update animation variable
         updateAnimation(timer, &anim);
     }
 
-    glDeleteTextures(2, texture);
+    glDeleteTextures(MAX_TEXTURES, texture);
     g_timer_destroy (timer);
 
     return EXIT_SUCCESS;
