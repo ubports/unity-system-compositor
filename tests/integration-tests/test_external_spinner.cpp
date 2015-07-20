@@ -18,6 +18,7 @@
 
 #include "src/external_spinner.h"
 #include "run_command.h"
+#include "spin_wait.h"
 
 #include <fstream>
 #include <chrono>
@@ -74,12 +75,21 @@ struct AnExternalSpinner : testing::Test
 {
     std::vector<pid_t> spinner_pids()
     {
-        return pidof(spinner_cmd);
+        std::vector<pid_t> pids;
+
+        usc::test::spin_wait_for_condition_or_timeout(
+            [&pids, this] { pids = pidof(spinner_cmd); return !pids.empty(); },
+            timeout);
+
+        if (pids.empty())
+            BOOST_THROW_EXCEPTION(std::runtime_error("spinner_pids timed out"));
+
+        return pids;
     }
 
     std::vector<std::string> environment_of_spinner()
     {
-        auto const pids = pidof(spinner_cmd);
+        auto const pids = spinner_pids();
         if (pids.size() > 1)
             BOOST_THROW_EXCEPTION(std::runtime_error("Detected multiple spinner processes"));
         std::vector<std::string> env;
@@ -96,19 +106,14 @@ struct AnExternalSpinner : testing::Test
 
     void wait_for_spinner_to_terminate()
     {
-        auto const timeout = std::chrono::milliseconds{3000};
-        auto const expire = std::chrono::steady_clock::now() + timeout;
-
-        while (spinner_pids().size() > 0)
-        {
-            if (std::chrono::steady_clock::now() > expire)
-                BOOST_THROW_EXCEPTION(std::runtime_error("wait_for_no_spinner timed out"));
-            std::this_thread::sleep_for(std::chrono::milliseconds{10});
-        }
+        usc::test::spin_wait_for_condition_or_timeout(
+            [this] { return pidof(spinner_cmd).empty(); },
+            timeout);
     }
 
     std::string const spinner_cmd{executable_path() + "/usc_test_helper_wait_for_signal"};
     std::string const mir_socket{"usc_mir_socket"};
+    std::chrono::milliseconds const timeout{3000};
     usc::ExternalSpinner spinner{spinner_cmd, mir_socket};
 };
 
