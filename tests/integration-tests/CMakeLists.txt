@@ -32,6 +32,7 @@ add_executable(
   run_command.cpp
   dbus_bus.cpp
   dbus_client.cpp
+  spin_wait.cpp
   test_dbus_event_loop.cpp
   test_unity_screen_service.cpp
   test_external_spinner.cpp
