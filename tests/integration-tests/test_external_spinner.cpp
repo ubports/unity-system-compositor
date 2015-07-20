@@ -71,6 +71,16 @@ std::vector<pid_t> pidof(std::string const& process_name)
     return pids;
 }
 
+bool is_zombie(pid_t pid)
+{
+    std::ifstream stat("/proc/" + std::to_string(pid) + "/stat");
+
+    std::stringstream ss;
+    ss << stat.rdbuf();
+
+    return ss.str().find(" Z ") != std::string::npos;
+}
+
 struct AnExternalSpinner : testing::Test
 {
     std::vector<pid_t> spinner_pids()
@@ -169,4 +179,22 @@ TEST_F(AnExternalSpinner, sets_mir_socket_in_spinner_process_environment)
     spinner.ensure_running();
 
     EXPECT_THAT(environment_of_spinner(), Contains("MIR_SOCKET=" + mir_socket));
+}
+
+TEST_F(AnExternalSpinner, does_not_leave_zombie_process)
+{
+    using namespace testing;
+
+    spinner.ensure_running();
+    auto const spinner_pid = spinner_pids()[0];
+    spinner.kill();
+
+    wait_for_spinner_to_terminate();
+
+    // Wait a bit for zombie to be reaped by parent
+    bool const spinner_is_not_zombie = usc::test::spin_wait_for_condition_or_timeout(
+        [spinner_pid] { return !is_zombie(spinner_pid); },
+        timeout);
+
+    EXPECT_TRUE(spinner_is_not_zombie);
 }
