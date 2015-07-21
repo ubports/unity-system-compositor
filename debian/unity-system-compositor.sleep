@@ -1,4 +1,4 @@
 #!/bin/sh
 
 sleep .1
-exec /usr/sbin/unity-system-compositor --disable-inactivity-policy=true --on-fatal-error-abort --enable-hardware-cursor=true $@
+exec /usr/sbin/unity-system-compositor --disable-inactivity-policy=true --on-fatal-error-abort $@
