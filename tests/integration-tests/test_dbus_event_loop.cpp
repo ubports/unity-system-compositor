@@ -201,6 +201,8 @@ TEST_F(ADBusEventLoop, handles_reply_timeouts)
 
     static int const timeout_ms = 100;
 
+    auto const start = std::chrono::steady_clock::now();
+
     dbus_event_loop.enqueue(
         [this,&pending_promise]
         {
@@ -218,7 +220,6 @@ TEST_F(ADBusEventLoop, handles_reply_timeouts)
         });
 
     // No one is going to reply to the signal, so the notification should time out
-    auto const start = std::chrono::steady_clock::now();
     auto pending = pending_future.get();
     auto const end = std::chrono::steady_clock::now();
     auto const delay = end - start;

@@ -18,10 +18,10 @@
 
 #include "window_manager.h"
 
-#include "session_switcher.h"
+#include "session_monitor.h"
 
 #include "mir/geometry/rectangle.h"
-#include "mir/scene/null_surface_observer.h"
+#include "mir/shell/surface_ready_observer.h"
 #include "mir/scene/session.h"
 #include "mir/scene/session_coordinator.h"
 #include "mir/scene/surface.h"
@@ -82,52 +82,17 @@ public:
     std::shared_ptr<ms::Session> const scene_session;
     msh::FocusController& focus_controller;
 };
-
-
-struct SessionReadyObserver : ms::NullSurfaceObserver,
-                              std::enable_shared_from_this<SessionReadyObserver>
-{
-    SessionReadyObserver(
-        std::shared_ptr<usc::SessionSwitcher> const& switcher,
-        std::shared_ptr<ms::Surface> const& surface,
-        ms::Session const* session)
-        : switcher{switcher},
-          surface{surface},
-          session{session}
-    {
-    }
-
-    void frame_posted(int) override
-    {
-        ++num_frames_posted;
-        if (num_frames_posted == num_frames_for_session_ready)
-        {
-            switcher->mark_ready(session);
-            surface->remove_observer(shared_from_this());
-        }
-    }
-
-    std::shared_ptr<usc::SessionSwitcher> const switcher;
-    std::shared_ptr<ms::Surface> const surface;
-    ms::Session const* const session;
-    // We need to wait for the second frame before marking the session
-    // as ready. The first frame posted from sessions is a blank frame.
-    // TODO: Solve this issue at its root and remove this workaround
-    int const num_frames_for_session_ready{2};
-    int num_frames_posted{0};
-};
-
 }
 
 usc::WindowManager::WindowManager(
     mir::shell::FocusController* focus_controller,
     std::shared_ptr<mir::shell::DisplayLayout> const& display_layout,
     std::shared_ptr<ms::SessionCoordinator> const& session_coordinator,
-    std::shared_ptr<SessionSwitcher> const& session_switcher) :
+    std::shared_ptr<SessionMonitor> const& session_monitor) :
     focus_controller{focus_controller},
     display_layout{display_layout},
     session_coordinator{session_coordinator},
-    session_switcher{session_switcher}
+    session_monitor{session_monitor}
 {
 }
 
@@ -139,7 +104,7 @@ void usc::WindowManager::add_session(std::shared_ptr<ms::Session> const& session
 
     auto const usc_session = std::make_shared<UscSession>(session, *focus_controller);
 
-    session_switcher->add(usc_session, session->process_id());
+    session_monitor->add(usc_session, session->process_id());
 }
 
 void usc::WindowManager::remove_session(std::shared_ptr<ms::Session> const& session)
@@ -152,7 +117,7 @@ void usc::WindowManager::remove_session(std::shared_ptr<ms::Session> const& sess
     else
         focus_controller->set_focus_to(next_session, {});
 
-    session_switcher->remove(session);
+    session_monitor->remove(session);
 }
 
 auto usc::WindowManager::add_surface(
@@ -178,8 +143,13 @@ auto usc::WindowManager::add_surface(
     auto const result = build(session, placed_parameters);
     auto const surface = session->surface(result);
 
-    auto const session_ready_observer = std::make_shared<SessionReadyObserver>(
-        session_switcher, surface, session.get());
+    auto const session_ready_observer = std::make_shared<msh::SurfaceReadyObserver>(
+        [this](std::shared_ptr<ms::Session> const& session, std::shared_ptr<ms::Surface> const& surface)
+        {
+            session_monitor->mark_ready(session.get());
+        },
+        session,
+        surface);
 
     surface->add_observer(session_ready_observer);
 

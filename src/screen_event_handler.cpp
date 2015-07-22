@@ -35,6 +35,7 @@ usc::ScreenEventHandler::ScreenEventHandler(
       shutdown_timeout{shutdown_timeout},
       shutdown{shutdown},
       long_press_detected{false},
+      mode_at_press_start{MirPowerMode::mir_power_mode_off},
       shutdown_alarm{alarm_factory->create_alarm([this]{ shutdown_alarm_notification(); })},
       long_press_alarm{alarm_factory->create_alarm([this]{ long_press_notification(); })}
 {
@@ -77,6 +78,14 @@ bool usc::ScreenEventHandler::handle(MirEvent const& event)
 void usc::ScreenEventHandler::power_key_down()
 {
     std::lock_guard<std::mutex> lock{guard};
+
+    mode_at_press_start = screen->get_screen_power_mode();
+    if (mode_at_press_start != MirPowerMode::mir_power_mode_on)
+    {
+        screen->set_screen_power_mode(
+            MirPowerMode::mir_power_mode_on, PowerStateChangeReason::power_key);
+    }
+
     screen->enable_inactivity_timers(false);
     long_press_detected = false;
     long_press_alarm->reschedule_in(power_key_ignore_timeout);
@@ -88,9 +97,18 @@ void usc::ScreenEventHandler::power_key_up()
     std::lock_guard<std::mutex> lock{guard};
     shutdown_alarm->cancel();
     long_press_alarm->cancel();
+
     if (!long_press_detected)
     {
-        screen->toggle_screen_power_mode(PowerStateChangeReason::power_key);
+        if (mode_at_press_start == MirPowerMode::mir_power_mode_on)
+        {
+            screen->set_screen_power_mode(
+                MirPowerMode::mir_power_mode_off, PowerStateChangeReason::power_key);
+        }
+        else
+        {
+            screen->enable_inactivity_timers(true);
+        }
     }
 }
 
@@ -103,6 +121,9 @@ void usc::ScreenEventHandler::shutdown_alarm_notification()
 
 void usc::ScreenEventHandler::long_press_notification()
 {
+    // We know the screen is already on after power_key_down(), but we turn the
+    // screen on here to ensure that it is also at full brightness for the
+    // presumed system power dialog that will appear.
     screen->set_screen_power_mode(
         MirPowerMode::mir_power_mode_on, PowerStateChangeReason::power_key);
     long_press_detected = true;

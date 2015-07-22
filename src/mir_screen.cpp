@@ -79,13 +79,10 @@ void usc::MirScreen::enable_inactivity_timers(bool enable)
     enable_inactivity_timers_l(enable);
 }
 
-void usc::MirScreen::toggle_screen_power_mode(PowerStateChangeReason reason)
+MirPowerMode usc::MirScreen::get_screen_power_mode()
 {
     std::lock_guard<std::mutex> lock{guard};
-    MirPowerMode new_mode = (current_power_mode == MirPowerMode::mir_power_mode_on) ?
-            MirPowerMode::mir_power_mode_off : MirPowerMode::mir_power_mode_on;
-
-    set_screen_power_mode_l(new_mode, reason);
+    return current_power_mode;
 }
 
 void usc::MirScreen::set_screen_power_mode(MirPowerMode mode, PowerStateChangeReason reason)

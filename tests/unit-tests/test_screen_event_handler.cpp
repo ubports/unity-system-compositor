@@ -36,9 +36,9 @@ namespace
 struct MockScreen : usc::Screen
 {
     MOCK_METHOD1(enable_inactivity_timers, void(bool enable));
-    MOCK_METHOD1(toggle_screen_power_mode, void(PowerStateChangeReason reason));
     MOCK_METHOD0(keep_display_on_temporarily, void());
 
+    MirPowerMode get_screen_power_mode() override {return mock_mode;}
     MOCK_METHOD2(set_screen_power_mode, void(MirPowerMode mode, PowerStateChangeReason reason));
     MOCK_METHOD1(keep_display_on, void(bool on));
     MOCK_METHOD1(set_brightness, void(int brightness));
@@ -48,6 +48,8 @@ struct MockScreen : usc::Screen
     MOCK_METHOD1(set_touch_visualization_enabled, void(bool enabled));
     MOCK_METHOD1(register_power_state_change_handler, void(
                  usc::PowerStateChangeHandler const& handler));
+
+    MirPowerMode mock_mode = MirPowerMode::mir_power_mode_off;
 };
 
 struct AScreenEventHandler : testing::Test
@@ -74,21 +76,29 @@ struct AScreenEventHandler : testing::Test
 
     static const int32_t POWER_KEY_CODE = 26;
     mir::EventUPtr power_key_down_event = mir::events::make_event(
-        MirInputDeviceId{1}, 0, mir_keyboard_action_down,
+        MirInputDeviceId{1}, std::chrono::nanoseconds(0),
+	    mir_keyboard_action_down,
         POWER_KEY_CODE, 0, mir_input_event_modifier_none);
+
     mir::EventUPtr power_key_up_event = mir::events::make_event(
-        MirInputDeviceId{1}, 0, mir_keyboard_action_up,
+        MirInputDeviceId{1}, std::chrono::nanoseconds(0),
+	    mir_keyboard_action_up,
         POWER_KEY_CODE, 0, mir_input_event_modifier_none);
+
     mir::EventUPtr touch_event = mir::events::make_event(
-        MirInputDeviceId{1}, 0, mir_input_event_modifier_none);
+        MirInputDeviceId{1}, std::chrono::nanoseconds(0),
+	    mir_input_event_modifier_none);
+    
     mir::EventUPtr pointer_event = mir::events::make_event(
-        MirInputDeviceId{1}, 0, mir_input_event_modifier_none,
+        MirInputDeviceId{1}, std::chrono::nanoseconds(0),
+	    mir_input_event_modifier_none,
         mir_pointer_action_motion,
         {}, 0.0f, 0.0f, 0.0f, 0.0f);
 
     AdvanceableTimer timer;
     std::chrono::milliseconds const power_key_ignore_timeout{5000};
     std::chrono::milliseconds const shutdown_timeout{10000};
+    std::chrono::milliseconds const normal_press_duration{100};
     testing::NiceMock<MockScreen> mock_screen;
     std::atomic<bool> shutdown_called{false};
     usc::ScreenEventHandler screen_event_handler{
@@ -101,7 +111,7 @@ struct AScreenEventHandler : testing::Test
 
 }
 
-TEST_F(AScreenEventHandler, turns_screen_on_on_long_press)
+TEST_F(AScreenEventHandler, turns_screen_on_immediately_on_press)
 {
     auto const long_press_duration = power_key_ignore_timeout;
 
@@ -110,7 +120,6 @@ TEST_F(AScreenEventHandler, turns_screen_on_on_long_press)
                                       PowerStateChangeReason::power_key));
 
     press_power_key();
-    timer.advance_by(long_press_duration);
 }
 
 TEST_F(AScreenEventHandler, shuts_down_system_when_power_key_pressed_for_long_enough)
@@ -158,28 +167,32 @@ TEST_F(AScreenEventHandler, keeps_display_on_temporarily_on_pointer_event)
     move_pointer();
 }
 
-TEST_F(AScreenEventHandler, toggles_screen_mode_on_normal_press_release)
+TEST_F(AScreenEventHandler, sets_screen_mode_off_normal_press_release)
 {
-    std::chrono::milliseconds const normal_press_duration{100};
-
     EXPECT_CALL(mock_screen,
-                toggle_screen_power_mode(PowerStateChangeReason::power_key));
+                set_screen_power_mode(MirPowerMode::mir_power_mode_off,
+                                      PowerStateChangeReason::power_key));
 
+    mock_screen.mock_mode = MirPowerMode::mir_power_mode_on;
     press_power_key();
     timer.advance_by(normal_press_duration);
     release_power_key();
 }
 
-TEST_F(AScreenEventHandler, does_not_toggle_screen_mode_on_long_press_release)
+TEST_F(AScreenEventHandler, does_not_set_screen_mode_off_long_press_release)
 {
     using namespace testing;
 
     auto const long_press_duration = power_key_ignore_timeout;
 
     EXPECT_CALL(mock_screen,
-                toggle_screen_power_mode(_))
+                set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                      PowerStateChangeReason::power_key));
+    EXPECT_CALL(mock_screen,
+                set_screen_power_mode(MirPowerMode::mir_power_mode_off, _))
         .Times(0);
 
+    mock_screen.mock_mode = MirPowerMode::mir_power_mode_on;
     press_power_key();
     timer.advance_by(long_press_duration);
     release_power_key();
@@ -193,4 +206,20 @@ TEST_F(AScreenEventHandler, passes_through_all_handled_events)
     EXPECT_FALSE(screen_event_handler.handle(*power_key_up_event));
     EXPECT_FALSE(screen_event_handler.handle(*touch_event));
     EXPECT_FALSE(screen_event_handler.handle(*pointer_event));
+}
+
+TEST_F(AScreenEventHandler, disables_inactivity_timers_on_power_key_down)
+{
+    EXPECT_CALL(mock_screen, enable_inactivity_timers(false));
+
+    press_power_key();
+}
+
+TEST_F(AScreenEventHandler, enables_inactivity_timers_on_power_key_up_when_turning_screen_on)
+{
+    press_power_key();
+    timer.advance_by(normal_press_duration);
+
+    EXPECT_CALL(mock_screen, enable_inactivity_timers(true));
+    release_power_key();
 }
