@@ -25,6 +25,7 @@
 #include "screen_event_handler.h"
 #include "powerd_mediator.h"
 #include "unity_screen_service.h"
+#include "steady_clock.h"
 
 #include <mir/input/cursor_listener.h>
 #include <mir/server_status_listener.h>
@@ -117,6 +118,8 @@ usc::Server::Server(int argc, char** argv)
     add_configuration_option("shutdown-timeout", "The time in milli-seconds the power key must be held to initiate a clean system shutdown",  mir::OptionType::integer);
     add_configuration_option("power-key-ignore-timeout", "The time in milli-seconds the power key must be held to ignore - must be less than shutdown-timeout",  mir::OptionType::integer);
     add_configuration_option("disable-inactivity-policy", "Disables handling user inactivity and power key",  mir::OptionType::boolean);
+    add_configuration_option("notification-display-off-timeout", "The time in seconds before the screen is turned off after a notification arrives",  mir::OptionType::integer);
+    add_configuration_option("notification-display-dim-timeout", "The time in seconds before the screen is dimmed after a notification arrives",  mir::OptionType::integer);
 
     set_command_line(argc, const_cast<char const **>(argv));
 
@@ -237,8 +240,13 @@ std::shared_ptr<usc::Screen> usc::Server::the_screen()
                 the_display(),
                 the_touch_visualizer(),
                 the_main_loop(),
-                inactivity_display_off_timeout(),
-                inactivity_display_dim_timeout());
+                the_clock(),
+                MirScreen::Timeouts{
+                    inactivity_display_off_timeout(),
+                    inactivity_display_dim_timeout()},
+                MirScreen::Timeouts{
+                    notification_display_off_timeout(),
+                    notification_display_dim_timeout()});
         });
 }
 
@@ -273,6 +281,15 @@ std::shared_ptr<usc::UnityScreenService> usc::Server::the_unity_screen_service()
             return std::make_shared<UnityScreenService>(
                     dbus_bus_address(),
                     the_screen());
+        });
+}
+
+std::shared_ptr<usc::Clock> usc::Server::the_clock()
+{
+    return clock(
+        [this]
+        {
+            return std::make_shared<SteadyClock>();
         });
 }
 

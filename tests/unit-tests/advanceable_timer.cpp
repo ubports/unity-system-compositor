@@ -123,14 +123,8 @@ private:
 std::unique_ptr<mir::time::Alarm> AdvanceableTimer::create_alarm(
     std::function<void()> const& callback)
 {
-    decltype(now) now_tmp;
-    {
-        std::lock_guard<std::mutex> lock{now_mutex};
-        now_tmp = now;
-    }
-
     auto const adv_alarm =
-        std::make_shared<detail::AdvanceableAlarm>(now_tmp, callback);
+        std::make_shared<detail::AdvanceableAlarm>(now(), callback);
 
     register_alarm(adv_alarm);
 
@@ -147,7 +141,7 @@ void AdvanceableTimer::advance_by(std::chrono::milliseconds advance)
 {
     {
         std::lock_guard<std::mutex> lock{now_mutex};
-        now += advance;
+        now_ += advance;
     }
     trigger_alarms();
 }
@@ -189,13 +183,7 @@ void AdvanceableTimer::trigger_alarms()
         if (alarm)
         {
             lock.unlock();
-            decltype(now) now_tmp;
-            {
-                std::lock_guard<std::mutex> lock{now_mutex};
-                now_tmp = now;
-            }
-
-            alarm->update_now(now_tmp);
+            alarm->update_now(now());
             lock.lock();
         }
     }
@@ -208,4 +196,10 @@ void AdvanceableTimer::trigger_alarms()
                 return alarm.expired();
             }),
         end(alarms));
+}
+
+mir::time::Timestamp AdvanceableTimer::now() const
+{
+    std::lock_guard<std::mutex> lock{now_mutex};
+    return now_;
 }

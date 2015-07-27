@@ -42,6 +42,7 @@ class DMConnection;
 class Screen;
 class ScreenHardware;
 class UnityScreenService;
+class Clock;
 
 class Server : private mir::Server
 {
@@ -63,6 +64,7 @@ public:
     virtual std::shared_ptr<mir::input::EventFilter> the_screen_event_handler();
     virtual std::shared_ptr<ScreenHardware> the_screen_hardware();
     virtual std::shared_ptr<UnityScreenService> the_unity_screen_service();
+    virtual std::shared_ptr<Clock> the_clock();
 
     bool show_version()
     {
@@ -110,6 +112,20 @@ private:
             seconds{the_options()->get("inactivity-display-dim-timeout", 45)});
     }
 
+    std::chrono::milliseconds notification_display_off_timeout()
+    {
+        using namespace std::chrono;
+        return duration_cast<milliseconds>(
+            seconds{the_options()->get("notification-display-off-timeout", 15)});
+    }
+
+    std::chrono::milliseconds notification_display_dim_timeout()
+    {
+        using namespace std::chrono;
+        return duration_cast<milliseconds>(
+            seconds{the_options()->get("notification-display-dim-timeout", 12)});
+    }
+
     std::chrono::milliseconds shutdown_timeout()
     {
         return std::chrono::milliseconds{
@@ -145,6 +161,7 @@ private:
     mir::CachedPtr<mir::input::EventFilter> screen_event_handler;
     mir::CachedPtr<ScreenHardware> screen_hardware;
     mir::CachedPtr<UnityScreenService> unity_screen_service;
+    mir::CachedPtr<Clock> clock;
 };
 
 }
