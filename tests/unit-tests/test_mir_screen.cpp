@@ -664,6 +664,17 @@ TEST_F(AMirScreen, cancels_proximity_handling_when_screen_is_touched_after_notif
     uncover_screen();
 }
 
+TEST_F(AMirScreen, does_not_enable_proximity_handling_for_notification_when_screen_is_already_on)
+{
+    expect_no_reconfiguration();
+    receive_notification();
+    verify_and_clear_expectations();
+
+    expect_no_reconfiguration();
+    cover_screen();
+    uncover_screen();
+}
+
 TEST_F(AMirScreen, does_not_allow_proximity_to_turn_on_screen_not_turned_off_by_proximity)
 {
     turn_screen_off();

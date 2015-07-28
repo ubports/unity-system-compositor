@@ -146,8 +146,11 @@ void usc::MirScreen::set_screen_power_mode_l(MirPowerMode mode, PowerStateChange
     if (mode == MirPowerMode::mir_power_mode_on &&
         reason == PowerStateChangeReason::notification)
     {
-        allow_proximity_to_turn_on_screen = true;
-        screen_hardware->enable_proximity(true);
+        if (current_power_mode != MirPowerMode::mir_power_mode_on)
+        {
+            allow_proximity_to_turn_on_screen = true;
+            screen_hardware->enable_proximity(true);
+        }
         reset_timers_ignoring_power_mode_l(reason);
         return;
     }
