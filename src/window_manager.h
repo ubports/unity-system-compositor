@@ -19,7 +19,7 @@
 #ifndef USC_WINDOW_MANAGER_H_
 #define USC_WINDOW_MANAGER_H_
 
-#include <mir/shell/window_manager.h>
+#include <mir/shell/system_compositor_window_manager.h>
 #include "session_monitor.h"
 
 namespace mir
@@ -32,7 +32,7 @@ namespace usc
 {
 class SessionMonitor;
 
-class WindowManager : public mir::shell::WindowManager
+class WindowManager : public mir::shell::SystemCompositorWindowManager
 {
 public:
     explicit WindowManager(
@@ -41,45 +41,12 @@ public:
         std::shared_ptr<mir::scene::SessionCoordinator> const& session_coordinator,
         std::shared_ptr<SessionMonitor> const& session_switcher);
 
-    void add_session(std::shared_ptr<mir::scene::Session> const& session) override;
-
-    void remove_session(std::shared_ptr<mir::scene::Session> const& session) override;
-
-    mir::frontend::SurfaceId add_surface(
-        std::shared_ptr<mir::scene::Session> const& session,
-        mir::scene::SurfaceCreationParameters const& params,
-        std::function<mir::frontend::SurfaceId(std::shared_ptr<mir::scene::Session> const& session, mir::scene::SurfaceCreationParameters const& params)> const& build) override;
-
-    void modify_surface(
-        std::shared_ptr<mir::scene::Session> const& session,
-        std::shared_ptr<mir::scene::Surface> const& surface,
-        mir::shell::SurfaceSpecification const& modifications) override;
-
-    void remove_surface(
-        std::shared_ptr<mir::scene::Session> const& session,
-        std::weak_ptr<mir::scene::Surface> const& surface) override;
-
-    void add_display(mir::geometry::Rectangle const& area) override;
-
-    void remove_display(mir::geometry::Rectangle const& area) override;
-
-    bool handle_keyboard_event(MirKeyboardEvent const* event) override;
-
-    bool handle_touch_event(MirTouchEvent const* event) override;
-
-    bool handle_pointer_event(MirPointerEvent const* event) override;
-
-    int set_surface_attribute(
-        std::shared_ptr<mir::scene::Session> const& session,
-        std::shared_ptr<mir::scene::Surface> const& surface,
-        MirSurfaceAttrib attrib,
-        int value) override;
-
 private:
-    mir::shell::FocusController* const focus_controller;
-    std::shared_ptr<mir::shell::DisplayLayout> const display_layout;
-    std::shared_ptr<mir::scene::SessionCoordinator> const session_coordinator;
     std::shared_ptr<SessionMonitor> const session_monitor;
+
+    virtual void on_session_added(std::shared_ptr<mir::scene::Session> const& session) const;
+    virtual void on_session_removed(std::shared_ptr<mir::scene::Session> const& session) const;
+    virtual void on_session_ready(std::shared_ptr<mir::scene::Session> const& session) const;
 };
 }
 

@@ -1,3 +1,21 @@
+unity-system-compositor (0.1.0) UNRELEASED; urgency=medium
+
+  [ Alexandros Frantzis ]
+  * Support different screen timeout values for notifications
+    (LP: #1426115)
+  * Enable and handle proximity events properly (LP: #1291455)
+  * Don't force gcc 4.9 when building the package (LP: #1478926)
+  * Introduce new versioning scheme
+
+  [ Alan Griffiths ]
+  * Port to mir SystemCompositorWindowManager
+  
+  [ Robert Ancell ]
+  * Depend on the new xmir package instead of the obsolete
+    xserver-xorg-xmir (LP: #1204505)
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Tue, 28 Jul 2015 15:16:09 +0300
+
 unity-system-compositor (0.0.5+15.10.20150722-0ubuntu1) wily; urgency=medium
 
   [ Kevin Gunn ]

@@ -46,6 +46,8 @@ public:
     int min_brightness() override;
     int max_brightness() override;
 
+    void enable_proximity(bool enable) override;
+
     bool is_system_suspended();
 
 private:
@@ -66,6 +68,7 @@ private:
 
     enum class ForceDisableSuspend { no, yes };
     enum class ForceBacklightState { no, yes };
+    enum class ForceProximity { no, yes };
 
     static ::DBusHandlerResult handle_dbus_message_thunk(
         ::DBusConnection* connection, ::DBusMessage* message, void* user_data);
@@ -76,6 +79,7 @@ private:
     void init_brightness_params();
     void change_backlight_state(
         BacklightState new_state, ForceBacklightState force_backlight_state);
+    void enable_proximity_l(bool enable, ForceProximity force_proximity);
     bool is_valid_brightness(int brightness);
     bool request_suspend_block();
     void wait_for_sys_state(SysState state);
@@ -98,6 +102,7 @@ private:
     BacklightState backlight_state;
     bool auto_brightness_supported_;
     bool auto_brightness_requested;
+    bool proximity_enabled;
     std::string suspend_block_cookie;
     std::mutex sys_state_mutex;
     SysState sys_state;

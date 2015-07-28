@@ -18,6 +18,7 @@
 #define USC_MIR_SCREEN_H_
 
 #include "screen.h"
+#include <mir/time/types.h>
 
 #include <chrono>
 #include <memory>
@@ -37,17 +38,25 @@ namespace usc
 {
 class Server;
 class ScreenHardware;
+class Clock;
 
 class MirScreen: public Screen
 {
 public:
+    struct Timeouts
+    {
+        std::chrono::milliseconds power_off_timeout;
+        std::chrono::milliseconds dimming_timeout;
+    };
+
     MirScreen(std::shared_ptr<usc::ScreenHardware> const& screen_hardware,
               std::shared_ptr<mir::compositor::Compositor> const& compositor,
               std::shared_ptr<mir::graphics::Display> const& display,
               std::shared_ptr<mir::input::TouchVisualizer> const& touch_visualizer,
               std::shared_ptr<mir::time::AlarmFactory> const& alarm_factory,
-              std::chrono::milliseconds power_off_timeout,
-              std::chrono::milliseconds dimmer_timeout);
+              std::shared_ptr<usc::Clock> const& clock,
+              Timeouts inactivity_timeouts,
+              Timeouts notification_timeouts);
     ~MirScreen();
 
     void enable_inactivity_timers(bool enable) override;
@@ -68,9 +77,12 @@ private:
     void set_screen_power_mode_l(MirPowerMode mode, PowerStateChangeReason reason);
     void configure_display_l(MirPowerMode mode, PowerStateChangeReason reason);
 
-    void cancel_timers_l();
-    void reset_timers_l();
+    void cancel_timers_l(PowerStateChangeReason reason);
+    void reset_timers_l(PowerStateChangeReason reason);
+    void reset_timers_ignoring_power_mode_l(PowerStateChangeReason reason);
     void enable_inactivity_timers_l(bool flag);
+    Timeouts timeouts_for(PowerStateChangeReason reason);
+    bool is_screen_change_allowed(MirPowerMode mode, PowerStateChangeReason reason);
 
     void power_off_alarm_notification();
     void dimmer_alarm_notification();
@@ -81,15 +93,19 @@ private:
     std::shared_ptr<mir::graphics::Display> const display;
     std::shared_ptr<mir::input::TouchVisualizer> const touch_visualizer;
     std::shared_ptr<mir::time::AlarmFactory> const alarm_factory;
+    std::shared_ptr<usc::Clock> const clock;
     std::unique_ptr<mir::time::Alarm> const power_off_alarm;
     std::unique_ptr<mir::time::Alarm> const dimmer_alarm;
 
     std::mutex guard;
-    std::chrono::milliseconds power_off_timeout;
-    std::chrono::milliseconds dimming_timeout;
+    Timeouts inactivity_timeouts;
+    Timeouts notification_timeouts;
+    mir::time::Timestamp next_power_off{};
+    mir::time::Timestamp next_dimming{};
     MirPowerMode current_power_mode;
     bool restart_timers;
     PowerStateChangeHandler power_state_change_handler;
+    bool allow_proximity_to_turn_on_screen;
 };
 
 }

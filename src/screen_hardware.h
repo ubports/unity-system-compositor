@@ -39,6 +39,8 @@ public:
     virtual int min_brightness() = 0;
     virtual int max_brightness() = 0;
 
+    virtual void enable_proximity(bool enable) = 0;
+
 protected:
     ScreenHardware() = default;
     ScreenHardware(ScreenHardware const&) = delete;

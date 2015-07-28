@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014 Canonical Ltd.
+ * Copyright © 2015 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -14,16 +14,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef POWER_STATE_CHANGE_REASON_H_
-#define POWER_STATE_CHANGE_REASON_H_
+#ifndef USC_CLOCK_H_
+#define USC_CLOCK_H_
 
-enum class PowerStateChangeReason
+#include <mir/time/types.h>
+#include <chrono>
+
+namespace usc
 {
-    unknown = 0,
-    inactivity = 1,
-    power_key = 2,
-    proximity = 3,
-    notification = 4
+
+class Clock
+{
+public:
+    virtual ~Clock() = default;
+
+    virtual mir::time::Timestamp now() const = 0;
+
+protected:
+    Clock() = default;
+    Clock(Clock const&) = delete;
+    Clock& operator=(Clock const&) = delete;
 };
+
+}
 
 #endif

@@ -116,6 +116,25 @@ struct MockScreenHardware : usc::ScreenHardware
     MOCK_METHOD1(set_brightness, void(int));
     int min_brightness() override { return 100; }
     int max_brightness() override { return 0; }
+
+    enum class Proximity {near, far};
+
+    void enable_proximity(bool enable) override
+    {
+        proximity_enabled = enable;
+        set_proximity(current_proximity);
+    }
+
+    void set_proximity(Proximity proximity)
+    {
+        current_proximity = proximity;
+        if (proximity_enabled)
+            on_proximity_changed(current_proximity);
+    }
+
+    std::function<void(Proximity)> on_proximity_changed = [](Proximity){};
+    Proximity current_proximity{Proximity::far};
+    bool proximity_enabled{false};
 };
 
 struct MockTouchVisualizer : mir::input::TouchVisualizer
@@ -129,8 +148,47 @@ struct MockTouchVisualizer : mir::input::TouchVisualizer
 
 struct AMirScreen : testing::Test
 {
-    std::chrono::milliseconds power_off_timeout{5000};
-    std::chrono::milliseconds dimmer_timeout{4000};
+    AMirScreen()
+    {
+        using namespace testing;
+
+        screen_hardware->on_proximity_changed =
+            [this] (MockScreenHardware::Proximity p) { defer_proximity_event(p); };
+    }
+
+    void defer_proximity_event(MockScreenHardware::Proximity proximity)
+    {
+        deferred_actions.push_back(
+            [this, proximity]
+            {
+                mir_screen.set_screen_power_mode(
+                        proximity == MockScreenHardware::Proximity::far ?
+                            MirPowerMode::mir_power_mode_on :
+                            MirPowerMode::mir_power_mode_off,
+                        PowerStateChangeReason::proximity);
+            });
+    }
+
+    void process_deferred_actions()
+    {
+        for (auto const& a : deferred_actions)
+            a();
+        deferred_actions.clear();
+    }
+
+    std::vector<std::function<void(void)>> deferred_actions;
+
+    std::chrono::seconds const power_off_timeout{60};
+    std::chrono::seconds const dimmer_timeout{50};
+    std::chrono::seconds const notification_power_off_timeout{15};
+    std::chrono::seconds const notification_dimmer_timeout{12};
+
+    std::chrono::seconds const five_seconds{5};
+    std::chrono::seconds const ten_seconds{10};
+    std::chrono::seconds const fifteen_seconds{15};
+    std::chrono::seconds const thirty_seconds{30};
+    std::chrono::seconds const fourty_seconds{40};
+    std::chrono::seconds const fifty_seconds{50};
 
     void expect_screen_is_turned_off()
     {
@@ -176,6 +234,26 @@ struct AMirScreen : testing::Test
         verify_and_clear_expectations();
     }
 
+    void receive_notification()
+    {
+        mir_screen.set_screen_power_mode(
+            MirPowerMode::mir_power_mode_on,
+            PowerStateChangeReason::notification);
+        process_deferred_actions();
+    }
+
+    void cover_screen()
+    {
+        screen_hardware->set_proximity(MockScreenHardware::Proximity::near);
+        process_deferred_actions();
+    }
+
+    void uncover_screen()
+    {
+        screen_hardware->set_proximity(MockScreenHardware::Proximity::far);
+        process_deferred_actions();
+    }
+
     void verify_and_clear_expectations()
     {
         using namespace testing;
@@ -201,8 +279,9 @@ struct AMirScreen : testing::Test
         display,
         touch_visualizer,
         timer,
-        power_off_timeout,
-        dimmer_timeout};
+        timer,
+        {power_off_timeout, dimmer_timeout},
+        {notification_power_off_timeout, notification_dimmer_timeout}};
 };
 
 }
@@ -259,31 +338,31 @@ TEST_F(AMirScreen, does_not_turn_on_screen_temporarily_when_off)
 TEST_F(AMirScreen, keeps_screen_on_temporarily_when_already_on)
 {
     using namespace testing;
-    std::chrono::seconds const three_seconds{3};
-    std::chrono::seconds const one_second{1};
+    std::chrono::seconds const fourty_seconds{40};
+    std::chrono::seconds const ten_seconds{10};
 
     expect_no_reconfiguration();
 
     // After keep_display_on_temporarily the timeouts should
     // be reset...
-    timer->advance_by(three_seconds);
+    timer->advance_by(fourty_seconds);
     mir_screen.keep_display_on_temporarily();
 
-    // ... so 3 seconds after the reset (total 6 from start)
+    // ... so 40 seconds after the reset (total 80 from start)
     // should trigger neither dim nor power off
-    timer->advance_by(three_seconds);
+    timer->advance_by(fourty_seconds);
 
     verify_and_clear_expectations();
 
-    // A second more, 4 seconds from reset, the screen should dim
+    // Tens seconds more, 50 seconds from reset, the screen should dim
     expect_screen_is_turned_dim();
-    timer->advance_by(one_second);
+    timer->advance_by(ten_seconds);
 
     verify_and_clear_expectations();
 
-    // A second more, 5 seconds from reset, the screen should power off
+    // Ten seconds second more, 60 seconds from reset, the screen should power off
     expect_screen_is_turned_off();
-    timer->advance_by(one_second);
+    timer->advance_by(ten_seconds);
 
     verify_and_clear_expectations();
 }
@@ -366,4 +445,288 @@ TEST_F(AMirScreen, invokes_handler_when_power_state_changes)
 
     EXPECT_THAT(handler_reason, Eq(toggle_reason));
     EXPECT_THAT(handler_mode, Eq(MirPowerMode::mir_power_mode_off));
+}
+
+TEST_F(AMirScreen, turns_screen_off_after_notification_timeout)
+{
+    turn_screen_off();
+
+    expect_screen_is_turned_on();
+    receive_notification();
+    verify_and_clear_expectations();
+
+    expect_screen_is_turned_off();
+    timer->advance_by(notification_power_off_timeout);
+}
+
+TEST_F(AMirScreen, keep_display_on_temporarily_overrides_notification_timeout)
+{
+    turn_screen_off();
+
+    expect_screen_is_turned_on();
+    receive_notification();
+    verify_and_clear_expectations();
+
+    // At T=10 we request a temporary keep display on (e.g. user has touched
+    // the screen)
+    timer->advance_by(ten_seconds);
+    mir_screen.keep_display_on_temporarily();
+
+    // At T=20 nothing should happen since keep display on temporarily
+    // has reset the timers (so the notification timeout of 15s is overriden).
+    expect_no_reconfiguration();
+    timer->advance_by(ten_seconds);
+    verify_and_clear_expectations();
+
+    // At T=70 (10 + 60) the screen should turn off due to the normal
+    // inactivity timeout
+    expect_screen_is_turned_off();
+    timer->advance_by(fifty_seconds);
+}
+
+TEST_F(AMirScreen, notification_timeout_extends_active_timeout)
+{
+    // At T=0 we turn the screen on, and normal inactivity timeouts
+    // are reset
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                     PowerStateChangeReason::power_key);
+
+    // At T=50 we get a notification
+    timer->advance_by(fifty_seconds);
+    receive_notification();
+    verify_and_clear_expectations();
+
+    // At T=60 the screen should still be active because the notification
+    // has extended the timeout.
+    expect_no_reconfiguration();
+    timer->advance_by(ten_seconds);
+    verify_and_clear_expectations();
+
+    // At T=65 (50 + 15) the screen should turn off due to the notification
+    // inactivity timeout
+    expect_screen_is_turned_off();
+    timer->advance_by(five_seconds);
+}
+
+TEST_F(AMirScreen, notification_timeout_does_not_reduce_active_timeout)
+{
+    // At T=0 we turn the screen on, and normal inactivity timeouts
+    // are reset
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                     PowerStateChangeReason::power_key);
+
+
+    // At T=30 we get a notification
+    timer->advance_by(thirty_seconds);
+    receive_notification();
+    verify_and_clear_expectations();
+
+    // At T=45 the screen should still be active because the notification
+    // has not reduced the active timeout.
+    expect_no_reconfiguration();
+    timer->advance_by(fifteen_seconds);
+    verify_and_clear_expectations();
+
+    // At T=50 the screen should be dimmed
+    expect_screen_is_turned_dim();
+    timer->advance_by(five_seconds);
+    verify_and_clear_expectations();
+
+    // At T=60 the screen should turn off due to the normal
+    // inactivity timeout
+    expect_screen_is_turned_off();
+    timer->advance_by(ten_seconds);
+}
+
+TEST_F(AMirScreen, notification_timeout_can_extend_only_dimming)
+{
+    std::chrono::seconds const two_seconds{2};
+    std::chrono::seconds const eight_seconds{8};
+
+    // At T=0 we turn the screen on, and normal inactivity timeouts
+    // are reset
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                     PowerStateChangeReason::power_key);
+
+    // At T=40 we get a notification
+    timer->advance_by(fourty_seconds);
+    receive_notification();
+    verify_and_clear_expectations();
+
+    // At T=50 nothing should happen since the notification has
+    // extended the dimming timeout
+    expect_no_reconfiguration();
+    timer->advance_by(ten_seconds);
+    verify_and_clear_expectations();
+
+    // At T=52 (40 + 12) screen should be dimmed due to the notification
+    // dimming timeout
+    expect_screen_is_turned_dim();
+    timer->advance_by(two_seconds);
+    verify_and_clear_expectations();
+
+    // At T=60 the screen should turn off due to the normal
+    // inactivity timeout
+    expect_screen_is_turned_off();
+    timer->advance_by(eight_seconds);
+}
+
+TEST_F(AMirScreen, proximity_requests_affect_screen_state)
+{
+    expect_screen_is_turned_off();
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_off,
+                                     PowerStateChangeReason::proximity);
+    verify_and_clear_expectations();
+
+    expect_screen_is_turned_on();
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                     PowerStateChangeReason::proximity);
+    verify_and_clear_expectations();
+}
+
+TEST_F(AMirScreen, proximity_requests_do_not_reset_timeouts)
+{
+    // At T=0 we turn the screen on, and normal inactivity timeouts
+    // are reset
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                     PowerStateChangeReason::power_key);
+
+    // At T=30 we get a screen off request due to proximity
+    timer->advance_by(thirty_seconds);
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_off,
+                                     PowerStateChangeReason::proximity);
+
+    // At T=40 we get a screen on request due to proximity
+    timer->advance_by(ten_seconds);
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                     PowerStateChangeReason::proximity);
+
+    verify_and_clear_expectations();
+
+    // At T=50 screen should be dimmed due to the inactivity
+    // dimming timeout
+    expect_screen_is_turned_dim();
+    timer->advance_by(ten_seconds);
+    verify_and_clear_expectations();
+
+    // At T=60 the screen should turn off due to the normal
+    // inactivity timeout
+    expect_screen_is_turned_off();
+    timer->advance_by(ten_seconds);
+}
+
+TEST_F(AMirScreen, does_not_turn_on_screen_when_notification_arrives_with_phone_covered)
+{
+    turn_screen_off();
+    cover_screen();
+
+    expect_no_reconfiguration();
+    receive_notification();
+}
+
+TEST_F(AMirScreen, turns_screen_on_when_phone_is_uncovered_after_notification_arrives)
+{
+    turn_screen_off();
+    cover_screen();
+
+    expect_no_reconfiguration();
+    receive_notification();
+    verify_and_clear_expectations();
+
+    expect_screen_is_turned_on();
+    uncover_screen();
+}
+
+TEST_F(AMirScreen, cancels_proximity_handling_when_phone_is_turned_off_after_notification)
+{
+    turn_screen_off();
+    cover_screen();
+
+    receive_notification();
+    timer->advance_by(notification_power_off_timeout);
+    verify_and_clear_expectations();
+
+    expect_no_reconfiguration();
+    uncover_screen();
+    cover_screen();
+}
+
+TEST_F(AMirScreen, cancels_proximity_handling_when_screen_is_touched_after_notification)
+{
+    turn_screen_off();
+
+    receive_notification();
+    mir_screen.keep_display_on_temporarily();
+    verify_and_clear_expectations();
+
+    expect_no_reconfiguration();
+    cover_screen();
+    uncover_screen();
+}
+
+TEST_F(AMirScreen, does_not_enable_proximity_handling_for_notification_when_screen_is_already_on)
+{
+    expect_no_reconfiguration();
+    receive_notification();
+    verify_and_clear_expectations();
+
+    expect_no_reconfiguration();
+    cover_screen();
+    uncover_screen();
+}
+
+TEST_F(AMirScreen, does_not_allow_proximity_to_turn_on_screen_not_turned_off_by_proximity)
+{
+    turn_screen_off();
+
+    expect_no_reconfiguration();
+    mir_screen.set_screen_power_mode(
+        MirPowerMode::mir_power_mode_on,
+        PowerStateChangeReason::proximity);
+    verify_and_clear_expectations();
+
+    expect_no_reconfiguration();
+    mir_screen.set_screen_power_mode(
+        MirPowerMode::mir_power_mode_off,
+        PowerStateChangeReason::proximity);
+    verify_and_clear_expectations();
+
+    expect_no_reconfiguration();
+    mir_screen.set_screen_power_mode(
+        MirPowerMode::mir_power_mode_on,
+        PowerStateChangeReason::proximity);
+}
+
+TEST_F(AMirScreen, does_not_allow_proximity_to_turn_on_screen_not_turned_off_by_proximity_2)
+{
+    mir_screen.set_screen_power_mode(
+        MirPowerMode::mir_power_mode_off,
+        PowerStateChangeReason::proximity);
+
+    mir_screen.set_screen_power_mode(
+        MirPowerMode::mir_power_mode_off,
+        PowerStateChangeReason::power_key);
+
+    verify_and_clear_expectations();
+
+    expect_no_reconfiguration();
+    mir_screen.set_screen_power_mode(
+        MirPowerMode::mir_power_mode_on,
+        PowerStateChangeReason::proximity);
+}
+
+TEST_F(AMirScreen, proximity_can_affect_screen_after_keep_display_on)
+{
+    mir_screen.keep_display_on(true);
+
+    expect_screen_is_turned_off();
+    mir_screen.set_screen_power_mode(
+        MirPowerMode::mir_power_mode_off,
+        PowerStateChangeReason::proximity);
+    verify_and_clear_expectations();
+
+    expect_screen_is_turned_on();
+    mir_screen.set_screen_power_mode(
+        MirPowerMode::mir_power_mode_on,
+        PowerStateChangeReason::proximity);
 }
