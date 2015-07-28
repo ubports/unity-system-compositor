@@ -89,116 +89,30 @@ usc::WindowManager::WindowManager(
     std::shared_ptr<mir::shell::DisplayLayout> const& display_layout,
     std::shared_ptr<ms::SessionCoordinator> const& session_coordinator,
     std::shared_ptr<SessionMonitor> const& session_monitor) :
-    focus_controller{focus_controller},
-    display_layout{display_layout},
-    session_coordinator{session_coordinator},
+    mir::shell::SystemCompositorWindowManager{
+        focus_controller,
+        display_layout,
+        session_coordinator},
     session_monitor{session_monitor}
 {
 }
-
-void usc::WindowManager::add_session(std::shared_ptr<ms::Session> const& session)
+void usc::WindowManager::on_session_added(std::shared_ptr<mir::scene::Session> const& session) const
 {
     std::cerr << "Opening session " << session->name() << std::endl;
-
-    focus_controller->set_focus_to(session, {});
 
     auto const usc_session = std::make_shared<UscSession>(session, *focus_controller);
 
     session_monitor->add(usc_session, session->process_id());
 }
 
-void usc::WindowManager::remove_session(std::shared_ptr<ms::Session> const& session)
+void usc::WindowManager::on_session_removed(std::shared_ptr<mir::scene::Session> const& session) const
 {
     std::cerr << "Closing session " << session->name() << std::endl;
-
-    auto const next_session = session_coordinator->successor_of({});
-    if (next_session)
-        focus_controller->set_focus_to(next_session, next_session->default_surface());
-    else
-        focus_controller->set_focus_to(next_session, {});
 
     session_monitor->remove(session);
 }
 
-auto usc::WindowManager::add_surface(
-    std::shared_ptr<ms::Session> const& session,
-    ms::SurfaceCreationParameters const& params,
-    std::function<mf::SurfaceId(std::shared_ptr<ms::Session> const& session, ms::SurfaceCreationParameters const& params)> const& build)
--> mf::SurfaceId
+void usc::WindowManager::on_session_ready(std::shared_ptr<mir::scene::Session> const& session) const
 {
-    mir::graphics::DisplayConfigurationOutputId const output_id_invalid{
-        mir_display_output_id_invalid};
-    auto placed_parameters = params;
-
-    mir::geometry::Rectangle rect{params.top_left, params.size};
-
-    if (params.output_id != output_id_invalid)
-    {
-        display_layout->place_in_output(params.output_id, rect);
-    }
-
-    placed_parameters.top_left = rect.top_left;
-    placed_parameters.size = rect.size;
-
-    auto const result = build(session, placed_parameters);
-    auto const surface = session->surface(result);
-
-    auto const session_ready_observer = std::make_shared<msh::SurfaceReadyObserver>(
-        [this](std::shared_ptr<ms::Session> const& session, std::shared_ptr<ms::Surface> const& surface)
-        {
-            session_monitor->mark_ready(session.get());
-        },
-        session,
-        surface);
-
-    surface->add_observer(session_ready_observer);
-
-    return result;
-}
-
-void usc::WindowManager::modify_surface(
-    std::shared_ptr<ms::Session> const& /*session*/,
-    std::shared_ptr<ms::Surface> const& surface,
-    msh::SurfaceSpecification const& modifications)
-{
-    if (modifications.name.is_set())
-        surface->rename(modifications.name.value());
-}
-
-void usc::WindowManager::remove_surface(
-    std::shared_ptr<ms::Session> const& /*session*/,
-    std::weak_ptr<ms::Surface> const& /*surface*/)
-{
-}
-
-void usc::WindowManager::add_display(mir::geometry::Rectangle const& /*area*/)
-{
-}
-
-void usc::WindowManager::remove_display(mir::geometry::Rectangle const& /*area*/)
-{
-}
-
-bool usc::WindowManager::handle_keyboard_event(MirKeyboardEvent const* /*event*/)
-{
-    return false;
-}
-
-bool usc::WindowManager::handle_touch_event(MirTouchEvent const* /*event*/)
-{
-    return false;
-}
-
-bool usc::WindowManager::handle_pointer_event(MirPointerEvent const* /*event*/)
-{
-    return false;
-}
-
-int usc::WindowManager::set_surface_attribute(
-    std::shared_ptr<ms::Session> const& /*session*/,
-    std::shared_ptr<ms::Surface> const& surface,
-    MirSurfaceAttrib attrib,
-    int value)
-{
-    return surface->configure(attrib, value);
+    session_monitor->mark_ready(session.get());
 }
