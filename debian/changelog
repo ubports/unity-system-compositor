@@ -1,4 +1,4 @@
-unity-system-compositor (0.1.0) UNRELEASED; urgency=medium
+unity-system-compositor (0.1.0+15.10.20150728.1-0ubuntu1) wily; urgency=medium
 
   [ Alexandros Frantzis ]
   * Support different screen timeout values for notifications
@@ -14,7 +14,10 @@ unity-system-compositor (0.1.0) UNRELEASED; urgency=medium
   * Depend on the new xmir package instead of the obsolete
     xserver-xorg-xmir (LP: #1204505)
 
- -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Tue, 28 Jul 2015 15:16:09 +0300
+  [ CI Train Bot ]
+  * New rebuild forced.
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Tue, 28 Jul 2015 18:55:28 +0000
 
 unity-system-compositor (0.0.5+15.10.20150722-0ubuntu1) wily; urgency=medium
 
