@@ -20,6 +20,7 @@
 #define USC_TESTS_ADVANCEABLE_TIMER_H_
 
 #include <mir/time/alarm_factory.h>
+#include "src/clock.h"
 
 #include <vector>
 #include <mutex>
@@ -30,13 +31,17 @@ namespace detail
 class AdvanceableAlarm;
 }
 
-class AdvanceableTimer : public mir::time::AlarmFactory
+class AdvanceableTimer : public mir::time::AlarmFactory, public usc::Clock
 {
 public:
+    // mir::time::AlarmFactory
     std::unique_ptr<mir::time::Alarm> create_alarm(
         std::function<void()> const& callback) override;
     std::unique_ptr<mir::time::Alarm> create_alarm(
         std::shared_ptr<mir::LockableCallback> const& callback) override;
+
+    // usc::Clock
+    mir::time::Timestamp now() const override;
 
     void advance_by(std::chrono::milliseconds advance);
 
@@ -44,8 +49,8 @@ private:
     void register_alarm(std::shared_ptr<detail::AdvanceableAlarm> const& alarm);
     void trigger_alarms();
 
-    std::mutex now_mutex;
-    mir::time::Timestamp now{};
+    mutable std::mutex now_mutex;
+    mir::time::Timestamp now_{};
     std::mutex alarms_mutex;
     std::vector<std::weak_ptr<detail::AdvanceableAlarm>> alarms;
 };

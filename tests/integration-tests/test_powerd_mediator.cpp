@@ -84,6 +84,8 @@ public:
     MOCK_METHOD1(dbus_userAutobrightnessEnable, void(dbus_bool_t enable));
     MOCK_METHOD2(dbus_requestSysState, std::string(char const* name, int state));
     MOCK_METHOD1(dbus_clearSysState, void(char const* cookie));
+    MOCK_METHOD1(dbus_enableProximityHandling, void(char const* name));
+    MOCK_METHOD1(dbus_disableProximityHandling, void(char const* name));
 
     int32_t const dim_brightness = 13;
     int32_t const min_brightness = 5;
@@ -191,6 +193,32 @@ private:
             dbus_connection_send(connection, reply, nullptr);
 
             emit_SysPowerStateChange(0);
+        }
+        else if (dbus_message_is_method_call(message, powerd_service_name, "enableProximityHandling"))
+        {
+            char const* name{nullptr};
+            dbus_message_get_args(
+                message, nullptr,
+                DBUS_TYPE_STRING, &name,
+                DBUS_TYPE_INVALID);
+
+            dbus_enableProximityHandling(name);
+
+            usc::DBusMessageHandle reply{dbus_message_new_method_return(message)};
+            dbus_connection_send(connection, reply, nullptr);
+        }
+        else if (dbus_message_is_method_call(message, powerd_service_name, "disableProximityHandling"))
+        {
+            char const* name{nullptr};
+            dbus_message_get_args(
+                message, nullptr,
+                DBUS_TYPE_STRING, &name,
+                DBUS_TYPE_INVALID);
+
+            dbus_disableProximityHandling(name);
+
+            usc::DBusMessageHandle reply{dbus_message_new_method_return(message)};
+            dbus_connection_send(connection, reply, nullptr);
         }
 
         return DBUS_HANDLER_RESULT_HANDLED;
@@ -462,6 +490,41 @@ TEST_F(APowerdMediator, uses_correct_cookie_when_allowing_suspend)
     mediator->allow_suspend();
 }
 
+TEST_F(APowerdMediator, enables_and_disables_proximity_handling)
+{
+    using namespace testing;
+    auto const proximity_name = "unity-system-compositor";
+
+    InSequence s;
+    EXPECT_CALL(powerd_service, dbus_enableProximityHandling(StrEq(proximity_name)));
+    EXPECT_CALL(powerd_service, dbus_disableProximityHandling(StrEq(proximity_name)));
+
+    mediator->enable_proximity(true);
+    mediator->enable_proximity(false);
+}
+
+TEST_F(APowerdMediator, ignores_requests_for_redundant_proximity_handling)
+{
+    using namespace testing;
+
+    auto const proximity_name = "unity-system-compositor";
+
+    InSequence s;
+    EXPECT_CALL(powerd_service, dbus_enableProximityHandling(StrEq(proximity_name)));
+    EXPECT_CALL(powerd_service, dbus_disableProximityHandling(StrEq(proximity_name)));
+
+    // Should be ignore, proximity already disabled
+    mediator->enable_proximity(false);
+
+    // Should be handled only once
+    mediator->enable_proximity(true);
+    mediator->enable_proximity(true);
+
+    // Should be handled only once
+    mediator->enable_proximity(false);
+    mediator->enable_proximity(false);
+}
+
 namespace
 {
 
@@ -635,6 +698,24 @@ TEST(APowerdMediatorAtStartup, turns_on_backlight_and_disables_suspend)
 
     EXPECT_CALL(powerd_service, dbus_clearSysState(_)).Times(AtMost(1));
     EXPECT_CALL(powerd_service, dbus_setUserBrightness(0)).Times(AtMost(1));
+}
+
+TEST(APowerdMediatorAtStartup, disables_proximity_handling)
+{
+    using namespace testing;
+
+    dbus_bool_t const auto_brightness_supported{TRUE};
+
+    ut::DBusBus bus;
+    NiceMock<PowerdService> powerd_service{
+        bus.address(), auto_brightness_supported, PowerdService::StartNow::yes};
+
+    EXPECT_CALL(powerd_service, dbus_disableProximityHandling(_));
+
+    usc::PowerdMediator mediator{bus.address()};
+    powerd_service.wait_for_initial_setup();
+
+    Mock::VerifyAndClearExpectations(&powerd_service);
 }
 
 TEST(APowerdMediatorAtShutdown, turns_off_backlight)

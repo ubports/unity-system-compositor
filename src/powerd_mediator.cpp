@@ -56,6 +56,7 @@ usc::PowerdMediator::PowerdMediator(std::string const& bus_addr)
       backlight_state{BacklightState::normal},
       auto_brightness_supported_{false},
       auto_brightness_requested{false},
+      proximity_enabled{false},
       sys_state{SysState::unknown}
 {
     connection.add_match(
@@ -197,6 +198,13 @@ int usc::PowerdMediator::max_brightness()
     return max_brightness_;
 }
 
+void usc::PowerdMediator::enable_proximity(bool enable)
+{
+    std::lock_guard<decltype(mutex)> lock{mutex};
+
+    enable_proximity_l(enable, ForceProximity::no);
+}
+
 bool usc::PowerdMediator::is_system_suspended()
 {
     std::lock_guard<decltype(mutex)> lock{mutex};
@@ -290,6 +298,8 @@ void usc::PowerdMediator::init_powerd_state(ForceDisableSuspend force_disable_su
 
     // Powerd may have restarted, re-apply backlight settings
     change_backlight_state(backlight_state, ForceBacklightState::yes);
+
+    enable_proximity_l(false, ForceProximity::yes);
 }
 
 void usc::PowerdMediator::init_brightness_params()
@@ -360,6 +370,22 @@ void usc::PowerdMediator::change_backlight_state(
                DBUS_TYPE_INT32, &b,
                DBUS_TYPE_INVALID);
     }
+}
+
+void usc::PowerdMediator::enable_proximity_l(
+    bool enable, ForceProximity force_proximity)
+{
+    if (proximity_enabled == enable && force_proximity == ForceProximity::no)
+        return;
+
+    auto const name = "unity-system-compositor";
+    auto const request = enable ? "enableProximityHandling" :
+                                  "disableProximityHandling";
+    invoke_with_reply(request,
+                      DBUS_TYPE_STRING, &name,
+                      DBUS_TYPE_INVALID);
+
+    proximity_enabled = enable;
 }
 
 bool usc::PowerdMediator::is_valid_brightness(int brightness)
