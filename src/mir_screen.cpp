@@ -127,11 +127,9 @@ void usc::MirScreen::set_inactivity_timeouts(int raw_poweroff_timeout, int raw_d
     std::chrono::seconds the_power_off_timeout{raw_poweroff_timeout};
     std::chrono::seconds the_dimming_timeout{raw_dimmer_timeout};
 
-    if (raw_poweroff_timeout >= 0)
-        inactivity_timeouts.power_off_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(the_power_off_timeout);
+    inactivity_timeouts.power_off_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(the_power_off_timeout);
 
-    if (raw_dimmer_timeout >= 0)
-        inactivity_timeouts.dimming_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(the_dimming_timeout);
+    inactivity_timeouts.dimming_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(the_dimming_timeout);
 
     cancel_timers_l(PowerStateChangeReason::inactivity);
     reset_timers_l(PowerStateChangeReason::inactivity);
@@ -245,10 +243,12 @@ void usc::MirScreen::reset_timers_ignoring_power_mode_l(PowerStateChangeReason r
     if (!restart_timers || reason == PowerStateChangeReason::proximity)
         return;
 
+    auto const timeouts_inactivity = timeouts_for(PowerStateChangeReason::inactivity);
     auto const timeouts = timeouts_for(reason);
     auto const now = clock->now();
 
-    if (timeouts.power_off_timeout.count() > 0)
+    if (timeouts_inactivity.power_off_timeout.count() > 0 &&
+        timeouts.power_off_timeout.count() > 0)
     {
         auto const new_next_power_off = now + timeouts.power_off_timeout;
         if (new_next_power_off > next_power_off)
@@ -258,7 +258,8 @@ void usc::MirScreen::reset_timers_ignoring_power_mode_l(PowerStateChangeReason r
         }
     }
 
-    if (timeouts.dimming_timeout.count() > 0)
+    if (timeouts_inactivity.dimming_timeout.count() > 0 &&
+        timeouts.dimming_timeout.count() > 0)
     {
         auto const new_next_dimming = now + timeouts.dimming_timeout;
         if (new_next_dimming > next_dimming)
