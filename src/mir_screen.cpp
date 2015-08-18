@@ -245,17 +245,10 @@ void usc::MirScreen::reset_timers_ignoring_power_mode_l(PowerStateChangeReason r
     if (!restart_timers || reason == PowerStateChangeReason::proximity)
         return;
 
-    auto const timeouts_inactivity = timeouts_for(PowerStateChangeReason::inactivity);
-    auto const ignore_inactivity =
-        reason == PowerStateChangeReason::notification &&
-        current_power_mode != MirPowerMode::mir_power_mode_on;
-
     auto const timeouts = timeouts_for(reason);
     auto const now = clock->now();
 
-    if ((ignore_inactivity ||
-         timeouts_inactivity.power_off_timeout.count() > 0) &&
-        timeouts.power_off_timeout.count() > 0)
+    if (timeouts.power_off_timeout.count() > 0)
     {
         auto const new_next_power_off = now + timeouts.power_off_timeout;
         if (new_next_power_off > next_power_off)
@@ -267,12 +260,10 @@ void usc::MirScreen::reset_timers_ignoring_power_mode_l(PowerStateChangeReason r
     else
     {
         power_off_alarm->cancel();
-        next_power_off = {};
+        next_power_off = mir::time::Timestamp::max();
     }
 
-    if ((ignore_inactivity ||
-         timeouts_inactivity.dimming_timeout.count() > 0) &&
-        timeouts.dimming_timeout.count() > 0)
+    if (timeouts.dimming_timeout.count() > 0)
     {
         auto const new_next_dimming = now + timeouts.dimming_timeout;
         if (new_next_dimming > next_dimming)
@@ -284,7 +275,7 @@ void usc::MirScreen::reset_timers_ignoring_power_mode_l(PowerStateChangeReason r
     else
     {
         dimmer_alarm->cancel();
-        next_dimming = {};
+        next_dimming = mir::time::Timestamp::max();
     }
 }
 
