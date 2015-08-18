@@ -262,6 +262,11 @@ void usc::MirScreen::reset_timers_ignoring_power_mode_l(PowerStateChangeReason r
             next_power_off = new_next_power_off;
         }
     }
+    else
+    {
+        power_off_alarm->cancel();
+        next_power_off = {};
+    }
 
     if ((ignore_inactivity ||
          timeouts_inactivity.dimming_timeout.count() > 0) &&
@@ -273,6 +278,11 @@ void usc::MirScreen::reset_timers_ignoring_power_mode_l(PowerStateChangeReason r
             dimmer_alarm->reschedule_in(timeouts.dimming_timeout);
             next_dimming = new_next_dimming;
         }
+    }
+    else
+    {
+        dimmer_alarm->cancel();
+        next_dimming = {};
     }
 }
 

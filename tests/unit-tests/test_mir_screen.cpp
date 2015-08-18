@@ -774,3 +774,19 @@ TEST_F(AMirScreen, notification_timeout_is_respected_when_screen_is_off_if_inact
     timer->advance_by(notification_power_off_timeout);
     verify_and_clear_expectations();
 }
+
+TEST_F(AMirScreen, keep_display_on_temporarily_after_notification_keeps_display_on_forever_if_inactivity_timeouts_are_nonpositive)
+{
+    std::chrono::hours const ten_hours{10};
+
+    mir_screen.set_inactivity_timeouts(-1,-1);
+    turn_screen_off();
+    
+    receive_notification();
+    verify_and_clear_expectations();
+
+    expect_no_reconfiguration();
+    mir_screen.keep_display_on_temporarily();
+    timer->advance_by(ten_hours);
+    verify_and_clear_expectations();
+}
