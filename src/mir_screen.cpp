@@ -244,10 +244,15 @@ void usc::MirScreen::reset_timers_ignoring_power_mode_l(PowerStateChangeReason r
         return;
 
     auto const timeouts_inactivity = timeouts_for(PowerStateChangeReason::inactivity);
+    auto const ignore_inactivity =
+        reason == PowerStateChangeReason::notification &&
+        current_power_mode != MirPowerMode::mir_power_mode_on;
+
     auto const timeouts = timeouts_for(reason);
     auto const now = clock->now();
 
-    if (timeouts_inactivity.power_off_timeout.count() > 0 &&
+    if ((ignore_inactivity ||
+         timeouts_inactivity.power_off_timeout.count() > 0) &&
         timeouts.power_off_timeout.count() > 0)
     {
         auto const new_next_power_off = now + timeouts.power_off_timeout;
@@ -258,7 +263,8 @@ void usc::MirScreen::reset_timers_ignoring_power_mode_l(PowerStateChangeReason r
         }
     }
 
-    if (timeouts_inactivity.dimming_timeout.count() > 0 &&
+    if ((ignore_inactivity ||
+         timeouts_inactivity.dimming_timeout.count() > 0) &&
         timeouts.dimming_timeout.count() > 0)
     {
         auto const new_next_dimming = now + timeouts.dimming_timeout;

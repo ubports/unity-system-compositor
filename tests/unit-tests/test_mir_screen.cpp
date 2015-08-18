@@ -762,3 +762,15 @@ TEST_F(AMirScreen, notification_timeout_is_ignored_if_inactivity_timeouts_are_no
     timer->advance_by(ten_hours);
     verify_and_clear_expectations();
 }
+
+TEST_F(AMirScreen, notification_timeout_is_respected_when_screen_is_off_if_inactivity_timeouts_are_nonpositive)
+{
+    mir_screen.set_inactivity_timeouts(-1,-1);
+    turn_screen_off();
+    receive_notification();
+    verify_and_clear_expectations();
+
+    expect_screen_is_turned_off();
+    timer->advance_by(notification_power_off_timeout);
+    verify_and_clear_expectations();
+}
