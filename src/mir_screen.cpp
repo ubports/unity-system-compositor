@@ -127,9 +127,11 @@ void usc::MirScreen::set_inactivity_timeouts(int raw_poweroff_timeout, int raw_d
     std::chrono::seconds the_power_off_timeout{raw_poweroff_timeout};
     std::chrono::seconds the_dimming_timeout{raw_dimmer_timeout};
 
-    inactivity_timeouts.power_off_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(the_power_off_timeout);
+    if (raw_poweroff_timeout >= 0)
+        inactivity_timeouts.power_off_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(the_power_off_timeout);
 
-    inactivity_timeouts.dimming_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(the_dimming_timeout);
+    if (raw_dimmer_timeout >= 0)
+        inactivity_timeouts.dimming_timeout = std::chrono::duration_cast<std::chrono::milliseconds>(the_dimming_timeout);
 
     cancel_timers_l(PowerStateChangeReason::inactivity);
     reset_timers_l(PowerStateChangeReason::inactivity);
