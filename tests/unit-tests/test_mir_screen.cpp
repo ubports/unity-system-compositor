@@ -730,3 +730,52 @@ TEST_F(AMirScreen, proximity_can_affect_screen_after_keep_display_on)
         MirPowerMode::mir_power_mode_on,
         PowerStateChangeReason::proximity);
 }
+
+TEST_F(AMirScreen, disables_active_timeout_when_setting_zero_inactivity_timeouts)
+{
+    std::chrono::hours const ten_hours{10};
+
+    expect_no_reconfiguration();
+    mir_screen.set_inactivity_timeouts(0, 0);
+    timer->advance_by(ten_hours);
+    verify_and_clear_expectations();
+}
+
+TEST_F(AMirScreen, notification_timeout_is_ignored_if_inactivity_timeouts_are_zero)
+{
+    std::chrono::hours const ten_hours{10};
+
+    expect_no_reconfiguration();
+    mir_screen.set_inactivity_timeouts(0, 0);
+    receive_notification();
+    timer->advance_by(ten_hours);
+    verify_and_clear_expectations();
+}
+
+TEST_F(AMirScreen, notification_timeout_is_respected_when_screen_is_off_if_inactivity_timeouts_are_zero)
+{
+    mir_screen.set_inactivity_timeouts(0, 0);
+    turn_screen_off();
+    receive_notification();
+    verify_and_clear_expectations();
+
+    expect_screen_is_turned_off();
+    timer->advance_by(notification_power_off_timeout);
+    verify_and_clear_expectations();
+}
+
+TEST_F(AMirScreen, keep_display_on_temporarily_after_notification_keeps_display_on_forever_if_inactivity_timeouts_are_zero)
+{
+    std::chrono::hours const ten_hours{10};
+
+    mir_screen.set_inactivity_timeouts(0, 0);
+    turn_screen_off();
+    
+    receive_notification();
+    verify_and_clear_expectations();
+
+    expect_no_reconfiguration();
+    mir_screen.keep_display_on_temporarily();
+    timer->advance_by(ten_hours);
+    verify_and_clear_expectations();
+}
