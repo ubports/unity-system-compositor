@@ -780,7 +780,7 @@ TEST_F(AMirScreen, keep_display_on_temporarily_after_notification_keeps_display_
     verify_and_clear_expectations();
 }
 
-TEST_F(AMirScreen, proximity_can_turn_on_screen_after_power_off_timeout)
+TEST_F(AMirScreen, proximity_can_turn_on_screen_after_power_off_timeout_occurs_when_screen_is_off)
 {
     mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
                                      PowerStateChangeReason::power_key);
@@ -800,15 +800,36 @@ TEST_F(AMirScreen, proximity_can_turn_on_screen_after_power_off_timeout)
     timer->advance_by(power_off_timeout);
 }
 
-TEST_F(AMirScreen, proximity_cannot_turn_on_screen_if_power_key_was_used)
+TEST_F(AMirScreen, proximity_can_turn_on_screen_after_power_off_timeout_when_screen_is_on)
+{
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                     PowerStateChangeReason::power_key);
+
+    expect_no_reconfiguration();
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                     PowerStateChangeReason::proximity);
+    verify_and_clear_expectations();
+
+    expect_screen_is_turned_off();
+    timer->advance_by(power_off_timeout);
+    verify_and_clear_expectations();
+
+    expect_screen_is_turned_on();
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                     PowerStateChangeReason::proximity);
+    verify_and_clear_expectations();
+
+    expect_screen_is_turned_off();
+    timer->advance_by(notification_power_off_timeout);
+}
+
+TEST_F(AMirScreen, proximity_cannot_turn_on_screen_if_power_key_turned_it_off)
 {
     mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
                                      PowerStateChangeReason::power_key);
 
     mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_off,
                                      PowerStateChangeReason::power_key);
-
-    //timer->advance_by(power_off_timeout);
 
     expect_no_reconfiguration();
     mir_screen.set_screen_power_mode(
