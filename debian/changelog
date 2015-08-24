@@ -15,6 +15,18 @@ unity-system-compositor (0.1.1-0ubuntu1) UNRELEASED; urgency=medium
 
  -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Mon, 24 Aug 2015 10:17:46 +0300
 
+unity-system-compositor (0.1.0+15.10.20150817-0ubuntu1) wily; urgency=medium
+
+  * 
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Mon, 17 Aug 2015 19:28:40 +0000
+
+unity-system-compositor (0.1.0+15.10.20150728.1-0ubuntu2~gcc5.1) wily; urgency=medium
+
+  * Build using GCC 5.
+
+ -- Matthias Klose <doko@ubuntu.com>  Wed, 29 Jul 2015 18:20:18 +0200
+
 unity-system-compositor (0.1.0+15.10.20150728.1-0ubuntu1) wily; urgency=medium
 
   [ Alexandros Frantzis ]
