@@ -183,7 +183,7 @@ void usc::MirScreen::configure_display_l(MirPowerMode mode, PowerStateChangeReas
 
     allow_proximity_to_turn_on_screen =
         mode == mir_power_mode_off &&
-        reason == PowerStateChangeReason::proximity;
+        reason != PowerStateChangeReason::power_key;
 
     std::shared_ptr<mg::DisplayConfiguration> displayConfig = display->configuration();
 
