@@ -1,3 +1,20 @@
+unity-system-compositor (0.1.1-0ubuntu1) UNRELEASED; urgency=medium
+
+  [ Alberto Aguirre ]
+  * Fix "Proximity does not turn screen on during a call" (LP: #1483127)
+
+  [ Alexandros Frantzis ]
+  * Work around EGL bug in ubuntu-touch emulator that causes the spinner
+    to fail
+  * Fix "Screen fades to black while typing a message (after wake-up from
+    notification)" (LP: #1485737)
+
+  [ Robert Ancell ]
+  * Use [Seat:*] section for LightDM configuration instead of deprecated
+    [SeatDefaults]
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Mon, 24 Aug 2015 10:17:46 +0300
+
 unity-system-compositor (0.1.0+15.10.20150817-0ubuntu1) wily; urgency=medium
 
   * 
