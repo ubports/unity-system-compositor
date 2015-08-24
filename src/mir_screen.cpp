@@ -175,7 +175,7 @@ void usc::MirScreen::configure_display_l(MirPowerMode mode, PowerStateChangeReas
     if (reason != PowerStateChangeReason::proximity)
     {
         screen_hardware->enable_proximity(false);
-        allow_proximity_to_turn_on_screen = false;
+        allow_proximity_to_turn_on_screen = reason != PowerStateChangeReason::power_key;
     }
 
     if (current_power_mode == mode)
@@ -226,7 +226,11 @@ void usc::MirScreen::configure_display_l(MirPowerMode mode, PowerStateChangeReas
 void usc::MirScreen::cancel_timers_l(PowerStateChangeReason reason)
 {
     if (reason == PowerStateChangeReason::proximity)
+    {
+        next_power_off = {};
+        next_dimming = {};
         return;
+    }
 
     power_off_alarm->cancel();
     dimmer_alarm->cancel();
@@ -242,7 +246,7 @@ void usc::MirScreen::reset_timers_l(PowerStateChangeReason reason)
 
 void usc::MirScreen::reset_timers_ignoring_power_mode_l(PowerStateChangeReason reason)
 {
-    if (!restart_timers || reason == PowerStateChangeReason::proximity)
+    if (!restart_timers)
         return;
 
     auto const timeouts = timeouts_for(reason);
@@ -289,7 +293,7 @@ void usc::MirScreen::enable_inactivity_timers_l(bool enable)
 
 usc::MirScreen::Timeouts usc::MirScreen::timeouts_for(PowerStateChangeReason reason)
 {
-    if (reason == PowerStateChangeReason::notification)
+    if (reason == PowerStateChangeReason::notification || reason == PowerStateChangeReason::proximity)
         return notification_timeouts;
     else
         return inactivity_timeouts;
