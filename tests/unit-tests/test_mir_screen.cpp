@@ -800,7 +800,7 @@ TEST_F(AMirScreen, proximity_can_turn_on_screen_after_power_off_timeout_occurs_w
     timer->advance_by(power_off_timeout);
 }
 
-TEST_F(AMirScreen, proximity_can_turn_on_screen_after_power_off_timeout_when_screen_is_on)
+TEST_F(AMirScreen, proximity_can_turn_on_screen_after_power_off_timeout_occurs_when_screen_is_on)
 {
     mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
                                      PowerStateChangeReason::power_key);
