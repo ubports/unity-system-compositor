@@ -19,6 +19,8 @@
 #include "unity_screen_service.h"
 #include "screen.h"
 #include "dbus_message_handle.h"
+#include "dbus_connection_thread.h"
+#include "dbus_connection_handle.h"
 #include "thread_name.h"
 #include "scoped_dbus_error.h"
 
@@ -34,13 +36,13 @@ char const* const dbus_screen_service_name = "com.canonical.Unity.Screen";
 }
 
 usc::UnityScreenService::UnityScreenService(
-    std::string const& bus_addr,
+    std::shared_ptr<usc::DBusConnectionThread> const& dbus,
     std::shared_ptr<usc::Screen> const& screen)
-    : connection{bus_addr.c_str()},
-      screen{screen},
-      dbus_event_loop{connection},
+    : screen{screen},
+      dbus{dbus},
       request_id{0}
 {
+    auto const& connection = dbus->connection();
     connection.request_name(dbus_screen_service_name);
     connection.add_match(
         "type='signal',"
@@ -54,24 +56,6 @@ usc::UnityScreenService::UnityScreenService(
         {
             dbus_emit_DisplayPowerStateChange(mode, reason);
         });
-
-    std::promise<void> event_loop_started;
-    auto event_loop_started_future = event_loop_started.get_future();
-
-    dbus_loop_thread = std::thread(
-        [this,&event_loop_started]
-        {
-            usc::set_thread_name("USC/DBusScreen");
-            dbus_event_loop.run(event_loop_started);
-        });
-
-    event_loop_started_future.wait();
-}
-
-usc::UnityScreenService::~UnityScreenService()
-{
-    dbus_event_loop.stop();
-    dbus_loop_thread.join();
 }
 
 ::DBusHandlerResult usc::UnityScreenService::handle_dbus_message_thunk(
@@ -349,7 +333,7 @@ void usc::UnityScreenService::dbus_emit_DisplayPowerStateChange(
     int32_t const power_state = (power_mode == MirPowerMode::mir_power_mode_off) ? 0 : 1;
     int32_t const reason_int = static_cast<int32_t>(reason);
 
-    dbus_event_loop.enqueue(
+    dbus->loop().enqueue(
         [this, power_state, reason_int]
         {
             DBusMessageHandle signal{
@@ -361,6 +345,6 @@ void usc::UnityScreenService::dbus_emit_DisplayPowerStateChange(
                 DBUS_TYPE_INT32, &reason_int,
                 DBUS_TYPE_INVALID};
 
-            dbus_connection_send(connection, signal, nullptr);
+            dbus_connection_send(dbus->connection(), signal, nullptr);
         });
 }
