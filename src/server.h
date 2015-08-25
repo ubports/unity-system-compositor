@@ -42,6 +42,7 @@ class DMConnection;
 class Screen;
 class ScreenHardware;
 class UnityScreenService;
+class DBusConnectionThread;
 class Clock;
 
 class Server : private mir::Server
@@ -64,6 +65,7 @@ public:
     virtual std::shared_ptr<mir::input::EventFilter> the_screen_event_handler();
     virtual std::shared_ptr<ScreenHardware> the_screen_hardware();
     virtual std::shared_ptr<UnityScreenService> the_unity_screen_service();
+    virtual std::shared_ptr<DBusConnectionThread> the_dbus_connection_thread();
     virtual std::shared_ptr<Clock> the_clock();
 
     bool show_version()
@@ -160,6 +162,7 @@ private:
     mir::CachedPtr<Screen> screen;
     mir::CachedPtr<mir::input::EventFilter> screen_event_handler;
     mir::CachedPtr<ScreenHardware> screen_hardware;
+    mir::CachedPtr<DBusConnectionThread> dbus_thread;
     mir::CachedPtr<UnityScreenService> unity_screen_service;
     mir::CachedPtr<Clock> clock;
 };

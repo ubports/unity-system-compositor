@@ -17,6 +17,7 @@
 set(USC_SRCS
   asio_dm_connection.cpp
   dbus_connection_handle.cpp
+  dbus_connection_thread.cpp
   dbus_event_loop.cpp
   dbus_message_handle.cpp
   external_spinner.cpp

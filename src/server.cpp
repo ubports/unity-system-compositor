@@ -25,6 +25,7 @@
 #include "screen_event_handler.h"
 #include "powerd_mediator.h"
 #include "unity_screen_service.h"
+#include "dbus_connection_thread.h"
 #include "steady_clock.h"
 
 #include <mir/input/cursor_listener.h>
@@ -273,13 +274,22 @@ std::shared_ptr<usc::ScreenHardware> usc::Server::the_screen_hardware()
         });
 }
 
+std::shared_ptr<usc::DBusConnectionThread> usc::Server::the_dbus_connection_thread()
+{
+    return dbus_thread(
+        [this]
+        {
+            return std::make_shared<DBusConnectionThread>(dbus_bus_address());
+        });
+}
+
 std::shared_ptr<usc::UnityScreenService> usc::Server::the_unity_screen_service()
 {
     return unity_screen_service(
         [this]
         {
             return std::make_shared<UnityScreenService>(
-                    dbus_bus_address(),
+                    the_dbus_connection_thread(),
                     the_screen());
         });
 }
