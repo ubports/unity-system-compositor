@@ -44,8 +44,6 @@ public:
         std::shared_ptr<usc::Screen> const& screen);
 
 private:
-    void dbus_loop();
-    void stop_loop();
     static ::DBusHandlerResult handle_dbus_message_thunk(
         DBusConnection* connection, DBusMessage* message, void* user_data);
     ::DBusHandlerResult handle_dbus_message(
