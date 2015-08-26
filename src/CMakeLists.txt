@@ -17,7 +17,6 @@
 set(USC_SRCS
   asio_dm_connection.cpp
   dbus_connection_handle.cpp
-  dbus_connection_thread.cpp
   dbus_event_loop.cpp
   dbus_message_handle.cpp
   external_spinner.cpp
@@ -29,6 +28,9 @@ set(USC_SRCS
   steady_clock.cpp
   system_compositor.cpp
   thread_name.cpp
+  dbus_connection_thread.cpp
+  unity_input_service.cpp
+  unity_input_service_introspection.h
   unity_screen_service.cpp
   unity_screen_service_introspection.h
   window_manager.cpp
@@ -39,6 +41,14 @@ add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unity_screen_service_introspection.h
   COMMAND sh generate_header_with_string_from_file.sh ${CMAKE_CURRENT_BINARY_DIR}/unity_screen_service_introspection.h unity_screen_service_introspection com.canonical.Unity.Screen.xml
   DEPENDS com.canonical.Unity.Screen.xml generate_header_with_string_from_file.sh
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  VERBATIM
+)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unity_input_service_introspection.h
+  COMMAND sh generate_header_with_string_from_file.sh ${CMAKE_CURRENT_BINARY_DIR}/unity_input_service_introspection.h unity_input_service_introspection com.canonical.Unity.Input.xml
+  DEPENDS com.canonical.Unity.Input.xml generate_header_with_string_from_file.sh
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   VERBATIM
 )
@@ -86,9 +96,14 @@ install(TARGETS unity-system-compositor
 )
 
 # Install data files
-install(FILES com.canonical.Unity.Screen.conf
+install(FILES 
+    com.canonical.Unity.Screen.conf
+    com.canonical.Unity.Input.conf
   DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/dbus-1/system.d
 )
-install(FILES com.canonical.Unity.Screen.xml
+install(FILES
+    com.canonical.Unity.Screen.xml
+    com.canonical.Unity.Input.xml
   DESTINATION ${CMAKE_INSTALL_DATADIR}/dbus-1/interfaces
 )
+
