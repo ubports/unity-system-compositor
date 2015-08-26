@@ -25,6 +25,7 @@
 #include "screen_event_handler.h"
 #include "powerd_mediator.h"
 #include "unity_screen_service.h"
+#include "display_configuration_policy.h"
 #include "steady_clock.h"
 
 #include <mir/input/cursor_listener.h>
@@ -118,6 +119,7 @@ usc::Server::Server(int argc, char** argv)
     add_configuration_option("shutdown-timeout", "The time in milli-seconds the power key must be held to initiate a clean system shutdown",  mir::OptionType::integer);
     add_configuration_option("power-key-ignore-timeout", "The time in milli-seconds the power key must be held to ignore - must be less than shutdown-timeout",  mir::OptionType::integer);
     add_configuration_option("disable-inactivity-policy", "Disables handling user inactivity and power key",  mir::OptionType::boolean);
+    add_display_configuration_options_to(*this);
     add_configuration_option("notification-display-off-timeout", "The time in seconds before the screen is turned off after a notification arrives",  mir::OptionType::integer);
     add_configuration_option("notification-display-dim-timeout", "The time in seconds before the screen is dimmed after a notification arrives",  mir::OptionType::integer);
 
