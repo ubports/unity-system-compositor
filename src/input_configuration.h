@@ -17,6 +17,8 @@
 #ifndef USC_INPUT_CONFIGURATION_H_
 #define USC_INPUT_CONFIGURATION_H_
 
+#include <cstdint>
+
 namespace usc
 {
 class InputConfiguration

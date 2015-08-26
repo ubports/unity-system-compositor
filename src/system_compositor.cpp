@@ -122,6 +122,7 @@ void usc::SystemCompositor::run()
                 composite_filter->append(screen_event_handler);
 
                 unity_screen_service = server->the_unity_screen_service();
+                unity_input_service = server->the_unity_input_service();
             }
         });
 

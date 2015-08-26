@@ -21,6 +21,7 @@ set(USC_SRCS
   dbus_message_handle.cpp
   external_spinner.cpp
   mir_screen.cpp
+  mir_input_configuration.cpp
   powerd_mediator.cpp
   screen_event_handler.cpp
   server.cpp
