@@ -118,9 +118,10 @@ public:
 
     ut::DBusAsyncReplyVoid request(char const* requestName, bool value)
     {
+        dbus_bool_t copied = value;
         return invoke_with_reply<ut::DBusAsyncReplyVoid>(
             unity_input_interface, requestName,
-            DBUS_TYPE_BOOLEAN, &value,
+            DBUS_TYPE_BOOLEAN, &copied,
             DBUS_TYPE_INVALID);
     }
 

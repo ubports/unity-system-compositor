@@ -54,7 +54,7 @@ usc::UnityInputService::UnityInputService(
 void usc::UnityInputService::handle_message(DBusMessage* message, void (usc::InputConfiguration::* method)(bool))
 {
     ScopedDBusError args_error;
-    bool flag{true};
+    dbus_bool_t flag{true};
     dbus_message_get_args(
         message, &args_error, DBUS_TYPE_BOOLEAN, &flag, DBUS_TYPE_INVALID);
 
