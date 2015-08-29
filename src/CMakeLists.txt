@@ -99,8 +99,7 @@ install(TARGETS unity-system-compositor
 
 # Install data files
 install(FILES 
-    com.canonical.Unity.Screen.conf
-    com.canonical.Unity.Input.conf
+    com.canonical.Unity.conf
   DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/dbus-1/system.d
 )
 install(FILES
