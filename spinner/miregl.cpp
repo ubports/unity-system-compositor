@@ -132,7 +132,6 @@ MirEglApp::MirEglApp(MirConnection* const connection, MirPixelFormat pixel_forma
         {
             EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
             EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-            EGL_COLOR_BUFFER_TYPE, EGL_RGB_BUFFER,
             EGL_BUFFER_SIZE, (EGLint) bpp,
             EGL_NONE
         };
