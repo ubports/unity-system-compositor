@@ -39,6 +39,7 @@ class Spinner;
 class ScreenEventHandler;
 class Screen;
 class UnityScreenService;
+class UnityInputService;
 
 class SystemCompositor
 {
@@ -53,6 +54,7 @@ private:
     std::shared_ptr<Screen> screen;
     std::shared_ptr<mir::input::EventFilter> screen_event_handler;
     std::shared_ptr<UnityScreenService> unity_screen_service;
+    std::shared_ptr<UnityInputService> unity_input_service;
 };
 
 }
