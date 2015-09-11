@@ -1,4 +1,14 @@
-unity-system-compositor (0.1.1-0ubuntu1) UNRELEASED; urgency=medium
+unity-system-compositor (0.1.1+15.10.20150904-0ubuntu1) wily; urgency=medium
+
+  [ Michal Sawicz ]
+  * Rebuild to resync wily and vivid
+
+  [ CI Train Bot ]
+  * No-change rebuild.
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Fri, 04 Sep 2015 07:31:34 +0000
+
+unity-system-compositor (0.1.1+15.10.20150902-0ubuntu1) wily; urgency=medium
 
   [ Alberto Aguirre ]
   * Fix "Proximity does not turn screen on during a call" (LP: #1483127)
@@ -13,7 +23,30 @@ unity-system-compositor (0.1.1-0ubuntu1) UNRELEASED; urgency=medium
   * Use [Seat:*] section for LightDM configuration instead of deprecated
     [SeatDefaults]
 
- -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Mon, 24 Aug 2015 10:17:46 +0300
+  [ CI Train Bot ]
+  * No-change rebuild.
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Wed, 02 Sep 2015 12:31:35 +0000
+
+unity-system-compositor (0.1.1+15.04.20150824.1-0ubuntu1) vivid; urgency=medium
+
+  [ Alberto Aguirre ]
+  * Fix "Proximity does not turn screen on during a call" (LP: #1483127)
+
+  [ Alexandros Frantzis ]
+  * Work around EGL bug in ubuntu-touch emulator that causes the spinner
+    to fail
+  * Fix "Screen fades to black while typing a message (after wake-up from
+    notification)" (LP: #1485737)
+
+  [ Robert Ancell ]
+  * Use [Seat:*] section for LightDM configuration instead of deprecated
+    [SeatDefaults]
+
+  [ CI Train Bot ]
+  * No-change rebuild.
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Mon, 24 Aug 2015 19:23:43 +0000
 
 unity-system-compositor (0.1.0+15.10.20150817-0ubuntu1) wily; urgency=medium
 
