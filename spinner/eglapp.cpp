@@ -200,7 +200,7 @@ std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv
 
     MirConnection* const connection{mir_connect_sync(mir_socket, appname)};
     if (!mir_connection_is_valid(connection))
-        throw std::runtime_error("Can't get connection");
+        throw std::runtime_error(mir_connection_get_error_message(connection));
 
     auto const pixel_format = select_pixel_format(connection);
     surfaceparm.pixel_format = pixel_format;

@@ -19,14 +19,12 @@
 #ifndef USC_UNITY_SCREEN_SERVICE_H_
 #define USC_UNITY_SCREEN_SERVICE_H_
 
-#include "dbus_event_loop.h"
 #include "dbus_connection_handle.h"
 
 #include <mir_toolkit/common.h>
 
 #include <cstdint>
 #include <memory>
-#include <thread>
 #include <atomic>
 #include <mutex>
 #include <unordered_map>
@@ -36,19 +34,16 @@ enum class PowerStateChangeReason;
 namespace usc
 {
 class Screen;
-class WorkerThread;
+class DBusConnectionThread;
 
 class UnityScreenService
 {
 public:
     UnityScreenService(
-        std::string const& bus_addr,
+        std::shared_ptr<usc::DBusConnectionThread> const& connection,
         std::shared_ptr<usc::Screen> const& screen);
-    ~UnityScreenService();
 
 private:
-    void dbus_loop();
-    void stop_loop();
     static ::DBusHandlerResult handle_dbus_message_thunk(
         DBusConnection* connection, DBusMessage* message, void* user_data);
     ::DBusHandlerResult handle_dbus_message(
@@ -68,11 +63,9 @@ private:
     void dbus_emit_DisplayPowerStateChange(
         MirPowerMode power_mode, PowerStateChangeReason reason);
 
-    DBusConnectionHandle const connection;
     std::shared_ptr<usc::Screen> const screen;
+    std::shared_ptr<DBusConnectionThread> const dbus;
 
-    DBusEventLoop dbus_event_loop;
-    std::thread dbus_loop_thread;
     std::mutex keep_display_on_mutex;
     std::unordered_multimap<std::string,int32_t> keep_display_on_ids;
     int32_t request_id;

@@ -22,9 +22,13 @@
 #include "session_switcher.h"
 #include "window_manager.h"
 #include "mir_screen.h"
+#include "mir_input_configuration.h"
 #include "screen_event_handler.h"
 #include "powerd_mediator.h"
 #include "unity_screen_service.h"
+#include "unity_input_service.h"
+#include "dbus_connection_thread.h"
+#include "display_configuration_policy.h"
 #include "steady_clock.h"
 
 #include <mir/input/cursor_listener.h>
@@ -118,6 +122,7 @@ usc::Server::Server(int argc, char** argv)
     add_configuration_option("shutdown-timeout", "The time in milli-seconds the power key must be held to initiate a clean system shutdown",  mir::OptionType::integer);
     add_configuration_option("power-key-ignore-timeout", "The time in milli-seconds the power key must be held to ignore - must be less than shutdown-timeout",  mir::OptionType::integer);
     add_configuration_option("disable-inactivity-policy", "Disables handling user inactivity and power key",  mir::OptionType::boolean);
+    add_display_configuration_options_to(*this);
     add_configuration_option("notification-display-off-timeout", "The time in seconds before the screen is turned off after a notification arrives",  mir::OptionType::integer);
     add_configuration_option("notification-display-dim-timeout", "The time in seconds before the screen is dimmed after a notification arrives",  mir::OptionType::integer);
 
@@ -229,6 +234,15 @@ std::shared_ptr<usc::DMConnection> usc::Server::the_dm_connection()
         });
 }
 
+std::shared_ptr<usc::InputConfiguration> usc::Server::the_input_configuration()
+{
+    return input_configuration(
+        [this]
+        {
+            return std::make_shared<MirInputConfiguration>();
+        });
+}
+
 std::shared_ptr<usc::Screen> usc::Server::the_screen()
 {
     return screen(
@@ -273,14 +287,34 @@ std::shared_ptr<usc::ScreenHardware> usc::Server::the_screen_hardware()
         });
 }
 
+std::shared_ptr<usc::DBusConnectionThread> usc::Server::the_dbus_connection_thread()
+{
+    return dbus_thread(
+        [this]
+        {
+            return std::make_shared<DBusConnectionThread>(dbus_bus_address());
+        });
+}
+
 std::shared_ptr<usc::UnityScreenService> usc::Server::the_unity_screen_service()
 {
     return unity_screen_service(
         [this]
         {
             return std::make_shared<UnityScreenService>(
-                    dbus_bus_address(),
+                    the_dbus_connection_thread(),
                     the_screen());
+        });
+}
+
+std::shared_ptr<usc::UnityInputService> usc::Server::the_unity_input_service()
+{
+    return unity_input_service(
+        [this]
+        {
+            return std::make_shared<UnityInputService>(
+                    the_dbus_connection_thread(),
+                    the_input_configuration());
         });
 }
 
