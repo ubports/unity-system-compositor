@@ -42,6 +42,9 @@ class DMConnection;
 class Screen;
 class ScreenHardware;
 class UnityScreenService;
+class InputConfiguration;
+class UnityInputService;
+class DBusConnectionThread;
 class Clock;
 
 class Server : private mir::Server
@@ -61,9 +64,12 @@ public:
     virtual std::shared_ptr<DMMessageHandler> the_dm_message_handler();
     virtual std::shared_ptr<DMConnection> the_dm_connection();
     virtual std::shared_ptr<Screen> the_screen();
+    virtual std::shared_ptr<InputConfiguration> the_input_configuration();
     virtual std::shared_ptr<mir::input::EventFilter> the_screen_event_handler();
     virtual std::shared_ptr<ScreenHardware> the_screen_hardware();
     virtual std::shared_ptr<UnityScreenService> the_unity_screen_service();
+    virtual std::shared_ptr<UnityInputService> the_unity_input_service();
+    virtual std::shared_ptr<DBusConnectionThread> the_dbus_connection_thread();
     virtual std::shared_ptr<Clock> the_clock();
 
     bool show_version()
@@ -158,9 +164,12 @@ private:
     mir::CachedPtr<DMConnection> dm_connection;
     mir::CachedPtr<SessionSwitcher> session_switcher;
     mir::CachedPtr<Screen> screen;
+    mir::CachedPtr<InputConfiguration> input_configuration;
     mir::CachedPtr<mir::input::EventFilter> screen_event_handler;
     mir::CachedPtr<ScreenHardware> screen_hardware;
+    mir::CachedPtr<DBusConnectionThread> dbus_thread;
     mir::CachedPtr<UnityScreenService> unity_screen_service;
+    mir::CachedPtr<UnityInputService> unity_input_service;
     mir::CachedPtr<Clock> clock;
 };
 
