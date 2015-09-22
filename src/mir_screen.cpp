@@ -18,6 +18,7 @@
 #include "clock.h"
 
 #include <mir/main_loop.h>
+#include <mir/lockable_callback.h>
 #include <mir/time/alarm_factory.h>
 #include <mir/compositor/compositor.h>
 #include <mir/graphics/display.h>
@@ -31,6 +32,52 @@
 
 namespace mi = mir::input;
 namespace mg = mir::graphics;
+
+class usc::MirScreen::LockableCallback : public mir::LockableCallback
+{
+public:
+    LockableCallback(MirScreen* mir_screen)
+        : mir_screen{mir_screen}
+    {
+    }
+
+    void lock() override
+    {
+        guard_lock = std::unique_lock<std::mutex>{mir_screen->guard};
+    }
+
+    void unlock() override
+    {
+        if (guard_lock.owns_lock())
+            guard_lock.unlock();
+    }
+    
+protected:
+    MirScreen* const mir_screen;
+    std::unique_lock<std::mutex> guard_lock;
+};
+
+class usc::MirScreen::PowerOffLockableCallback : public usc::MirScreen::LockableCallback
+{
+    using usc::MirScreen::LockableCallback::LockableCallback;
+
+    void operator()() override
+    {
+        mir_screen->before_power_off_alarm();
+        mir_screen->power_off_alarm_notification();
+    }
+};
+
+class usc::MirScreen::DimmerLockableCallback : public usc::MirScreen::LockableCallback
+{
+    using usc::MirScreen::LockableCallback::LockableCallback;
+
+    void operator()() override
+    {
+        mir_screen->before_dimmer_alarm();
+        mir_screen->dimmer_alarm_notification();
+    }
+};
 
 usc::MirScreen::MirScreen(
     std::shared_ptr<usc::ScreenHardware> const& screen_hardware,
@@ -48,9 +95,9 @@ usc::MirScreen::MirScreen(
       alarm_factory{alarm_factory},
       clock{clock},
       power_off_alarm{alarm_factory->create_alarm(
-              std::bind(&usc::MirScreen::power_off_alarm_notification, this))},
+              std::make_shared<PowerOffLockableCallback>(this))},
       dimmer_alarm{alarm_factory->create_alarm(
-              std::bind(&usc::MirScreen::dimmer_alarm_notification, this))},
+              std::make_shared<DimmerLockableCallback>(this))},
       inactivity_timeouts(inactivity_timeouts),
       notification_timeouts(notification_timeouts),
       current_power_mode{MirPowerMode::mir_power_mode_on},
@@ -311,16 +358,22 @@ bool usc::MirScreen::is_screen_change_allowed(MirPowerMode mode, PowerStateChang
     return true;
 }
 
+void usc::MirScreen::before_power_off_alarm()
+{
+}
+
 void usc::MirScreen::power_off_alarm_notification()
 {
-    std::lock_guard<std::mutex> lock{guard};
     configure_display_l(MirPowerMode::mir_power_mode_off, PowerStateChangeReason::inactivity);
     next_power_off = {};
 }
 
+void usc::MirScreen::before_dimmer_alarm()
+{
+}
+
 void usc::MirScreen::dimmer_alarm_notification()
 {
-    std::lock_guard<std::mutex> lock{guard};
     screen_hardware->set_dim_backlight();
     next_dimming = {};
 }

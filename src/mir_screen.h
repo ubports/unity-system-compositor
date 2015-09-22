@@ -73,7 +73,15 @@ public:
     void register_power_state_change_handler(
             PowerStateChangeHandler const& power_state_change_handler) override;
 
+protected:
+    virtual void before_dimmer_alarm();
+    virtual void before_power_off_alarm();
+
 private:
+    class LockableCallback;
+    class PowerOffLockableCallback;
+    class DimmerLockableCallback;
+
     void set_screen_power_mode_l(MirPowerMode mode, PowerStateChangeReason reason);
     void configure_display_l(MirPowerMode mode, PowerStateChangeReason reason);
 
