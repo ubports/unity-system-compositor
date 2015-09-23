@@ -63,7 +63,6 @@ class usc::MirScreen::PowerOffLockableCallback : public usc::MirScreen::Lockable
 
     void operator()() override
     {
-        mir_screen->before_power_off_alarm();
         mir_screen->power_off_alarm_notification();
     }
 };
@@ -74,7 +73,6 @@ class usc::MirScreen::DimmerLockableCallback : public usc::MirScreen::LockableCa
 
     void operator()() override
     {
-        mir_screen->before_dimmer_alarm();
         mir_screen->dimmer_alarm_notification();
     }
 };
@@ -358,18 +356,10 @@ bool usc::MirScreen::is_screen_change_allowed(MirPowerMode mode, PowerStateChang
     return true;
 }
 
-void usc::MirScreen::before_power_off_alarm()
-{
-}
-
 void usc::MirScreen::power_off_alarm_notification()
 {
     configure_display_l(MirPowerMode::mir_power_mode_off, PowerStateChangeReason::inactivity);
     next_power_off = {};
-}
-
-void usc::MirScreen::before_dimmer_alarm()
-{
 }
 
 void usc::MirScreen::dimmer_alarm_notification()

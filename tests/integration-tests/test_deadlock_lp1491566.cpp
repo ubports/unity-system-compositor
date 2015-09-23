@@ -144,14 +144,16 @@ class TestMirScreen : public usc::MirScreen
 public:
     using usc::MirScreen::MirScreen;
 
-    void before_dimmer_alarm() override
+    void dimmer_alarm_notification() override
     {
         before_dimmer_alarm_func();
+        usc::MirScreen::dimmer_alarm_notification();
     }
 
-    void before_power_off_alarm() override
+    void power_off_alarm_notification() override
     {
         before_power_off_alarm_func();
+        usc::MirScreen::power_off_alarm_notification();
     }
 
     std::function<void()> before_dimmer_alarm_func = []{};
