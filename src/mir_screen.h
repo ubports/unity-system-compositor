@@ -73,7 +73,16 @@ public:
     void register_power_state_change_handler(
             PowerStateChangeHandler const& power_state_change_handler) override;
 
+protected:
+    // These are protected virtual because we need to override them in tests
+    virtual void power_off_alarm_notification();
+    virtual void dimmer_alarm_notification();
+
 private:
+    class LockableCallback;
+    class PowerOffLockableCallback;
+    class DimmerLockableCallback;
+
     void set_screen_power_mode_l(MirPowerMode mode, PowerStateChangeReason reason);
     void configure_display_l(MirPowerMode mode, PowerStateChangeReason reason);
 
@@ -84,8 +93,6 @@ private:
     Timeouts timeouts_for(PowerStateChangeReason reason);
     bool is_screen_change_allowed(MirPowerMode mode, PowerStateChangeReason reason);
 
-    void power_off_alarm_notification();
-    void dimmer_alarm_notification();
     void long_press_alarm_notification();
 
     std::shared_ptr<usc::ScreenHardware> const screen_hardware;

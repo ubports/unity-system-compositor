@@ -38,6 +38,7 @@ add_executable(
   test_unity_input_service.cpp
   test_external_spinner.cpp
   test_powerd_mediator.cpp
+  test_deadlock_lp1491566.cpp
 )
 
 target_link_libraries(
