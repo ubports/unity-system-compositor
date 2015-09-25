@@ -17,6 +17,7 @@
  */
 
 #include "advanceable_timer.h"
+#include <mir/lockable_callback.h>
 #include <algorithm>
 
 namespace
@@ -59,7 +60,7 @@ struct detail::AdvanceableAlarm : mir::time::Alarm
 {
     AdvanceableAlarm(
         mir::time::Timestamp now,
-        std::function<void(void)> const& callback)
+        std::shared_ptr<mir::LockableCallback> const& callback)
         : now{now}, callback{callback}
     {
     }
@@ -101,7 +102,9 @@ struct detail::AdvanceableAlarm : mir::time::Alarm
         {
             state_ = mir::time::Alarm::triggered;
             lock.unlock();
-            callback();
+            callback->lock();
+            (*callback)();
+            callback->unlock();
         }
     }
 
@@ -113,7 +116,7 @@ struct detail::AdvanceableAlarm : mir::time::Alarm
 
 private:
     mir::time::Timestamp now;
-    std::function<void()> const callback;
+    std::shared_ptr<mir::LockableCallback> const callback;
     mir::time::Timestamp next_trigger_;
     mutable std::mutex mutex;
     mir::time::Alarm::State state_ = mir::time::Alarm::triggered;
@@ -123,18 +126,32 @@ private:
 std::unique_ptr<mir::time::Alarm> AdvanceableTimer::create_alarm(
     std::function<void()> const& callback)
 {
+    struct SimpleLockableCallback : public mir::LockableCallback
+    {
+        SimpleLockableCallback(std::function<void()> const& callback)
+            : callback{callback}
+        {
+        }
+
+        void operator()() override { callback(); }
+        void lock() override {}
+        void unlock() override {}
+
+        std::function<void()> const callback;
+    };
+
+    return create_alarm(std::make_shared<SimpleLockableCallback>(callback));
+}
+
+std::unique_ptr<mir::time::Alarm> AdvanceableTimer::create_alarm(
+    std::shared_ptr<mir::LockableCallback> const& callback)
+{
     auto const adv_alarm =
         std::make_shared<detail::AdvanceableAlarm>(now(), callback);
 
     register_alarm(adv_alarm);
 
     return std::unique_ptr<AlarmWrapper>(new AlarmWrapper{adv_alarm});
-}
-
-std::unique_ptr<mir::time::Alarm> AdvanceableTimer::create_alarm(
-    std::shared_ptr<mir::LockableCallback> const&)
-{
-    throw std::runtime_error("Not implemented");
 }
 
 void AdvanceableTimer::advance_by(std::chrono::milliseconds advance)
