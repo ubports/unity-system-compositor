@@ -182,6 +182,8 @@ struct AMirScreen : testing::Test
     std::chrono::seconds const dimmer_timeout{50};
     std::chrono::seconds const notification_power_off_timeout{15};
     std::chrono::seconds const notification_dimmer_timeout{12};
+    std::chrono::seconds const call_power_off_timeout{30};
+    std::chrono::seconds const call_dimmer_timeout{25};
 
     std::chrono::seconds const five_seconds{5};
     std::chrono::seconds const ten_seconds{10};
@@ -224,6 +226,45 @@ struct AMirScreen : testing::Test
         EXPECT_CALL(*screen_hardware, set_dim_backlight()).Times(0);
     }
 
+    void verify_proximity_enabled()
+    {
+        verify_and_clear_expectations();
+
+        if (screen_hardware->current_proximity == MockScreenHardware::Proximity::far)
+        {
+            expect_screen_is_turned_off();
+            cover_screen();
+            verify_and_clear_expectations();
+
+            expect_screen_is_turned_on();
+            uncover_screen();
+            verify_and_clear_expectations();
+        }
+
+        if (screen_hardware->current_proximity == MockScreenHardware::Proximity::near)
+        {
+            expect_screen_is_turned_on();
+            uncover_screen();
+            verify_and_clear_expectations();
+
+            expect_screen_is_turned_off();
+            cover_screen();
+            verify_and_clear_expectations();
+        }
+    }
+
+    void verify_proximity_disabled()
+    {
+        verify_and_clear_expectations();
+
+        expect_no_reconfiguration();
+        uncover_screen();
+        cover_screen();
+        uncover_screen();
+
+        verify_and_clear_expectations();
+    }
+
     void turn_screen_off()
     {
         using namespace testing;
@@ -234,11 +275,37 @@ struct AMirScreen : testing::Test
         verify_and_clear_expectations();
     }
 
+    void turn_screen_on()
+    {
+        using namespace testing;
+        mir_screen.set_screen_power_mode(
+            MirPowerMode::mir_power_mode_on,
+            PowerStateChangeReason::power_key);
+
+        verify_and_clear_expectations();
+    }
+
     void receive_notification()
     {
         mir_screen.set_screen_power_mode(
             MirPowerMode::mir_power_mode_on,
             PowerStateChangeReason::notification);
+        process_deferred_actions();
+    }
+
+    void receive_call()
+    {
+        mir_screen.set_screen_power_mode(
+            MirPowerMode::mir_power_mode_on,
+            PowerStateChangeReason::snap_decision);
+        process_deferred_actions();
+    }
+
+    void receive_call_done()
+    {
+        mir_screen.set_screen_power_mode(
+            MirPowerMode::mir_power_mode_on,
+            PowerStateChangeReason::call_done);
         process_deferred_actions();
     }
 
@@ -281,7 +348,8 @@ struct AMirScreen : testing::Test
         timer,
         timer,
         {power_off_timeout, dimmer_timeout},
-        {notification_power_off_timeout, notification_dimmer_timeout}};
+        {notification_power_off_timeout, notification_dimmer_timeout},
+        {call_power_off_timeout, call_dimmer_timeout}};
 };
 
 }
@@ -847,4 +915,205 @@ TEST_F(AMirScreen, proximity_cannot_turn_on_screen_if_power_key_turned_it_off)
     mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on,
                                      PowerStateChangeReason::proximity);
 
+}
+
+TEST_F(AMirScreen, turns_screen_off_after_call_timeout)
+{
+    turn_screen_off();
+
+    expect_screen_is_turned_on();
+    receive_call();
+    verify_and_clear_expectations();
+
+    expect_screen_is_turned_off();
+    timer->advance_by(call_power_off_timeout);
+}
+
+TEST_F(AMirScreen, keep_display_on_temporarily_overrides_call_timeout)
+{
+    turn_screen_off();
+
+    expect_screen_is_turned_on();
+    receive_call();
+    verify_and_clear_expectations();
+
+    // At T=20 we request a temporary keep display on (e.g. user has touched
+    // the screen)
+    timer->advance_by(ten_seconds);
+    timer->advance_by(ten_seconds);
+    mir_screen.keep_display_on_temporarily();
+
+    // At T=30 nothing should happen since keep display on temporarily
+    // has reset the timers (so the call timeout is overriden).
+    expect_no_reconfiguration();
+    timer->advance_by(ten_seconds);
+    verify_and_clear_expectations();
+
+    // At T=110 (50 + 60) the screen should turn off due to the normal
+    // inactivity timeout
+    expect_screen_is_turned_off();
+    timer->advance_by(fifty_seconds);
+}
+
+TEST_F(AMirScreen, does_not_turn_on_screen_when_call_arrives_with_phone_covered)
+{
+    turn_screen_off();
+    cover_screen();
+
+    expect_no_reconfiguration();
+    receive_call();
+}
+
+TEST_F(AMirScreen, enables_proximity_when_call_arrives)
+{
+    turn_screen_off();
+    cover_screen();
+
+    expect_no_reconfiguration();
+    receive_call();
+    verify_and_clear_expectations();
+
+    verify_proximity_enabled();
+}
+
+TEST_F(AMirScreen, cancels_proximity_handling_when_screen_is_turned_off_by_call_timeout)
+{
+    turn_screen_off();
+    cover_screen();
+
+    receive_call();
+    timer->advance_by(call_power_off_timeout);
+
+    verify_proximity_disabled();
+}
+
+TEST_F(AMirScreen, cancels_proximity_handling_when_screen_is_touched_after_call)
+{
+    turn_screen_off();
+
+    receive_call();
+    mir_screen.keep_display_on_temporarily();
+
+    verify_proximity_disabled();
+}
+
+TEST_F(AMirScreen, does_not_enable_proximity_handling_for_call_when_screen_is_already_on)
+{
+    expect_no_reconfiguration();
+    receive_call();
+    verify_and_clear_expectations();
+
+    verify_proximity_disabled();
+}
+
+TEST_F(AMirScreen, retains_proximity_handling_when_call_done_arrives_when_screen_is_off_after_call)
+{
+    turn_screen_off();
+    cover_screen();
+    receive_call();
+    receive_call_done();
+
+    verify_proximity_enabled();
+}
+
+TEST_F(AMirScreen,
+       turns_off_screen_and_proximity_soon_after_call_when_screen_not_covered)
+{
+    turn_screen_off();
+
+    // Call
+    receive_call();
+    timer->advance_by(ten_seconds);
+    receive_call_done();
+
+    verify_and_clear_expectations();
+
+    // After the notification timeout the screen should be off
+    // and proximity should be disabled
+    expect_screen_is_turned_off();
+    timer->advance_by(notification_power_off_timeout);
+
+    verify_proximity_disabled();
+}
+
+TEST_F(AMirScreen,
+       turns_proximity_off_soon_after_call_when_screen_covered)
+{
+    turn_screen_off();
+    cover_screen();
+
+    expect_no_reconfiguration();
+
+    // call
+    receive_call();
+    timer->advance_by(ten_seconds);
+    receive_call_done();
+    timer->advance_by(notification_power_off_timeout);
+
+    verify_and_clear_expectations();
+
+    verify_proximity_disabled();
+}
+
+TEST_F(AMirScreen,
+       turns_off_screen_and_proximity_soon_after_call_when_screen_uncovered_after_call_is_received)
+{
+    turn_screen_off();
+    cover_screen();
+
+    // Uncover screen while in call
+    receive_call();
+    timer->advance_by(five_seconds);
+    uncover_screen();
+    timer->advance_by(five_seconds);
+    receive_call_done();
+
+    verify_and_clear_expectations();
+
+    // After the notification timeout the screen should be off
+    // and proximity should be disabled
+    expect_screen_is_turned_off();
+    timer->advance_by(notification_power_off_timeout);
+
+    verify_proximity_disabled();
+}
+
+TEST_F(AMirScreen,
+      keeps_screen_on_for_full_timeout_after_call_received_when_screen_was_turned_on_manually)
+{
+    // Turn screen on manually (i.e. with power key)
+    turn_screen_off();
+    turn_screen_on();
+
+    expect_no_reconfiguration();
+
+    // call
+    receive_call();
+    timer->advance_by(ten_seconds);
+    receive_call_done();
+    // Call done notification timeout should be ignored since
+    // user had turned on the screen manually
+    timer->advance_by(notification_power_off_timeout);
+
+    verify_and_clear_expectations();
+
+    verify_proximity_disabled();
+}
+
+TEST_F(AMirScreen,
+       sets_normal_backlight_when_notification_arrives_while_screen_already_on)
+{
+    turn_screen_on();
+
+    EXPECT_CALL(*screen_hardware, set_normal_backlight());
+    receive_notification();
+}
+
+TEST_F(AMirScreen,
+       sets_normal_backlight_when_call_arrives_while_screen_already_on)
+{
+    turn_screen_on();
+
+    EXPECT_CALL(*screen_hardware, set_normal_backlight());
+    receive_call();
 }

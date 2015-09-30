@@ -132,6 +132,20 @@ private:
             seconds{the_options()->get("notification-display-dim-timeout", 12)});
     }
 
+    std::chrono::milliseconds snap_decision_display_off_timeout()
+    {
+        using namespace std::chrono;
+        return duration_cast<milliseconds>(
+            seconds{the_options()->get("snap-decision-display-off-timeout", 60)});
+    }
+
+    std::chrono::milliseconds snap_decision_display_dim_timeout()
+    {
+        using namespace std::chrono;
+        return duration_cast<milliseconds>(
+            seconds{the_options()->get("snap-decision-display-dim-timeout", 50)});
+    }
+
     std::chrono::milliseconds shutdown_timeout()
     {
         return std::chrono::milliseconds{
