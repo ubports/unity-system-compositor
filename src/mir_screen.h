@@ -109,7 +109,7 @@ private:
     std::mutex guard;
     Timeouts inactivity_timeouts;
     Timeouts notification_timeouts;
-    Timeouts call_timeouts;
+    Timeouts snap_decision_timeouts;
     mir::time::Timestamp next_power_off{};
     mir::time::Timestamp next_dimming{};
     MirPowerMode current_power_mode;

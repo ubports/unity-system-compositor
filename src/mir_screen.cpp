@@ -86,7 +86,7 @@ usc::MirScreen::MirScreen(
     std::shared_ptr<usc::Clock> const& clock,
     Timeouts inactivity_timeouts,
     Timeouts notification_timeouts,
-    Timeouts call_timeouts)
+    Timeouts snap_decision_timeouts)
     : screen_hardware{screen_hardware},
       compositor{compositor},
       display{display},
@@ -99,7 +99,7 @@ usc::MirScreen::MirScreen(
               std::make_shared<DimmerLockableCallback>(this))},
       inactivity_timeouts(inactivity_timeouts),
       notification_timeouts(notification_timeouts),
-      call_timeouts(call_timeouts),
+      snap_decision_timeouts(snap_decision_timeouts),
       current_power_mode{MirPowerMode::mir_power_mode_on},
       restart_timers{true},
       power_state_change_handler{[](MirPowerMode,PowerStateChangeReason){}},
@@ -372,7 +372,7 @@ usc::MirScreen::Timeouts usc::MirScreen::timeouts_for(PowerStateChangeReason rea
     }
     else if (reason == PowerStateChangeReason::snap_decision)
     {
-        return call_timeouts;
+        return snap_decision_timeouts;
     }
     else
     {
