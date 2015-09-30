@@ -56,7 +56,8 @@ public:
               std::shared_ptr<mir::time::AlarmFactory> const& alarm_factory,
               std::shared_ptr<usc::Clock> const& clock,
               Timeouts inactivity_timeouts,
-              Timeouts notification_timeouts);
+              Timeouts notification_timeouts,
+              Timeouts call_timeouts);
     ~MirScreen();
 
     void enable_inactivity_timers(bool enable) override;
@@ -79,6 +80,7 @@ protected:
     virtual void dimmer_alarm_notification();
 
 private:
+    enum class ForceResetTimers { no, yes };
     class LockableCallback;
     class PowerOffLockableCallback;
     class DimmerLockableCallback;
@@ -88,7 +90,7 @@ private:
 
     void cancel_timers_l(PowerStateChangeReason reason);
     void reset_timers_l(PowerStateChangeReason reason);
-    void reset_timers_ignoring_power_mode_l(PowerStateChangeReason reason);
+    void reset_timers_ignoring_power_mode_l(PowerStateChangeReason reason, ForceResetTimers force);
     void enable_inactivity_timers_l(bool flag);
     Timeouts timeouts_for(PowerStateChangeReason reason);
     bool is_screen_change_allowed(MirPowerMode mode, PowerStateChangeReason reason);
@@ -107,12 +109,14 @@ private:
     std::mutex guard;
     Timeouts inactivity_timeouts;
     Timeouts notification_timeouts;
+    Timeouts snap_decision_timeouts;
     mir::time::Timestamp next_power_off{};
     mir::time::Timestamp next_dimming{};
     MirPowerMode current_power_mode;
     bool restart_timers;
     PowerStateChangeHandler power_state_change_handler;
     bool allow_proximity_to_turn_on_screen;
+    bool turned_on_by_user;
 };
 
 }

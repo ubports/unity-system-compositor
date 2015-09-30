@@ -23,7 +23,9 @@ enum class PowerStateChangeReason
     inactivity = 1,
     power_key = 2,
     proximity = 3,
-    notification = 4
+    notification = 4,
+    snap_decision = 5,
+    call_done = 6
 };
 
 #endif
