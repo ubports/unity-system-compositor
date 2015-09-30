@@ -224,6 +224,7 @@ struct DeadlockLP1491566 : public testing::Test
         main_loop,
         server.the_clock(),
         {power_off_timeout, dimmer_timeout},
+        {power_off_timeout, dimmer_timeout},
         {power_off_timeout, dimmer_timeout}};
 
     std::thread main_loop_thread;

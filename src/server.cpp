@@ -125,6 +125,8 @@ usc::Server::Server(int argc, char** argv)
     add_display_configuration_options_to(*this);
     add_configuration_option("notification-display-off-timeout", "The time in seconds before the screen is turned off after a notification arrives",  mir::OptionType::integer);
     add_configuration_option("notification-display-dim-timeout", "The time in seconds before the screen is dimmed after a notification arrives",  mir::OptionType::integer);
+    add_configuration_option("snap-decision-display-off-timeout", "The time in seconds before the screen is turned off after snap decision arrives",  mir::OptionType::integer);
+    add_configuration_option("snap-decision-display-dim-timeout", "The time in seconds before the screen is dimmed after a snap decision arrives", mir::OptionType::integer);
 
     set_command_line(argc, const_cast<char const **>(argv));
 
@@ -260,7 +262,10 @@ std::shared_ptr<usc::Screen> usc::Server::the_screen()
                     inactivity_display_dim_timeout()},
                 MirScreen::Timeouts{
                     notification_display_off_timeout(),
-                    notification_display_dim_timeout()});
+                    notification_display_dim_timeout()},
+                MirScreen::Timeouts{
+                    snap_decision_display_off_timeout(),
+                    snap_decision_display_dim_timeout()});
         });
 }
 
