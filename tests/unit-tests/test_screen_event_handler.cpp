@@ -93,7 +93,7 @@ struct AScreenEventHandler : testing::Test
         MirInputDeviceId{1}, std::chrono::nanoseconds(0),
 	    0, mir_input_event_modifier_none,
         mir_pointer_action_motion,
-        {}, 0.0f, 0.0f, 0.0f, 0.0f);
+        {}, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 
     AdvanceableTimer timer;
     std::chrono::milliseconds const power_key_ignore_timeout{5000};
