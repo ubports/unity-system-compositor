@@ -1,8 +1,127 @@
-unity-system-compositor (0.0.5+15.10.20150506.2-0ubuntu1) UNRELEASED; urgency=medium
+unity-system-compositor (0.1.4+15.10.20150930.1-0ubuntu1) wily; urgency=medium
 
+  [ Alexandros Frantzis ]
+  * Improve proximity handling and screen blanking for voice calls
+    (LP: #1291455)
+
+  [ CI Train Bot ]
+  * New rebuild forced.
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Wed, 30 Sep 2015 12:29:53 +0000
+
+unity-system-compositor (0.1.3+15.10.20150925.1-0ubuntu1) wily; urgency=medium
+
+  [ Alexandros Frantzis ]
+  * Fix "unresponsive shell including power button doesn't blank/unblank
+    display" (LP: #1491566)
+
+  [ CI Train Bot ]
+  * No-change rebuild.
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Fri, 25 Sep 2015 14:09:43 +0000
+
+unity-system-compositor (0.1.2+15.10.20150922-0ubuntu1) wily; urgency=medium
+
+  [ Cemil Azizoglu ]
+  * Rebuild for Mir 0.16
+
+  [ CI Train Bot ]
+  * New rebuild forced.
+
+ -- Cemil Azizoglu <cemil.azizoglu@canonical.com>  Tue, 22 Sep 2015 16:44:54 +0000
+
+unity-system-compositor (0.1.1+15.10.20150904-0ubuntu1) wily; urgency=medium
+
+  [ Michal Sawicz ]
+  * Rebuild to resync wily and vivid
+
+  [ CI Train Bot ]
+  * No-change rebuild.
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Fri, 04 Sep 2015 07:31:34 +0000
+
+unity-system-compositor (0.1.1+15.10.20150902-0ubuntu1) wily; urgency=medium
+
+  [ Alberto Aguirre ]
+  * Fix "Proximity does not turn screen on during a call" (LP: #1483127)
+
+  [ Alexandros Frantzis ]
+  * Work around EGL bug in ubuntu-touch emulator that causes the spinner
+    to fail
+  * Fix "Screen fades to black while typing a message (after wake-up from
+    notification)" (LP: #1485737)
+
+  [ Robert Ancell ]
+  * Use [Seat:*] section for LightDM configuration instead of deprecated
+    [SeatDefaults]
+
+  [ CI Train Bot ]
+  * No-change rebuild.
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Wed, 02 Sep 2015 12:31:35 +0000
+
+unity-system-compositor (0.1.1+15.04.20150824.1-0ubuntu1) vivid; urgency=medium
+
+  [ Alberto Aguirre ]
+  * Fix "Proximity does not turn screen on during a call" (LP: #1483127)
+
+  [ Alexandros Frantzis ]
+  * Work around EGL bug in ubuntu-touch emulator that causes the spinner
+    to fail
+  * Fix "Screen fades to black while typing a message (after wake-up from
+    notification)" (LP: #1485737)
+
+  [ Robert Ancell ]
+  * Use [Seat:*] section for LightDM configuration instead of deprecated
+    [SeatDefaults]
+
+  [ CI Train Bot ]
+  * No-change rebuild.
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Mon, 24 Aug 2015 19:23:43 +0000
+
+unity-system-compositor (0.1.0+15.10.20150817-0ubuntu1) wily; urgency=medium
+
+  * 
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Mon, 17 Aug 2015 19:28:40 +0000
+
+unity-system-compositor (0.1.0+15.10.20150728.1-0ubuntu2~gcc5.1) wily; urgency=medium
+
+  * Build using GCC 5.
+
+ -- Matthias Klose <doko@ubuntu.com>  Wed, 29 Jul 2015 18:20:18 +0200
+
+unity-system-compositor (0.1.0+15.10.20150728.1-0ubuntu1) wily; urgency=medium
+
+  [ Alexandros Frantzis ]
+  * Support different screen timeout values for notifications
+    (LP: #1426115)
+  * Enable and handle proximity events properly (LP: #1291455)
+  * Don't force gcc 4.9 when building the package (LP: #1478926)
+  * Introduce new versioning scheme
+
+  [ Alan Griffiths ]
+  * Port to mir SystemCompositorWindowManager
+  
+  [ Robert Ancell ]
+  * Depend on the new xmir package instead of the obsolete
+    xserver-xorg-xmir (LP: #1204505)
+
+  [ CI Train Bot ]
+  * New rebuild forced.
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Tue, 28 Jul 2015 18:55:28 +0000
+
+unity-system-compositor (0.0.5+15.10.20150722-0ubuntu1) wily; urgency=medium
+
+  [ Kevin Gunn ]
   * Release in step with Mir 0.14 
 
- -- Kevin Gunn <kevin.gunn@canonical.com>  Thu, 16 Jul 2015 15:14:22 -0500
+  [ CI Train Bot ]
+  * New rebuild forced.
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Wed, 22 Jul 2015 14:49:58 +0000
 
 unity-system-compositor (0.0.5+15.04.20150713-0ubuntu1) vivid; urgency=medium
 
