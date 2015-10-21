@@ -11,27 +11,23 @@ Build-Depends: cmake,
                libboost-dev,
                libboost-system-dev,
                libdbus-1-dev,
-               libglib2.0-dev,
                libgles2-mesa-dev,
+               libglib2.0-dev,
                libmirclient-dev (>= 0.13.0),
                libmirserver-dev (>= 0.13.0),
                libprotobuf-dev,
                pkg-config,
-               python:any (>= 2.7),
-               python-setuptools,
                python-pil,
+               python-setuptools,
+               python:any (>= 2.7)
 Standards-Version: 3.9.4
 Homepage: https://launchpad.net/unity-system-compositor
-# if you don't have have commit access to this branch but would like to upload
-# directly to Ubuntu, don't worry: your changes will be merged back into the
-# upstream branch
 Vcs-Bzr: lp:unity-system-compositor
 
 Package: unity-system-compositor
 Architecture: any
-Depends: ${misc:Depends},
-         ${shlibs:Depends},
-Suggests: powerd,
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Suggests: powerd
 Description: System compositor for Ubuntu
  System compositor used by the Mir display server in Ubuntu. If the Unity
  System Compositor can't start, LightDM will fallback to plain Xorg display
@@ -42,18 +38,22 @@ Architecture: all
 Depends: python-autopilot,
          unity-system-compositor (>= ${source:Version}),
          ${misc:Depends},
-         ${python:Depends},
-Description: Test package for Unity System Compositor
+         ${python:Depends}
+Description: autopilot tests for Unity System Compositor
  Autopilots tests for Unity System Compositor
+
+Package: unity-system-compositor-tests
+Architecture: any
+Depends: unity-system-compositor (>= ${source:Version}), ${misc:Depends}
+Description: tests for Unity System Compositor
+ General tests for Unity System Compositor targeted at autopkgtest runs when a
+ dependency has changed.
 
 Package: ubuntu-desktop-mir
 Architecture: all
-Depends: lightdm (>= 1.9.4),
-         unity-system-compositor,
-         xmir,
-         ${misc:Depends},
-Replaces: unity-system-compositor (<< 0.0.2),
-Breaks: unity-system-compositor (<< 0.0.2),
+Depends: lightdm (>= 1.9.4), unity-system-compositor, xmir, ${misc:Depends}
+Replaces: unity-system-compositor (<< 0.0.2)
+Breaks: unity-system-compositor (<< 0.0.2)
 Description: System compositor for Ubuntu Desktop
  Settings package which installs everything Ubuntu Desktop needs to use Mir
  (via XMir).
