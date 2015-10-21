@@ -1,3 +1,2 @@
 Tests: mir
 Depends: unity-system-compositor-tests
-Tests-Directory: tests/integration

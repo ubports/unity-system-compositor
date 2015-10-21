@@ -1,4 +1,3 @@
 #!/bin/sh -ex
-exec 2>&1
-
+/usr/bin/usc_integration_tests
 exit 0
