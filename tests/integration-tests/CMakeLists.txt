@@ -54,3 +54,6 @@ add_test(usc_integration_tests ${EXECUTABLE_OUTPUT_PATH}/usc_integration_tests)
 
 add_dependencies(usc_integration_tests GMock)
 add_dependencies(usc_integration_tests usc_test_helper_wait_for_signal)
+
+install(TARGETS usc_integration_tests usc_test_helper_wait_for_signal
+        RUNTIME DESTINATION bin)

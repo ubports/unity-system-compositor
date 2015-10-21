@@ -1,0 +1,3 @@
+Tests: mir
+Depends: @, libmirclient-dev, libmirserver-dev
+Tests-Directory: tests/integration
