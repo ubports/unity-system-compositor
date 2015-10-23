@@ -19,7 +19,7 @@ Build-Depends: cmake,
                pkg-config,
                python-pil,
                python-setuptools,
-               python:any (>= 2.7)
+               python:any (>= 2.7),
 Standards-Version: 3.9.4
 Homepage: https://launchpad.net/unity-system-compositor
 Vcs-Bzr: lp:unity-system-compositor
@@ -27,8 +27,8 @@ Vcs-Bzr: lp:unity-system-compositor
 Package: unity-system-compositor
 Architecture: any
 Depends: ${misc:Depends},
-         ${shlibs:Depends}
-Suggests: powerd
+         ${shlibs:Depends},
+Suggests: powerd,
 Description: System compositor for Ubuntu
  System compositor used by the Mir display server in Ubuntu. If the Unity
  System Compositor can't start, LightDM will fallback to plain Xorg display
@@ -39,7 +39,7 @@ Architecture: all
 Depends: python-autopilot,
          unity-system-compositor (>= ${source:Version}),
          ${misc:Depends},
-         ${python:Depends}
+         ${python:Depends},
 Description: autopilot tests for Unity System Compositor
  Autopilots tests for Unity System Compositor
 
@@ -47,7 +47,7 @@ Package: unity-system-compositor-tests
 Architecture: any
 Depends: unity-system-compositor (>= ${source:Version}),
          ${misc:Depends},
-         ${shlibs:Depends}
+         ${shlibs:Depends},
 Description: tests for Unity System Compositor
  General tests for Unity System Compositor targeted at autopkgtest runs when a
  dependency has changed.
@@ -57,9 +57,9 @@ Architecture: all
 Depends: lightdm (>= 1.9.4),
          unity-system-compositor,
          xmir,
-         ${misc:Depends}
-Replaces: unity-system-compositor (<< 0.0.2)
-Breaks: unity-system-compositor (<< 0.0.2)
+         ${misc:Depends},
+Replaces: unity-system-compositor (<< 0.0.2),
+Breaks: unity-system-compositor (<< 0.0.2),
 Description: System compositor for Ubuntu Desktop
  Settings package which installs everything Ubuntu Desktop needs to use Mir
  (via XMir).
