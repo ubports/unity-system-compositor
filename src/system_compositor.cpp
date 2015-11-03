@@ -22,6 +22,7 @@
 #include "dm_connection.h"
 
 #include <mir/input/composite_event_filter.h>
+#include <mir/input/input_device_hub.h>
 #include <mir/abnormal_exit.h>
 
 #include <cerrno>
