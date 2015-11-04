@@ -108,7 +108,7 @@ void usc::MirInputConfiguration::update_mice()
 
 void usc::MirInputConfiguration::set_mouse_primary_button(int32_t button)
 {
-    mouse_pointer_config.handedness(button == 0?mir_pointer_handedness_right:mir_pointer_handedness_left);
+    mouse_pointer_config.handedness = button == 0?mir_pointer_handedness_right:mir_pointer_handedness_left;
     update_mice();
 }
 
@@ -119,62 +119,62 @@ void usc::MirInputConfiguration::set_mouse_cursor_speed(double speed)
         clamped = 0.0;
     if (clamped > 1.0)
         clamped = 1.0;
-    mouse_pointer_config.cursor_acceleration_bias(speed * 2.0 - 1.0);
+    mouse_pointer_config.cursor_acceleration_bias = speed * 2.0 - 1.0;
     update_mice();
 }
 
 void usc::MirInputConfiguration::set_mouse_scroll_speed(double speed)
 {
-    mouse_pointer_config.horizontal_scroll_scale(speed);
-    mouse_pointer_config.vertical_scroll_scale(speed);
+    mouse_pointer_config.horizontal_scroll_scale = speed;
+    mouse_pointer_config.vertical_scroll_scale = speed;
     update_mice();
 }
 
 void usc::MirInputConfiguration::set_touchpad_primary_button(int32_t button)
 {
-    touchpad_pointer_config.handedness(button == 0?mir_pointer_handedness_right:mir_pointer_handedness_left);
+    touchpad_pointer_config.handedness = button == 0?mir_pointer_handedness_right:mir_pointer_handedness_left;
     update_touchpads();
 }
 
 void usc::MirInputConfiguration::set_touchpad_cursor_speed(double speed)
 {
-    touchpad_pointer_config.cursor_acceleration_bias(speed * 2.0 - 1.0);
+    touchpad_pointer_config.cursor_acceleration_bias = speed * 2.0 - 1.0;
     update_touchpads();
 }
 
 void usc::MirInputConfiguration::set_touchpad_scroll_speed(double speed)
 {
-    touchpad_pointer_config.horizontal_scroll_scale(speed);
-    touchpad_pointer_config.vertical_scroll_scale(speed);
+    touchpad_pointer_config.horizontal_scroll_scale = speed;
+    touchpad_pointer_config.vertical_scroll_scale = speed;
     update_touchpads();
 }
 
 void usc::MirInputConfiguration::set_two_finger_scroll(bool enable)
 {
-    MirTouchpadScrollModes current = touchpad_config.scroll_mode();
+    MirTouchpadScrollModes current = touchpad_config.scroll_mode;
     if (enable)
         current |= mir_touchpad_scroll_mode_two_finger_scroll;
     else
         current &= ~mir_touchpad_scroll_mode_two_finger_scroll;
-    touchpad_config.scroll_mode(current);
+    touchpad_config.scroll_mode = current;
     update_touchpads();
 }
 
 void usc::MirInputConfiguration::set_tap_to_click(bool enable)
 {
-    touchpad_config.tap_to_click(enable);
+    touchpad_config.tap_to_click = enable;
     update_touchpads();
 }
 
 void usc::MirInputConfiguration::set_disable_touchpad_while_typing(bool enable)
 {
-    touchpad_config.disable_while_typing(enable);
+    touchpad_config.disable_while_typing = enable;
     update_touchpads();
 }
 
 void usc::MirInputConfiguration::set_disable_touchpad_with_mouse(bool enable)
 {
-    touchpad_config.disable_with_mouse(enable);
+    touchpad_config.disable_with_mouse = enable;
     update_touchpads();
 }
 
