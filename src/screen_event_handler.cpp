@@ -21,6 +21,7 @@
 #include <mir/time/alarm_factory.h>
 #include <mir_toolkit/events/input/input_event.h>
 
+#include "linux/input.h"
 #include <cstdio>
 
 usc::ScreenEventHandler::ScreenEventHandler(
@@ -45,8 +46,6 @@ usc::ScreenEventHandler::~ScreenEventHandler() = default;
 
 bool usc::ScreenEventHandler::handle(MirEvent const& event)
 {
-    static const int32_t POWER_KEY_CODE = 26;
-
     if (mir_event_get_type(&event) != mir_event_type_input)
         return false;
 
@@ -56,14 +55,25 @@ bool usc::ScreenEventHandler::handle(MirEvent const& event)
     if (input_event_type == mir_input_event_type_key)
     {
         auto const kev = mir_input_event_get_keyboard_event(input_event);
-        if (mir_keyboard_event_key_code(kev) != POWER_KEY_CODE)
-            return false;
-
-        auto const action = mir_keyboard_event_action(kev);
-        if (action == mir_keyboard_action_down)
-            power_key_down();
-        else if (action == mir_keyboard_action_up)
-            power_key_up();
+        if (mir_keyboard_event_scan_code(kev) == KEY_POWER)
+        {
+            auto const action = mir_keyboard_event_action(kev);
+            if (action == mir_keyboard_action_down)
+                power_key_down();
+            else if (action == mir_keyboard_action_up)
+                power_key_up();
+        }
+        // we might want to come up with a whole range of media player related keys
+        else if (mir_keyboard_event_scan_code(kev) == KEY_VOLUMEDOWN||
+                 mir_keyboard_event_scan_code(kev) == KEY_VOLUMEUP)
+        {
+            // do not keep display on when interacting with media player
+        }
+        else
+        {
+            std::lock_guard<std::mutex> lock{guard};
+            screen->keep_display_on_temporarily();
+        }
     }
     else if (input_event_type == mir_input_event_type_touch ||
              input_event_type == mir_input_event_type_pointer)
