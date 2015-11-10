@@ -14,5 +14,6 @@
 #
 # Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
 
+include_directories(include)
 add_subdirectory(unit-tests/)
 add_subdirectory(integration-tests/)

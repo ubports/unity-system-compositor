@@ -21,11 +21,11 @@
 #include "src/screen_hardware.h"
 #include "src/power_state_change_reason.h"
 #include "spin_wait.h"
+#include "usc/stub_display_configuration.h"
+#include "usc/mock_display.h"
 
 #include <mir/compositor/compositor.h>
 #include <mir/main_loop.h>
-#include <mir/graphics/display.h>
-#include <mir/graphics/display_configuration.h>
 #include <mir/graphics/gl_context.h>
 #include <mir/input/touch_visualizer.h>
 
@@ -46,71 +46,6 @@ struct NullCompositor : mir::compositor::Compositor
     void stop() override {}
 };
 
-struct StubDisplayConfiguration : mg::DisplayConfiguration
-{
-    StubDisplayConfiguration()
-    {
-        conf_output.power_mode = MirPowerMode::mir_power_mode_on;
-    }
-
-    void for_each_card(std::function<void(mg::DisplayConfigurationCard const&)> f) const override
-    {
-    }
-
-    void for_each_output(std::function<void(mg::DisplayConfigurationOutput const&)> f) const override
-    {
-        f(conf_output);
-    }
-
-    void for_each_output(std::function<void(mg::UserDisplayConfigurationOutput&)> f)
-    {
-        mg::UserDisplayConfigurationOutput user{conf_output};
-        f(user);
-    }
-
-    mg::DisplayConfigurationOutput conf_output;
-};
-
-struct StubDisplay : mg::Display
-{
-    void for_each_display_sync_group(std::function<void(mg::DisplaySyncGroup&)> const& f) override
-    {
-    }
-
-    std::unique_ptr<mg::DisplayConfiguration> configuration() const override
-    { 
-        return std::unique_ptr<mg::DisplayConfiguration>{new StubDisplayConfiguration{}};
-    }
-
-    void configure(mg::DisplayConfiguration const&) override {}
-
-    void register_configuration_change_handler(
-        mg::EventHandlerRegister& ,
-        mg::DisplayConfigurationChangeHandler const& ) override
-    {
-    }
-
-    void register_pause_resume_handlers(
-        mg::EventHandlerRegister&,
-        mg::DisplayPauseHandler const&,
-        mg::DisplayResumeHandler const&) override
-    {
-    }
-
-    void pause() override {}
-    void resume() override {}
-
-    std::shared_ptr<mg::Cursor> create_hardware_cursor(
-        std::shared_ptr<mg::CursorImage> const&) override
-    {
-        return{};
-    }
-
-    std::unique_ptr<mg::GLContext> create_gl_context() override
-    { 
-        return std::unique_ptr<mg::GLContext>{};
-    }
-};
 
 struct StubScreenHardware : usc::ScreenHardware
 {
@@ -219,7 +154,7 @@ struct DeadlockLP1491566 : public testing::Test
     TestMirScreen mir_screen{
         std::make_shared<StubScreenHardware>(),
         std::make_shared<NullCompositor>(),
-        std::make_shared<StubDisplay>(),
+        std::make_shared<::testing::NiceMock<usc::MockDisplay>>(),
         std::make_shared<NullTouchVisualizer>(),
         main_loop,
         server.the_clock(),
