@@ -32,7 +32,7 @@ struct StubDisplayConfiguration : mir::graphics::DisplayConfiguration
     }
 
     StubDisplayConfiguration(mir::graphics::DisplayConfigurationOutput const& output)
-        : conf_output{output}
+        : conf_output(output)
     {
     }
 
