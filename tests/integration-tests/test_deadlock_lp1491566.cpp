@@ -21,8 +21,8 @@
 #include "src/screen_hardware.h"
 #include "src/power_state_change_reason.h"
 #include "spin_wait.h"
-#include "usc/stub_display_configuration.h"
-#include "usc/mock_display.h"
+#include "usc/test/stub_display_configuration.h"
+#include "usc/test/mock_display.h"
 
 #include <mir/compositor/compositor.h>
 #include <mir/main_loop.h>
@@ -36,6 +36,7 @@
 #include <future>
 
 namespace mg = mir::graphics;
+namespace ut = usc::test;
 
 namespace
 {
@@ -154,7 +155,7 @@ struct DeadlockLP1491566 : public testing::Test
     TestMirScreen mir_screen{
         std::make_shared<StubScreenHardware>(),
         std::make_shared<NullCompositor>(),
-        std::make_shared<::testing::NiceMock<usc::MockDisplay>>(),
+        std::make_shared<::testing::NiceMock<ut::MockDisplay>>(),
         std::make_shared<NullTouchVisualizer>(),
         main_loop,
         server.the_clock(),
