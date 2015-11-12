@@ -14,12 +14,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef USC_STUB_DISPLAY_CONFIGURATION_H_
-#define USC_STUB_DISPLAY_CONFIGURATION_H_
+#ifndef USC_TEST_STUB_DISPLAY_CONFIGURATION_H_
+#define USC_TEST_STUB_DISPLAY_CONFIGURATION_H_
 
 #include <mir/graphics/display_configuration.h>
 
 namespace usc
+{
+namespace test
 {
 
 struct StubDisplayConfiguration : mir::graphics::DisplayConfiguration
@@ -58,4 +60,6 @@ struct StubDisplayConfiguration : mir::graphics::DisplayConfiguration
 };
 
 }
+}
+
 #endif

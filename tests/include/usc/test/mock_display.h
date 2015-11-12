@@ -14,15 +14,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef USC_MOCK_DISPLAY_H
-#define USC_MOCK_DISPLAY_H
+#ifndef USC_TEST_MOCK_DISPLAY_H
+#define USC_TEST_MOCK_DISPLAY_H
 
-#include "usc/stub_display_configuration.h"
+#include "usc/test/stub_display_configuration.h"
 
 #include <mir/graphics/display.h>
 #include <gmock/gmock.h>
 
 namespace usc
+{
+namespace test
 {
 struct MockDisplay : mir::graphics::Display
 {
@@ -31,7 +33,7 @@ struct MockDisplay : mir::graphics::Display
     }
 
     std::unique_ptr<mir::graphics::DisplayConfiguration> configuration() const override
-    { return std::make_unique<usc::StubDisplayConfiguration>(); }
+    { return std::make_unique<usc::test::StubDisplayConfiguration>(); }
 
     MOCK_METHOD1(configure, void(mir::graphics::DisplayConfiguration const& conf));
 
@@ -59,6 +61,7 @@ struct MockDisplay : mir::graphics::Display
     std::unique_ptr<mir::graphics::GLContext> create_gl_context() override
     { return std::unique_ptr<mir::graphics::GLContext>{};};
 };
+}
 }
 
 #endif

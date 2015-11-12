@@ -21,7 +21,7 @@
 #include "src/power_state_change_reason.h"
 #include "advanceable_timer.h"
 
-#include "usc/mock_display.h"
+#include "usc/test/mock_display.h"
 
 #include <mir/compositor/compositor.h>
 #include <mir/graphics/display_configuration.h>
@@ -34,6 +34,7 @@
 #include <atomic>
 
 namespace mg = mir::graphics;
+namespace ut = usc::test;
 
 namespace
 {
@@ -277,8 +278,8 @@ struct AMirScreen : testing::Test
         std::make_shared<testing::NiceMock<MockScreenHardware>>()};
     std::shared_ptr<MockCompositor> compositor{
         std::make_shared<testing::NiceMock<MockCompositor>>()};
-    std::shared_ptr<usc::MockDisplay> display{
-        std::make_shared<testing::NiceMock<usc::MockDisplay>>()};
+    std::shared_ptr<ut::MockDisplay> display{
+        std::make_shared<testing::NiceMock<ut::MockDisplay>>()};
     std::shared_ptr<MockTouchVisualizer> touch_visualizer{
         std::make_shared<testing::NiceMock<MockTouchVisualizer>>()};
     std::shared_ptr<AdvanceableTimer> timer{
