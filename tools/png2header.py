@@ -67,7 +67,7 @@ def export(image, variable_name):
     print "    unsigned char pixel_data[%d * %d * %d + 1];" % image_info
     print "} %s = {" % variable_name
     print "    %d, %d, %d," % image_info
-    print tocstring(image.tostring())
+    print tocstring(image.tobytes())
     print "};"
 
 def show_usage():
