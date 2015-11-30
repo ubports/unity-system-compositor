@@ -82,5 +82,6 @@ image_filename = sys.argv[1]
 variable_name = sys.argv[2]
 
 image = Image.open(image_filename)
-premultiply(image)
+if image.mode == 'RGBA':
+    premultiply(image)
 export(image, variable_name)
