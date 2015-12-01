@@ -241,7 +241,7 @@ std::shared_ptr<usc::InputConfiguration> usc::Server::the_input_configuration()
     return input_configuration(
         [this]
         {
-            return std::make_shared<MirInputConfiguration>();
+            return std::make_shared<MirInputConfiguration>(the_input_device_hub());
         });
 }
 
