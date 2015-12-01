@@ -27,8 +27,8 @@ namespace
 {
 struct DeviceObserver : mi::InputDeviceObserver
 {
-    usc::MirInputConfiguration * conf;
-    DeviceObserver(usc::MirInputConfiguration *conf)
+    usc::MirInputConfiguration* conf;
+    DeviceObserver(usc::MirInputConfiguration* conf)
         : conf{conf}
     {
     }
