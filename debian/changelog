@@ -1,3 +1,14 @@
+unity-system-compositor (0.2.0+15.10.20151008.1-0ubuntu1) wily; urgency=medium
+
+  [ Alexandros Frantzis ]
+  * Use new versions of mir::event::make_event() overloads.
+  * Rebuild for Mir 0.17.
+
+  [ CI Train Bot ]
+  * New rebuild forced.
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Thu, 08 Oct 2015 18:34:03 +0000
+
 unity-system-compositor (0.1.4+15.10.20150930.1-0ubuntu1) wily; urgency=medium
 
   [ Alexandros Frantzis ]
