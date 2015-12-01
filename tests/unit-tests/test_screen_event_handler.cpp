@@ -28,6 +28,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
+#include "linux/input.h"
 #include <atomic>
 
 namespace
@@ -64,6 +65,19 @@ struct AScreenEventHandler : testing::Test
         screen_event_handler.handle(*power_key_up_event);
     }
 
+    void press_a_key()
+    {
+        screen_event_handler.handle(*another_key_down_event);
+    }
+
+    void press_volume_keys()
+    {
+        screen_event_handler.handle(*vol_plus_key_down_event);
+        screen_event_handler.handle(*vol_plus_key_up_event);
+        screen_event_handler.handle(*vol_minus_key_down_event);
+        screen_event_handler.handle(*vol_minus_key_up_event);
+    }
+
     void touch_screen()
     {
         screen_event_handler.handle(*touch_event);
@@ -74,26 +88,55 @@ struct AScreenEventHandler : testing::Test
         screen_event_handler.handle(*pointer_event);
     }
 
-    static const int32_t POWER_KEY_CODE = 26;
     mir::EventUPtr power_key_down_event = mir::events::make_event(
         MirInputDeviceId{1}, std::chrono::nanoseconds(0),
 	    0, mir_keyboard_action_down,
-        POWER_KEY_CODE, 0, mir_input_event_modifier_none);
+        0, KEY_POWER, mir_input_event_modifier_none);
 
     mir::EventUPtr power_key_up_event = mir::events::make_event(
         MirInputDeviceId{1}, std::chrono::nanoseconds(0),
 	    0, mir_keyboard_action_up,
-        POWER_KEY_CODE, 0, mir_input_event_modifier_none);
+        0, KEY_POWER, mir_input_event_modifier_none);
+
+    mir::EventUPtr vol_plus_key_down_event = mir::events::make_event(
+        MirInputDeviceId{1}, std::chrono::nanoseconds(0),
+	    0, mir_keyboard_action_down,
+        0, KEY_VOLUMEUP, mir_input_event_modifier_none);
+
+    mir::EventUPtr vol_plus_key_up_event = mir::events::make_event(
+        MirInputDeviceId{1}, std::chrono::nanoseconds(0),
+	    0, mir_keyboard_action_up,
+        0, KEY_VOLUMEUP, mir_input_event_modifier_none);
+
+    mir::EventUPtr vol_minus_key_down_event = mir::events::make_event(
+        MirInputDeviceId{1}, std::chrono::nanoseconds(0),
+	    0, mir_keyboard_action_down,
+        0, KEY_VOLUMEDOWN, mir_input_event_modifier_none);
+
+    mir::EventUPtr vol_minus_key_up_event = mir::events::make_event(
+        MirInputDeviceId{1}, std::chrono::nanoseconds(0),
+	    0, mir_keyboard_action_up,
+        0, KEY_VOLUMEDOWN, mir_input_event_modifier_none);
+
+    mir::EventUPtr another_key_down_event = mir::events::make_event(
+        MirInputDeviceId{1}, std::chrono::nanoseconds(0),
+	    0, mir_keyboard_action_down,
+        0, KEY_A, mir_input_event_modifier_none);
+
+    mir::EventUPtr another_key_up_event = mir::events::make_event(
+        MirInputDeviceId{1}, std::chrono::nanoseconds(0),
+	    0, mir_keyboard_action_up,
+        0, KEY_A, mir_input_event_modifier_none);
 
     mir::EventUPtr touch_event = mir::events::make_event(
         MirInputDeviceId{1}, std::chrono::nanoseconds(0),
 	    0, mir_input_event_modifier_none);
-    
+
     mir::EventUPtr pointer_event = mir::events::make_event(
         MirInputDeviceId{1}, std::chrono::nanoseconds(0),
 	    0, mir_input_event_modifier_none,
         mir_pointer_action_motion,
-        {}, 0.0f, 0.0f, 0.0f, 0.0f);
+        {}, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 
     AdvanceableTimer timer;
     std::chrono::milliseconds const power_key_ignore_timeout{5000};
@@ -165,6 +208,20 @@ TEST_F(AScreenEventHandler, keeps_display_on_temporarily_on_pointer_event)
     EXPECT_CALL(mock_screen, keep_display_on_temporarily());
 
     move_pointer();
+}
+
+TEST_F(AScreenEventHandler, keeps_display_on_temporarily_on_other_keys)
+{
+    EXPECT_CALL(mock_screen, keep_display_on_temporarily());
+
+    press_a_key();
+}
+
+TEST_F(AScreenEventHandler, does_not_keep_display_on_for_volume_keys)
+{
+    EXPECT_CALL(mock_screen, keep_display_on_temporarily()).Times(0);
+
+    press_volume_keys();
 }
 
 TEST_F(AScreenEventHandler, sets_screen_mode_off_normal_press_release)

@@ -90,15 +90,25 @@ TEST_F(MirInputConfiguration, configures_device_on_add)
 {
     usc::MirInputConfiguration config(mock_hub);
 
+    EXPECT_CALL(*mock_touchpad, apply_pointer_configuration(_));
     EXPECT_CALL(*mock_touchpad, apply_touchpad_configuration(_));
     obs->device_added(mock_touchpad);
+}
+
+TEST_F(MirInputConfiguration, configures_mouse_on_add)
+{
+    usc::MirInputConfiguration config(mock_hub);
+
+    EXPECT_CALL(*mock_mouse, apply_pointer_configuration(_));
+    obs->device_added(mock_mouse);
 }
 
 TEST_F(MirInputConfiguration, ignores_keyboard_when_added)
 {
     usc::MirInputConfiguration config(mock_hub);
-    EXPECT_CALL(*mock_touchpad, apply_touchpad_configuration(_)).Times(0);
-    EXPECT_CALL(*mock_touchpad, apply_pointer_configuration(_)).Times(0);
+
+    EXPECT_CALL(*mock_keyboard, apply_touchpad_configuration(_)).Times(0);
+    EXPECT_CALL(*mock_keyboard, apply_pointer_configuration(_)).Times(0);
     obs->device_added(mock_keyboard);
 }
 

@@ -17,7 +17,7 @@
 project(UnitySystemCompositor)
 set(USC_VERSION_MAJOR 0)
 set(USC_VERSION_MINOR 1)
-set(USC_VERSION_PATCH 0)
+set(USC_VERSION_PATCH 4)
 set(USC_VERSION "${USC_VERSION_MAJOR}.${USC_VERSION_MINOR}.${USC_VERSION_PATCH}")
 
 cmake_minimum_required(VERSION 2.8)
@@ -35,7 +35,7 @@ set(CMAKE_AUTOMOC ON)
 
 # Use C++11 and warnings
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -Wall")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall")
 
 find_package(PkgConfig)
 pkg_check_modules(ANDROIDPROPS libandroid-properties)
