@@ -108,7 +108,9 @@ void usc::MirInputConfiguration::update_mice()
 
 void usc::MirInputConfiguration::set_mouse_primary_button(int32_t button)
 {
-    mouse_pointer_config.handedness = button == 0?mir_pointer_handedness_right:mir_pointer_handedness_left;
+    mouse_pointer_config.handedness = button == 0 ?
+        mir_pointer_handedness_right :
+        mir_pointer_handedness_left;
     update_mice();
 }
 
