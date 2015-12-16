@@ -1,3 +1,19 @@
+unity-system-compositor (0.2.0+16.04.20151216.1-0ubuntu1) xenial; urgency=medium
+
+  [ Alexandros Frantzis ]
+  * Merge trunk into 0.3.0
+
+  [ Andrea Cimitan ]
+  * Merge trunk into 0.3.0
+
+  [ Andreas Pokorny ]
+  * Merge trunk into 0.3.0
+
+  [ Kevin DuBois ]
+  * Merge trunk into 0.3.0
+
+ -- Kevin DuBois <kevin.dubois@canonical.com>  Wed, 16 Dec 2015 22:44:38 +0000
+
 unity-system-compositor (0.2.0+15.10.20151008.1-0ubuntu1) wily; urgency=medium
 
   [ Alexandros Frantzis ]
