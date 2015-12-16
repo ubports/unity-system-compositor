@@ -21,8 +21,9 @@
 #include "src/power_state_change_reason.h"
 #include "advanceable_timer.h"
 
+#include "usc/test/mock_display.h"
+
 #include <mir/compositor/compositor.h>
-#include <mir/graphics/display.h>
 #include <mir/graphics/display_configuration.h>
 #include <mir/graphics/gl_context.h>
 #include <mir/input/touch_visualizer.h>
@@ -33,6 +34,7 @@
 #include <atomic>
 
 namespace mg = mir::graphics;
+namespace ut = usc::test;
 
 namespace
 {
@@ -41,63 +43,6 @@ struct MockCompositor : mir::compositor::Compositor
 {
     MOCK_METHOD0(start, void());
     MOCK_METHOD0(stop, void());
-};
-
-struct StubDisplayConfiguration : mg::DisplayConfiguration
-{
-    StubDisplayConfiguration()
-    {
-        conf_output.power_mode = MirPowerMode::mir_power_mode_on;
-    }
-
-    void for_each_card(std::function<void(mg::DisplayConfigurationCard const&)> f) const override
-    {
-    }
-
-    void for_each_output(std::function<void(mg::DisplayConfigurationOutput const&)> f) const override
-    {
-        f(conf_output);
-    }
-
-    void for_each_output(std::function<void(mg::UserDisplayConfigurationOutput&)> f)
-    {
-        mg::UserDisplayConfigurationOutput user{conf_output};
-        f(user);
-    }
-
-    mg::DisplayConfigurationOutput conf_output;
-};
-
-struct MockDisplay : mg::Display
-{
-    void for_each_display_sync_group(std::function<void(mg::DisplaySyncGroup&)> const& f) override
-    {
-    }
-
-    std::unique_ptr<mg::DisplayConfiguration> configuration() const override
-    { return std::unique_ptr<mg::DisplayConfiguration>{new StubDisplayConfiguration{}}; }
-
-    MOCK_METHOD1(configure, void(mg::DisplayConfiguration const& conf));
-
-    void register_configuration_change_handler(
-    mg::EventHandlerRegister& ,
-    mg::DisplayConfigurationChangeHandler const& ) override {};
-
-    void register_pause_resume_handlers(
-        mg::EventHandlerRegister&,
-        mg::DisplayPauseHandler const&,
-        mg::DisplayResumeHandler const&) override
-    {
-    }
-
-    void pause() override {};
-
-    void resume() override {};
-
-    std::shared_ptr<mg::Cursor> create_hardware_cursor(std::shared_ptr<mg::CursorImage> const&) override {return{};};
-
-    std::unique_ptr<mg::GLContext> create_gl_context() override
-    { return std::unique_ptr<mg::GLContext>{};};
 };
 
 struct MockScreenHardware : usc::ScreenHardware
@@ -333,8 +278,8 @@ struct AMirScreen : testing::Test
         std::make_shared<testing::NiceMock<MockScreenHardware>>()};
     std::shared_ptr<MockCompositor> compositor{
         std::make_shared<testing::NiceMock<MockCompositor>>()};
-    std::shared_ptr<MockDisplay> display{
-        std::make_shared<testing::NiceMock<MockDisplay>>()};
+    std::shared_ptr<ut::MockDisplay> display{
+        std::make_shared<testing::NiceMock<ut::MockDisplay>>()};
     std::shared_ptr<MockTouchVisualizer> touch_visualizer{
         std::make_shared<testing::NiceMock<MockTouchVisualizer>>()};
     std::shared_ptr<AdvanceableTimer> timer{
