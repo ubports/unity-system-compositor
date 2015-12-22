@@ -1,3 +1,23 @@
+unity-system-compositor (0.2.0+16.04.20151222.1-0ubuntu1) xenial; urgency=medium
+
+  [ Alexandros Frantzis ]
+  * tests: Fix build failure with gcc-4.9
+
+  [ Andrea Cimitan ]
+  * Updated wallpaper for spinner from unity8.
+
+  [ Andreas Pokorny ]
+  * Add clone method to StubdisplayConfigurations
+  * Change keyboard handling to scan codes. (LP: #1514059, #1520422)
+  * do not premultiply RGB images
+  * follow the deprecation warning and use tobytes instead of tostring.
+
+  [ Kevin DuBois ]
+  * Accommodate RGB images (LP: #1528279)
+  * Accommodate RGB images (LP: #1528279)
+
+ -- Kevin DuBois <kevin.dubois@canonical.com>  Tue, 22 Dec 2015 19:09:40 +0000
+
 unity-system-compositor (0.2.0+15.10.20151008.1-0ubuntu1) wily; urgency=medium
 
   [ Alexandros Frantzis ]
