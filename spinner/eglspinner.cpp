@@ -150,14 +150,17 @@ template <typename Image>
 void uploadTexture (GLuint id, Image& image)
 {
     glBindTexture(GL_TEXTURE_2D, id);
+    GLint format = GL_RGBA;
+    if (image.bytes_per_pixel == 3)
+        format = GL_RGB;
 
     glTexImage2D(GL_TEXTURE_2D,
                  0,
-                 GL_RGBA,
+                 format,
                  image.width,
                  image.height,
                  0,
-                 GL_RGBA,
+                 format,
                  GL_UNSIGNED_BYTE,
                  image.pixel_data);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
