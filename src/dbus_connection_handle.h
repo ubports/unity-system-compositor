@@ -21,7 +21,7 @@
 
 #include <dbus/dbus.h>
 
-#include <iostream>
+#include <string>
 
 namespace usc
 {
