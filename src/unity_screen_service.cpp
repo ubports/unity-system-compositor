@@ -19,7 +19,7 @@
 #include "unity_screen_service.h"
 #include "screen.h"
 #include "dbus_message_handle.h"
-#include "dbus_connection_thread.h"
+#include "dbus_event_loop.h"
 #include "dbus_connection_handle.h"
 #include "scoped_dbus_error.h"
 
@@ -35,20 +35,22 @@ char const* const dbus_screen_service_name = "com.canonical.Unity.Screen";
 }
 
 usc::UnityScreenService::UnityScreenService(
-    std::shared_ptr<usc::DBusConnectionThread> const& dbus,
+    std::shared_ptr<usc::DBusEventLoop> const& loop,
+    std::string const& address,
     std::shared_ptr<usc::Screen> const& screen)
     : screen{screen},
-      dbus{dbus},
+      loop{loop},
+      connection{std::make_shared<DBusConnectionHandle>(address.c_str())},
       request_id{0}
 {
-    auto const& connection = dbus->connection();
-    connection.request_name(dbus_screen_service_name);
-    connection.add_match(
+    loop->add_connection(connection);
+    connection->request_name(dbus_screen_service_name);
+    connection->add_match(
         "type='signal',"
         "sender='org.freedesktop.DBus',"
         "interface='org.freedesktop.DBus',"
         "member='NameOwnerChanged'");
-    connection.add_filter(handle_dbus_message_thunk, this);
+    connection->add_filter(handle_dbus_message_thunk, this);
 
     screen->register_power_state_change_handler(
         [this](MirPowerMode mode, PowerStateChangeReason reason)
@@ -332,7 +334,7 @@ void usc::UnityScreenService::dbus_emit_DisplayPowerStateChange(
     int32_t const power_state = (power_mode == MirPowerMode::mir_power_mode_off) ? 0 : 1;
     int32_t const reason_int = static_cast<int32_t>(reason);
 
-    dbus->loop().enqueue(
+    loop->enqueue(
         [this, power_state, reason_int]
         {
             DBusMessageHandle signal{
@@ -344,6 +346,6 @@ void usc::UnityScreenService::dbus_emit_DisplayPowerStateChange(
                 DBUS_TYPE_INT32, &reason_int,
                 DBUS_TYPE_INVALID};
 
-            dbus_connection_send(dbus->connection(), signal, nullptr);
+            dbus_connection_send(*connection, signal, nullptr);
         });
 }

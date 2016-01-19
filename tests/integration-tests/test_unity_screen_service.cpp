@@ -19,6 +19,7 @@
 #include "src/unity_screen_service.h"
 #include "src/dbus_connection_handle.h"
 #include "src/dbus_connection_thread.h"
+#include "src/dbus_event_loop.h"
 #include "src/dbus_message_handle.h"
 #include "src/screen.h"
 #include "src/power_state_change_reason.h"
@@ -186,9 +187,12 @@ struct AUnityScreenService : testing::Test
     std::shared_ptr<MockScreen> const mock_screen =
         std::make_shared<testing::NiceMock<MockScreen>>();
     UnityScreenDBusClient client{bus.address()};
+    std::shared_ptr<usc::DBusEventLoop> const dbus_loop=
+        std::make_shared<usc::DBusEventLoop>();
+    usc::UnityScreenService service{dbus_loop, bus.address(), mock_screen};
     std::shared_ptr<usc::DBusConnectionThread> const dbus_thread =
-        std::make_shared<usc::DBusConnectionThread>(bus.address());
-    usc::UnityScreenService service{dbus_thread, mock_screen};
+        std::make_shared<usc::DBusConnectionThread>(dbus_loop);
+
 };
 
 }

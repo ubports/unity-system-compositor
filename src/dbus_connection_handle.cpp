@@ -22,12 +22,12 @@
 #include <stdexcept>
 #include <boost/throw_exception.hpp>
 
-usc::DBusConnectionHandle::DBusConnectionHandle(const char* address)
+usc::DBusConnectionHandle::DBusConnectionHandle(std::string const& address)
 {
     dbus_threads_init_default();
     ScopedDBusError error;
 
-    connection = dbus_connection_open_private(address, &error);
+    connection = dbus_connection_open_private(address.c_str(), &error);
     if (!connection || error)
     {
         BOOST_THROW_EXCEPTION(
