@@ -203,23 +203,50 @@ TEST_F(AScreenEventHandler, keeps_display_on_temporarily_on_touch_event)
     touch_screen();
 }
 
-TEST_F(AScreenEventHandler, keeps_display_on_temporarily_on_pointer_event)
+TEST_F(AScreenEventHandler, turns_on_screen_and_filters_first_pointer_event_when_screen_is_off)
 {
+    mock_screen.mock_mode = MirPowerMode::mir_power_mode_off;
+    EXPECT_CALL(mock_screen,
+                set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                      PowerStateChangeReason::unknown));
+
+    auto const event_filtered = screen_event_handler.handle(*pointer_event);
+    EXPECT_TRUE(event_filtered);
+}
+
+TEST_F(AScreenEventHandler, turns_on_screen_and_propagates_keys_when_screen_is_off)
+{
+    mock_screen.mock_mode = MirPowerMode::mir_power_mode_off;
+    EXPECT_CALL(mock_screen,
+                set_screen_power_mode(MirPowerMode::mir_power_mode_on,
+                                      PowerStateChangeReason::unknown));
+
+    auto const event_filtered = screen_event_handler.handle(*another_key_down_event);
+    EXPECT_FALSE(event_filtered);
+}
+
+TEST_F(AScreenEventHandler, keeps_display_on_temporarily_for_pointer_event_when_screen_is_on)
+{
+    mock_screen.mock_mode = MirPowerMode::mir_power_mode_on;
     EXPECT_CALL(mock_screen, keep_display_on_temporarily());
 
     move_pointer();
 }
 
-TEST_F(AScreenEventHandler, keeps_display_on_temporarily_on_other_keys)
+TEST_F(AScreenEventHandler, keeps_display_on_temporarily_key_event_when_screen_is_on)
 {
+    mock_screen.mock_mode = MirPowerMode::mir_power_mode_on;
     EXPECT_CALL(mock_screen, keep_display_on_temporarily());
 
     press_a_key();
 }
 
-TEST_F(AScreenEventHandler, does_not_keep_display_on_for_volume_keys)
+TEST_F(AScreenEventHandler, does_not_affect_screen_state_for_volume_keys)
 {
+    using namespace testing;
+
     EXPECT_CALL(mock_screen, keep_display_on_temporarily()).Times(0);
+    EXPECT_CALL(mock_screen, set_screen_power_mode(_,_)).Times(0);
 
     press_volume_keys();
 }
@@ -255,9 +282,11 @@ TEST_F(AScreenEventHandler, does_not_set_screen_mode_off_long_press_release)
     release_power_key();
 }
 
-TEST_F(AScreenEventHandler, passes_through_all_handled_events)
+TEST_F(AScreenEventHandler, passes_through_all_handled_events_when_screen_is_on)
 {
     using namespace testing;
+
+    mock_screen.mock_mode = MirPowerMode::mir_power_mode_on;
 
     EXPECT_FALSE(screen_event_handler.handle(*power_key_down_event));
     EXPECT_FALSE(screen_event_handler.handle(*power_key_up_event));
