@@ -26,8 +26,9 @@
 #include "src/unity_screen_service_introspection.h"
 #include "wait_condition.h"
 #include "dbus_bus.h"
-#include "dbus_client.h"
+#include "unity_screen_dbus_client.h"
 
+#include "usc/test/mock_screen.h"
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
@@ -39,154 +40,14 @@ namespace ut = usc::test;
 namespace
 {
 
-struct MockScreen : usc::Screen
-{
-    MOCK_METHOD1(enable_inactivity_timers, void(bool enable));
-    MOCK_METHOD0(keep_display_on_temporarily, void());
-
-    MOCK_METHOD0(get_screen_power_mode, MirPowerMode());
-    MOCK_METHOD2(set_screen_power_mode, void(MirPowerMode mode, PowerStateChangeReason reason));
-    MOCK_METHOD1(keep_display_on, void(bool on));
-    MOCK_METHOD1(set_brightness, void(int brightness));
-    MOCK_METHOD1(enable_auto_brightness, void(bool enable));
-    MOCK_METHOD2(set_inactivity_timeouts, void(int power_off_timeout, int dimmer_timeout));
-
-    MOCK_METHOD1(set_touch_visualization_enabled, void(bool enabled));
-
-    void register_power_state_change_handler(
-        usc::PowerStateChangeHandler const& handler)
-    {
-        power_state_change_handler = handler;
-    }
-
-    usc::PowerStateChangeHandler power_state_change_handler;
-};
-
-class UnityScreenDBusClient : public ut::DBusClient
-{
-public:
-    UnityScreenDBusClient(std::string const& address)
-        : ut::DBusClient{
-            address,
-            "com.canonical.Unity.Screen",
-            "/com/canonical/Unity/Screen"}
-    {
-        connection.add_match(
-            "type='signal',"
-            "interface='com.canonical.Unity.Screen',"
-            "member='DisplayPowerStateChange'");
-    }
-
-    ut::DBusAsyncReplyString request_introspection()
-    {
-        return invoke_with_reply<ut::DBusAsyncReplyString>(
-            "org.freedesktop.DBus.Introspectable", "Introspect",
-            DBUS_TYPE_INVALID);
-    }
-
-    ut::DBusAsyncReplyVoid request_set_user_brightness(int32_t brightness)
-    {
-        return invoke_with_reply<ut::DBusAsyncReplyVoid>(
-            unity_screen_interface, "setUserBrightness",
-            DBUS_TYPE_INT32, &brightness,
-            DBUS_TYPE_INVALID);
-    }
-
-    ut::DBusAsyncReplyVoid request_user_auto_brightness_enable(bool enabled)
-    {
-        dbus_bool_t const e = enabled ? TRUE : FALSE;
-        return invoke_with_reply<ut::DBusAsyncReplyVoid>(
-            unity_screen_interface, "userAutobrightnessEnable",
-            DBUS_TYPE_BOOLEAN, &e,
-            DBUS_TYPE_INVALID);
-    }
-
-    ut::DBusAsyncReplyVoid request_set_inactivity_timeouts(
-        int32_t poweroff_timeout, int32_t dimmer_timeout)
-    {
-        return invoke_with_reply<ut::DBusAsyncReplyVoid>(
-            unity_screen_interface, "setInactivityTimeouts",
-            DBUS_TYPE_INT32, &poweroff_timeout,
-            DBUS_TYPE_INT32, &dimmer_timeout,
-            DBUS_TYPE_INVALID);
-    }
-
-    ut::DBusAsyncReplyVoid request_set_touch_visualization_enabled(bool enabled)
-    {
-        dbus_bool_t const e = enabled ? TRUE : FALSE;
-        return invoke_with_reply<ut::DBusAsyncReplyVoid>(
-            unity_screen_interface, "setTouchVisualizationEnabled",
-            DBUS_TYPE_BOOLEAN, &e,
-            DBUS_TYPE_INVALID);
-    }
-
-    ut::DBusAsyncReplyBool request_set_screen_power_mode(
-        std::string const& mode, int reason)
-    {
-        auto mode_cstr = mode.c_str();
-        return invoke_with_reply<ut::DBusAsyncReplyBool>(
-            unity_screen_interface, "setScreenPowerMode",
-            DBUS_TYPE_STRING, &mode_cstr,
-            DBUS_TYPE_INT32, &reason,
-            DBUS_TYPE_INVALID);
-    }
-
-    ut::DBusAsyncReplyInt request_keep_display_on()
-    {
-        return invoke_with_reply<ut::DBusAsyncReplyInt>(
-            unity_screen_interface, "keepDisplayOn",
-            DBUS_TYPE_INVALID);
-    }
-
-    ut::DBusAsyncReplyVoid request_remove_display_on_request(int id)
-    {
-        return invoke_with_reply<ut::DBusAsyncReplyVoid>(
-            unity_screen_interface, "removeDisplayOnRequest",
-            DBUS_TYPE_INT32, &id,
-            DBUS_TYPE_INVALID);
-    }
-
-    ut::DBusAsyncReply request_invalid_method()
-    {
-        return invoke_with_reply<ut::DBusAsyncReply>(
-            unity_screen_interface, "invalidMethod",
-            DBUS_TYPE_INVALID);
-    }
-
-    ut::DBusAsyncReply request_method_with_invalid_arguments()
-    {
-        char const* const str = "abcd";
-        return invoke_with_reply<ut::DBusAsyncReply>(
-            unity_screen_interface, "setUserBrightness",
-            DBUS_TYPE_STRING, &str,
-            DBUS_TYPE_INVALID);
-    }
-
-    usc::DBusMessageHandle listen_for_power_state_change_signal()
-    {
-        while (true)
-        {
-            dbus_connection_read_write(connection, 1);
-            auto msg = usc::DBusMessageHandle{dbus_connection_pop_message(connection)};
-
-            if (msg && dbus_message_is_signal(msg, "com.canonical.Unity.Screen", "DisplayPowerStateChange"))
-            {
-                return msg;
-            }
-        }
-    }
-
-    char const* const unity_screen_interface = "com.canonical.Unity.Screen";
-};
-
 struct AUnityScreenService : testing::Test
 {
     std::chrono::seconds const default_timeout{3};
     ut::DBusBus bus;
 
-    std::shared_ptr<MockScreen> const mock_screen =
-        std::make_shared<testing::NiceMock<MockScreen>>();
-    UnityScreenDBusClient client{bus.address()};
+    std::shared_ptr<ut::MockScreen> const mock_screen =
+        std::make_shared<testing::NiceMock<ut::MockScreen>>();
+    ut::UnityScreenDBusClient client{bus.address()};
     std::shared_ptr<usc::DBusEventLoop> const dbus_loop=
         std::make_shared<usc::DBusEventLoop>();
     usc::UnityScreenService service{dbus_loop, bus.address(), mock_screen};
@@ -344,7 +205,7 @@ TEST_F(AUnityScreenService, disables_keep_display_on_when_all_clients_disconnect
 {
     using namespace testing;
 
-    UnityScreenDBusClient other_client{bus.address()};
+    ut::UnityScreenDBusClient other_client{bus.address()};
 
     EXPECT_CALL(*mock_screen, keep_display_on(true)).Times(4);
     EXPECT_CALL(*mock_screen, keep_display_on(false)).Times(0);

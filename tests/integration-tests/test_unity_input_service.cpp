@@ -21,14 +21,14 @@
 #include "src/dbus_connection_thread.h"
 #include "src/dbus_event_loop.h"
 #include "src/dbus_message_handle.h"
-#include "src/input_configuration.h"
 #include "src/unity_input_service_introspection.h"
+
 #include "wait_condition.h"
 #include "dbus_bus.h"
 #include "dbus_client.h"
+#include "unity_input_dbus_client.h"
 
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
+#include "usc/test/mock_input_configuration.h"
 
 #include <stdexcept>
 #include <memory>
@@ -38,125 +38,14 @@ namespace ut = usc::test;
 namespace
 {
 
-struct MockInputConfiguration : usc::InputConfiguration
-{
-public:
-    MOCK_METHOD1(set_mouse_primary_button, void(int32_t));
-    MOCK_METHOD1(set_mouse_cursor_speed, void(double));
-    MOCK_METHOD1(set_mouse_scroll_speed, void(double));
-    MOCK_METHOD1(set_touchpad_primary_button, void(int32_t));
-    MOCK_METHOD1(set_touchpad_cursor_speed, void(double));
-    MOCK_METHOD1(set_touchpad_scroll_speed, void(double));
-    MOCK_METHOD1(set_two_finger_scroll, void(bool));
-    MOCK_METHOD1(set_tap_to_click, void(bool));
-    MOCK_METHOD1(set_disable_touchpad_with_mouse, void(bool));
-    MOCK_METHOD1(set_disable_touchpad_while_typing, void(bool));
-};
-
-class UnityInputDBusClient : public ut::DBusClient
-{
-public:
-    UnityInputDBusClient(std::string const& address)
-        : ut::DBusClient{
-            address,
-            "com.canonical.Unity.Input",
-            "/com/canonical/Unity/Input"}
-    {
-    }
-
-    ut::DBusAsyncReplyString request_introspection()
-    {
-        return invoke_with_reply<ut::DBusAsyncReplyString>(
-            "org.freedesktop.DBus.Introspectable", "Introspect",
-            DBUS_TYPE_INVALID);
-    }
-
-    ut::DBusAsyncReplyVoid request(char const* requestName, int32_t value)
-    {
-        return invoke_with_reply<ut::DBusAsyncReplyVoid>(
-            unity_input_interface, requestName,
-            DBUS_TYPE_INT32, &value,
-            DBUS_TYPE_INVALID);
-    }
-
-    ut::DBusAsyncReplyVoid request_set_mouse_primary_button(int32_t button)
-    {
-        return request("setMousePrimaryButton", button);
-    }
-
-    ut::DBusAsyncReplyVoid request_set_touchpad_primary_button(int32_t button)
-    {
-        return request("setTouchpadPrimaryButton", button);
-    }
-
-    ut::DBusAsyncReplyVoid request(char const* requestName, double value)
-    {
-        return invoke_with_reply<ut::DBusAsyncReplyVoid>(
-            unity_input_interface, requestName,
-            DBUS_TYPE_DOUBLE, &value,
-            DBUS_TYPE_INVALID);
-    }
-
-    ut::DBusAsyncReplyVoid request_set_mouse_cursor_speed(double speed)
-    {
-        return request("setMouseCursorSpeed", speed);
-    }
-
-    ut::DBusAsyncReplyVoid request_set_mouse_scroll_speed(double speed)
-    {
-        return request("setMouseScrollSpeed", speed);
-    }
-
-    ut::DBusAsyncReplyVoid request_set_touchpad_cursor_speed(double speed)
-    {
-        return request("setTouchpadCursorSpeed", speed);
-    }
-
-    ut::DBusAsyncReplyVoid request_set_touchpad_scroll_speed(double speed)
-    {
-        return request("setTouchpadScrollSpeed", speed);
-    }
-
-    ut::DBusAsyncReplyVoid request(char const* requestName, bool value)
-    {
-        dbus_bool_t copied = value;
-        return invoke_with_reply<ut::DBusAsyncReplyVoid>(
-            unity_input_interface, requestName,
-            DBUS_TYPE_BOOLEAN, &copied,
-            DBUS_TYPE_INVALID);
-    }
-
-    ut::DBusAsyncReplyVoid request_set_touchpad_two_finger_scroll(bool enabled)
-    {
-        return request("setTouchpadTwoFingerScroll", enabled);
-    }
-
-    ut::DBusAsyncReplyVoid request_set_touchpad_tap_to_click(bool enabled)
-    {
-        return request("setTouchpadTapToClick", enabled);
-    }
-
-    ut::DBusAsyncReplyVoid request_set_touchpad_disable_with_mouse(bool enabled)
-    {
-        return request("setTouchpadDisableWithMouse", enabled);
-    }
-
-    ut::DBusAsyncReplyVoid request_set_touchpad_disable_while_typing(bool enabled)
-    {
-        return request("setTouchpadDisableWhileTyping", enabled);
-    }
-
-    char const* const unity_input_interface = "com.canonical.Unity.Input";
-};
-
 struct AUnityInputService : testing::Test
 {
     std::chrono::seconds const default_timeout{3};
     ut::DBusBus bus;
 
-    std::shared_ptr<MockInputConfiguration> const mock_input_configuration =
-        std::make_shared<testing::NiceMock<MockInputConfiguration>>();
-    UnityInputDBusClient client{bus.address()};
+    std::shared_ptr<ut::MockInputConfiguration> const mock_input_configuration =
+        std::make_shared<testing::NiceMock<ut::MockInputConfiguration>>();
+    ut::UnityInputDBusClient client{bus.address()};
     std::shared_ptr<usc::DBusEventLoop> const dbus_loop=
         std::make_shared<usc::DBusEventLoop>();
     usc::UnityInputService service{dbus_loop, bus.address(), mock_input_configuration};
