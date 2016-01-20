@@ -121,7 +121,7 @@ void usc::MirInputConfiguration::set_mouse_cursor_speed(double speed)
         clamped = 0.0;
     if (clamped > 1.0)
         clamped = 1.0;
-    mouse_pointer_config.cursor_acceleration_bias = speed * 2.0 - 1.0;
+    mouse_pointer_config.cursor_acceleration_bias = clamped * 2.0 - 1.0;
     update_mice();
 }
 
