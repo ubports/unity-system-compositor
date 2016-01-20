@@ -140,7 +140,12 @@ void usc::MirInputConfiguration::set_touchpad_primary_button(int32_t button)
 
 void usc::MirInputConfiguration::set_touchpad_cursor_speed(double speed)
 {
-    touchpad_pointer_config.cursor_acceleration_bias = speed * 2.0 - 1.0;
+    double clamped = speed;
+    if (clamped < 0.0)
+        clamped = 0.0;
+    if (clamped > 1.0)
+        clamped = 1.0;
+    touchpad_pointer_config.cursor_acceleration_bias = clamped * 2.0 - 1.0;
     update_touchpads();
 }
 
