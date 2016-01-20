@@ -19,6 +19,7 @@
 #include "src/unity_input_service.h"
 #include "src/dbus_connection_handle.h"
 #include "src/dbus_connection_thread.h"
+#include "src/dbus_event_loop.h"
 #include "src/dbus_message_handle.h"
 #include "src/unity_input_service_introspection.h"
 
@@ -45,9 +46,11 @@ struct AUnityInputService : testing::Test
     std::shared_ptr<ut::MockInputConfiguration> const mock_input_configuration =
         std::make_shared<testing::NiceMock<ut::MockInputConfiguration>>();
     ut::UnityInputDBusClient client{bus.address()};
+    std::shared_ptr<usc::DBusEventLoop> const dbus_loop=
+        std::make_shared<usc::DBusEventLoop>();
+    usc::UnityInputService service{dbus_loop, bus.address(), mock_input_configuration};
     std::shared_ptr<usc::DBusConnectionThread> const dbus_thread =
-        std::make_shared<usc::DBusConnectionThread>(bus.address());
-    usc::UnityInputService service{dbus_thread, mock_input_configuration};
+        std::make_shared<usc::DBusConnectionThread>(dbus_loop);
 };
 
 }

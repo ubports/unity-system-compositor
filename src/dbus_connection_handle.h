@@ -21,13 +21,15 @@
 
 #include <dbus/dbus.h>
 
+#include <string>
+
 namespace usc
 {
 
 class DBusConnectionHandle
 {
 public:
-    DBusConnectionHandle(char const* address);
+    DBusConnectionHandle(std::string const& address);
     ~DBusConnectionHandle();
 
     void request_name(char const* name) const;

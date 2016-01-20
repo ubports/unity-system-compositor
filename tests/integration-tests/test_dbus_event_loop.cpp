@@ -79,8 +79,9 @@ struct ADBusEventLoop : testing::Test
 {
     ADBusEventLoop()
     {
-        connection.request_name(test_service_name);
-        connection.add_filter(handle_dbus_message_thunk, this);
+        dbus_event_loop.add_connection(connection);
+        connection->request_name(test_service_name);
+        connection->add_filter(handle_dbus_message_thunk, this);
 
         std::promise<void> event_loop_started;
         auto event_loop_started_future = event_loop_started.get_future();
@@ -102,8 +103,7 @@ struct ADBusEventLoop : testing::Test
     }
 
     static ::DBusHandlerResult handle_dbus_message_thunk(
-        ::DBusConnection* connection, DBusMessage* message, void* user_data)
-    {
+        ::DBusConnection* connection, DBusMessage* message, void* user_data) {
         auto const a_dbus_event_loop = static_cast<ADBusEventLoop*>(user_data);
         return a_dbus_event_loop->handle_dbus_message(connection, message, user_data);
     }
@@ -142,8 +142,8 @@ struct ADBusEventLoop : testing::Test
 
     ut::DBusBus bus;
 
-    usc::DBusConnectionHandle connection{bus.address().c_str()};
-    usc::DBusEventLoop dbus_event_loop{connection};
+    std::shared_ptr<usc::DBusConnectionHandle> connection{std::make_shared<usc::DBusConnectionHandle>(bus.address())};
+    usc::DBusEventLoop dbus_event_loop{};
     std::thread dbus_loop_thread;
     TestDBusClient client{bus.address()};
 };
@@ -173,7 +173,7 @@ TEST_F(ADBusEventLoop, enqueues_send_requests)
                     test_service_interface,
                     "signal")};
 
-            dbus_connection_send(connection, msg, nullptr);
+            dbus_connection_send(*connection, msg, nullptr);
         });
 
     auto const reply = client.listen_for_signal();
@@ -214,7 +214,7 @@ TEST_F(ADBusEventLoop, handles_reply_timeouts)
 
             DBusPendingCall* pending{nullptr};
             dbus_connection_send_with_reply(
-                connection, msg, &pending, timeout_ms);
+                *connection, msg, &pending, timeout_ms);
             dbus_pending_call_set_notify(
                 pending, &pending_complete, &pending_promise, nullptr);
         });
