@@ -72,6 +72,7 @@ include_directories(
   ${Boost_INCLUDE_DIRS}
   ${GLESv2_INCLUDE_DIRS}
   ${MIRSERVER_INCLUDE_DIRS}
+  ${MIRCLIENT_INCLUDE_DIRS}
   ${DBUS_INCLUDE_DIRS}
 )
 add_definitions(

@@ -30,13 +30,15 @@
 
 namespace usc
 {
+class DBusConnectionHandle;
 
 class DBusEventLoop
 {
 public:
-    DBusEventLoop(DBusConnection* connection);
+    DBusEventLoop();
     ~DBusEventLoop();
 
+    void add_connection(std::shared_ptr<DBusConnectionHandle> const& connection);
     void run(std::promise<void>& started);
     void stop();
 
@@ -70,10 +72,10 @@ private:
     static void static_toggle_timeout(DBusTimeout* timeout, void* data);
     static void static_wake_up_loop(void* data);
 
-    DBusConnection* const connection;
     std::atomic<bool> running;
 
     std::mutex mutex;
+    std::vector<std::shared_ptr<DBusConnectionHandle>> connections;
     std::vector<DBusWatch*> watches;
     std::vector<std::pair<DBusTimeout*,mir::Fd>> timeouts;
     std::vector<std::function<void(void)>> actions;
