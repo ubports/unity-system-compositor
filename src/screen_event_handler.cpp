@@ -71,15 +71,19 @@ bool usc::ScreenEventHandler::handle(MirEvent const& event)
         }
         else
         {
-            std::lock_guard<std::mutex> lock{guard};
-            screen->keep_display_on_temporarily();
+            keep_or_turn_screen_on();
         }
     }
-    else if (input_event_type == mir_input_event_type_touch ||
-             input_event_type == mir_input_event_type_pointer)
+    else if (input_event_type == mir_input_event_type_touch)
     {
         std::lock_guard<std::mutex> lock{guard};
         screen->keep_display_on_temporarily();
+    }
+    else if (input_event_type == mir_input_event_type_pointer)
+    {
+        bool const filter_out_event = screen->get_screen_power_mode() != mir_power_mode_on;
+        keep_or_turn_screen_on();
+        return filter_out_event;
     }
 
     return false;
@@ -137,4 +141,19 @@ void usc::ScreenEventHandler::long_press_notification()
     screen->set_screen_power_mode(
         MirPowerMode::mir_power_mode_on, PowerStateChangeReason::power_key);
     long_press_detected = true;
+}
+
+void usc::ScreenEventHandler::keep_or_turn_screen_on()
+{
+    std::lock_guard<std::mutex> lock{guard};
+
+    if (screen->get_screen_power_mode() == mir_power_mode_off)
+    {
+        screen->set_screen_power_mode(
+            MirPowerMode::mir_power_mode_on, PowerStateChangeReason::unknown);
+    }
+    else
+    {
+        screen->keep_display_on_temporarily();
+    }
 }
