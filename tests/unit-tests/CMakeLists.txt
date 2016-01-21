@@ -25,6 +25,7 @@ add_executable(
   test_session_switcher.cpp
   test_screen_event_handler.cpp
   test_mir_screen.cpp
+  test_mir_input_configuration.cpp
 
   advanceable_timer.cpp
 )

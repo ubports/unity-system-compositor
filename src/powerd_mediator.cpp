@@ -45,8 +45,7 @@ usc::DBusMessageHandle make_powerd_method_call_message(
 }
 
 usc::PowerdMediator::PowerdMediator(std::string const& bus_addr)
-    : connection{bus_addr.c_str()},
-      dbus_event_loop{connection},
+    : connection{std::make_shared<DBusConnectionHandle>(bus_addr.c_str())},
       pending_suspend_block_request{false},
       dim_brightness_{10},
       min_brightness_{0},
@@ -59,17 +58,18 @@ usc::PowerdMediator::PowerdMediator(std::string const& bus_addr)
       proximity_enabled{false},
       sys_state{SysState::unknown}
 {
-    connection.add_match(
+    dbus_event_loop.add_connection(connection);
+    connection->add_match(
         "type='signal',"
         "sender='com.canonical.powerd',"
         "interface='com.canonical.powerd',"
         "member='SysPowerStateChange'");
-    connection.add_match(
+    connection->add_match(
         "type='signal',"
         "sender='org.freedesktop.DBus',"
         "interface='org.freedesktop.DBus',"
         "member='NameOwnerChanged'");
-    connection.add_filter(handle_dbus_message_thunk, this);
+    connection->add_filter(handle_dbus_message_thunk, this);
 
     std::promise<void> event_loop_started;
     auto event_loop_started_future = event_loop_started.get_future();
@@ -477,7 +477,7 @@ usc::DBusMessageHandle usc::PowerdMediator::invoke_with_reply(
         [this, &msg, &reply_promise]
         {
             auto const reply = dbus_connection_send_with_reply_and_block(
-                connection, msg, DBUS_TIMEOUT_USE_DEFAULT, nullptr);
+                *connection, msg, DBUS_TIMEOUT_USE_DEFAULT, nullptr);
 
             reply_promise.set_value(reply);
         };
