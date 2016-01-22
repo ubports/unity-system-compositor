@@ -20,9 +20,11 @@ set(USC_SRCS
   dbus_event_loop.cpp
   dbus_message_handle.cpp
   display_configuration_policy.cpp
-  external_spinner.cpp
+  external_spinner.cpp  
+  hw_performance_booster.cpp
   mir_screen.cpp
   mir_input_configuration.cpp
+  performance_booster.h
   powerd_mediator.cpp
   screen_event_handler.cpp
   server.cpp
@@ -74,6 +76,7 @@ include_directories(
   ${MIRSERVER_INCLUDE_DIRS}
   ${MIRCLIENT_INCLUDE_DIRS}
   ${DBUS_INCLUDE_DIRS}
+  ${UBUNTU_PLATFORM_HARDWARE_API_INCLUDE_DIRS}
 )
 add_definitions(
   -DDEFAULT_SPINNER="${CMAKE_INSTALL_FULL_BINDIR}/unity-system-compositor-spinner"
@@ -87,6 +90,7 @@ target_link_libraries(usc
   ${Boost_LIBRARIES}
   ${GLESv2_LIBRARIES}
   ${DBUS_LIBRARIES}
+  ${UBUNTU_PLATFORM_HARDWARE_API_LIBRARIES}
 )
 
 target_link_libraries(unity-system-compositor

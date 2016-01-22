@@ -19,6 +19,8 @@
 #ifndef USC_SERVER_H_
 #define USC_SERVER_H_
 
+#include "hw_performance_booster.h"
+
 #include <mir/server.h>
 #include <mir/cached_ptr.h>
 #include <mir/options/option.h>
@@ -171,6 +173,11 @@ private:
         // default value with DEFAULT_SPINNER instead of the empty string.
         auto x = the_options()->get("spinner", "");
         return x;
+    }
+
+    std::shared_ptr<PerformanceBooster> the_performance_booster()
+    {
+        return std::make_shared<HwPerformanceBooster>();
     }
 
     virtual std::shared_ptr<SessionSwitcher> the_session_switcher();

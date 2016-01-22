@@ -20,6 +20,7 @@ Build-Depends: cmake,
                python:any (>= 2.7),
                python-setuptools,
                python-pil,
+	       libubuntu-platform-hardware-api-dev,
 Standards-Version: 3.9.4
 Homepage: https://launchpad.net/unity-system-compositor
 # if you don't have have commit access to this branch but would like to upload

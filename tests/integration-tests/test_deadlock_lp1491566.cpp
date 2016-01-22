@@ -47,6 +47,11 @@ struct NullCompositor : mir::compositor::Compositor
     void stop() override {}
 };
 
+struct StubPerformanceBooster : usc::PerformanceBooster
+{
+    void enable_performance_boost_during_user_interaction() override {}
+    void disable_performance_boost_during_user_interaction() override {}
+};
 
 struct StubScreenHardware : usc::ScreenHardware
 {
@@ -153,6 +158,7 @@ struct DeadlockLP1491566 : public testing::Test
     std::chrono::milliseconds const dimmer_timeout{100};
 
     TestMirScreen mir_screen{
+        std::make_shared<StubPerformanceBooster>(),
         std::make_shared<StubScreenHardware>(),
         std::make_shared<NullCompositor>(),
         std::make_shared<::testing::NiceMock<ut::MockDisplay>>(),

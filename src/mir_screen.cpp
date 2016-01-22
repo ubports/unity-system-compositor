@@ -26,6 +26,7 @@
 #include <mir/input/touch_visualizer.h>
 
 #include <cstdio>
+#include "performance_booster.h"
 #include "screen_hardware.h"
 #include "power_state_change_reason.h"
 #include "server.h"
@@ -78,6 +79,7 @@ class usc::MirScreen::DimmerLockableCallback : public usc::MirScreen::LockableCa
 };
 
 usc::MirScreen::MirScreen(
+    std::shared_ptr<usc::PerformanceBooster> const& perf_booster,
     std::shared_ptr<usc::ScreenHardware> const& screen_hardware,
     std::shared_ptr<mir::compositor::Compositor> const& compositor,
     std::shared_ptr<mir::graphics::Display> const& display,
@@ -87,7 +89,8 @@ usc::MirScreen::MirScreen(
     Timeouts inactivity_timeouts,
     Timeouts notification_timeouts,
     Timeouts snap_decision_timeouts)
-    : screen_hardware{screen_hardware},
+    : perf_booster{perf_booster},
+      screen_hardware{screen_hardware},
       compositor{compositor},
       display{display},
       touch_visualizer{touch_visualizer},
@@ -268,11 +271,13 @@ void usc::MirScreen::configure_display_l(MirPowerMode mode, PowerStateChangeReas
     bool const power_on = mode == MirPowerMode::mir_power_mode_on;
     if (power_on)
     {
+        perf_booster->enable_performance_boost_during_user_interaction();
         //Some devices do not turn screen on properly from suspend mode
         screen_hardware->disable_suspend();
     }
     else
     {
+        perf_booster->disable_performance_boost_during_user_interaction();
         screen_hardware->turn_off_backlight();
     }
 

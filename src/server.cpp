@@ -252,6 +252,7 @@ std::shared_ptr<usc::Screen> usc::Server::the_screen()
         [this]
         {
             return std::make_shared<MirScreen>(
+                the_performance_booster(),
                 the_screen_hardware(),
                 the_compositor(),
                 the_display(),
