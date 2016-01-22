@@ -19,8 +19,6 @@
 #ifndef USC_SERVER_H_
 #define USC_SERVER_H_
 
-#include "hw_performance_booster.h"
-
 #include <mir/server.h>
 #include <mir/cached_ptr.h>
 #include <mir/options/option.h>
@@ -41,6 +39,7 @@ class Spinner;
 class SessionSwitcher;
 class DMMessageHandler;
 class DMConnection;
+class PerformanceBooster;
 class Screen;
 class ScreenHardware;
 class UnityScreenService;
@@ -63,6 +62,7 @@ public:
     using mir::Server::the_compositor;
     using mir::Server::the_touch_visualizer;
 
+    virtual std::shared_ptr<PerformanceBooster> the_performance_booster();
     virtual std::shared_ptr<Spinner> the_spinner();
     virtual std::shared_ptr<DMMessageHandler> the_dm_message_handler();
     virtual std::shared_ptr<DMConnection> the_dm_connection();
@@ -173,12 +173,7 @@ private:
         // default value with DEFAULT_SPINNER instead of the empty string.
         auto x = the_options()->get("spinner", "");
         return x;
-    }
-
-    std::shared_ptr<PerformanceBooster> the_performance_booster()
-    {
-        return std::make_shared<HwPerformanceBooster>();
-    }
+    }    
 
     virtual std::shared_ptr<SessionSwitcher> the_session_switcher();
     std::string dbus_bus_address();

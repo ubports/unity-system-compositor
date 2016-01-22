@@ -29,6 +29,7 @@
 #include "unity_input_service.h"
 #include "dbus_connection_thread.h"
 #include "dbus_event_loop.h"
+#include "hw_performance_booster.h"
 #include "display_configuration_policy.h"
 #include "steady_clock.h"
 
@@ -163,6 +164,11 @@ usc::Server::Server(int argc, char** argv)
     set_config_filename("unity-system-compositor.conf");
 
     apply_settings();
+}
+
+std::shared_ptr<usc::PerformanceBooster> usc::Server::the_performance_booster()
+{
+    return std::make_shared<HwPerformanceBooster>();
 }
 
 std::shared_ptr<usc::Spinner> usc::Server::the_spinner()

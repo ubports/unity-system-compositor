@@ -18,6 +18,7 @@
 
 #include "src/server.h"
 #include "src/mir_screen.h"
+#include "src/performance_booster.h"
 #include "src/screen_hardware.h"
 #include "src/power_state_change_reason.h"
 #include "spin_wait.h"
