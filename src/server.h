@@ -173,7 +173,7 @@ private:
         // default value with DEFAULT_SPINNER instead of the empty string.
         auto x = the_options()->get("spinner", "");
         return x;
-    }    
+    }
 
     virtual std::shared_ptr<SessionSwitcher> the_session_switcher();
     std::string dbus_bus_address();
