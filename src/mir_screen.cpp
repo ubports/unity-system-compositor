@@ -43,18 +43,14 @@ public:
 
     void lock() override
     {
-        guard_lock = std::unique_lock<std::mutex>{mir_screen->guard};
     }
 
     void unlock() override
     {
-        if (guard_lock.owns_lock())
-            guard_lock.unlock();
     }
     
 protected:
     MirScreen* const mir_screen;
-    std::unique_lock<std::mutex> guard_lock;
 };
 
 class usc::MirScreen::PowerOffLockableCallback : public usc::MirScreen::LockableCallback
@@ -394,12 +390,14 @@ bool usc::MirScreen::is_screen_change_allowed(MirPowerMode mode, PowerStateChang
 
 void usc::MirScreen::power_off_alarm_notification()
 {
+    std::lock_guard<std::mutex> lock{guard};
     configure_display_l(MirPowerMode::mir_power_mode_off, PowerStateChangeReason::inactivity);
     next_power_off = {};
 }
 
 void usc::MirScreen::dimmer_alarm_notification()
 {
+    std::lock_guard<std::mutex> lock{guard};
     if (current_power_mode != MirPowerMode::mir_power_mode_off)
         screen_hardware->set_dim_backlight();
     next_dimming = {};
