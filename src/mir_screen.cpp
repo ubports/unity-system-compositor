@@ -183,7 +183,7 @@ void usc::MirScreen::set_inactivity_timeouts(int raw_poweroff_timeout, int raw_d
 
 void usc::MirScreen::set_screen_power_mode_l(MirPowerMode mode, PowerStateChangeReason reason)
 {
-    if (!is_screen_change_allowed(mode, reason))
+    if (!is_screen_change_allowed_l(mode, reason))
         return;
 
     // Notifications don't turn on the screen directly, they rely on proximity events
@@ -316,7 +316,7 @@ void usc::MirScreen::reset_timers_ignoring_power_mode_l(
     if (!restart_timers)
         return;
 
-    auto const timeouts = timeouts_for(reason);
+    auto const timeouts = timeouts_for_l(reason);
     auto const now = clock->now();
 
     if (timeouts.power_off_timeout.count() > 0)
@@ -358,7 +358,7 @@ void usc::MirScreen::enable_inactivity_timers_l(bool enable)
         cancel_timers_l(PowerStateChangeReason::inactivity);
 }
 
-usc::MirScreen::Timeouts usc::MirScreen::timeouts_for(PowerStateChangeReason reason)
+usc::MirScreen::Timeouts usc::MirScreen::timeouts_for_l(PowerStateChangeReason reason)
 {
     if (reason == PowerStateChangeReason::notification ||
         reason == PowerStateChangeReason::proximity ||
@@ -376,7 +376,7 @@ usc::MirScreen::Timeouts usc::MirScreen::timeouts_for(PowerStateChangeReason rea
     }
 }
 
-bool usc::MirScreen::is_screen_change_allowed(MirPowerMode mode, PowerStateChangeReason reason)
+bool usc::MirScreen::is_screen_change_allowed_l(MirPowerMode mode, PowerStateChangeReason reason)
 {
     if (mode == MirPowerMode::mir_power_mode_on &&
         reason == PowerStateChangeReason::proximity &&

@@ -92,8 +92,8 @@ private:
     void reset_timers_l(PowerStateChangeReason reason);
     void reset_timers_ignoring_power_mode_l(PowerStateChangeReason reason, ForceResetTimers force);
     void enable_inactivity_timers_l(bool flag);
-    Timeouts timeouts_for(PowerStateChangeReason reason);
-    bool is_screen_change_allowed(MirPowerMode mode, PowerStateChangeReason reason);
+    Timeouts timeouts_for_l(PowerStateChangeReason reason);
+    bool is_screen_change_allowed_l(MirPowerMode mode, PowerStateChangeReason reason);
 
     void long_press_alarm_notification();
 
