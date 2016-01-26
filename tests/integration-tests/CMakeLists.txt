@@ -33,9 +33,12 @@ add_executable(
   dbus_bus.cpp
   dbus_client.cpp
   spin_wait.cpp
+  unity_screen_dbus_client.cpp
+  unity_input_dbus_client.cpp
   test_dbus_event_loop.cpp
   test_unity_screen_service.cpp
   test_unity_input_service.cpp
+  test_unity_services.cpp
   test_external_spinner.cpp
   test_powerd_mediator.cpp
   test_deadlock_lp1491566.cpp

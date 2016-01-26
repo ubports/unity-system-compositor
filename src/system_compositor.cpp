@@ -124,6 +124,7 @@ void usc::SystemCompositor::run()
 
                 unity_screen_service = server->the_unity_screen_service();
                 unity_input_service = server->the_unity_input_service();
+                dbus_service_thread = server->the_dbus_connection_thread();
             }
         });
 

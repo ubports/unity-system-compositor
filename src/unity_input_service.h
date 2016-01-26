@@ -20,18 +20,20 @@
 #define USC_UNITY_INPUT_SERVICE_H_
 
 #include <dbus/dbus.h>
+#include "dbus_connection_handle.h"
 #include <memory>
 
 namespace usc
 {
-class DBusConnectionThread;
+class DBusEventLoop;
 class InputConfiguration;
 
 class UnityInputService
 {
 public:
     UnityInputService(
-        std::shared_ptr<usc::DBusConnectionThread> const& dbus_thread,
+        std::shared_ptr<usc::DBusEventLoop> const& loop,
+        std::string const& address,
         std::shared_ptr<usc::InputConfiguration> const& input_config);
 
 private:
@@ -44,7 +46,8 @@ private:
     void handle_message(DBusMessage* message, void (usc::InputConfiguration::* method)(int32_t));
     void handle_message(DBusMessage* message, void (usc::InputConfiguration::* method)(double));
 
-    std::shared_ptr<usc::DBusConnectionThread> const dbus;
+    std::shared_ptr<usc::DBusEventLoop> const loop;
+    std::shared_ptr<usc::DBusConnectionHandle> connection;
     std::shared_ptr<usc::InputConfiguration> const input_config;
 };
 

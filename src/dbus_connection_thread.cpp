@@ -17,11 +17,10 @@
  */
 
 #include "dbus_connection_thread.h"
+#include "dbus_event_loop.h"
 #include "thread_name.h"
 
-usc::DBusConnectionThread::DBusConnectionThread(std::string const& address)
-    : dbus_connection{address.c_str()},
-      dbus_event_loop{dbus_connection}
+usc::DBusConnectionThread::DBusConnectionThread(std::shared_ptr<DBusEventLoop> const& loop) : dbus_event_loop(loop)
 {
     std::promise<void> event_loop_started;
     auto event_loop_started_future = event_loop_started.get_future();
@@ -30,7 +29,7 @@ usc::DBusConnectionThread::DBusConnectionThread(std::string const& address)
         [this,&event_loop_started]
         {
             usc::set_thread_name("USC/DBus");
-            dbus_event_loop.run(event_loop_started);
+            dbus_event_loop->run(event_loop_started);
         });
 
     event_loop_started_future.wait();
@@ -38,16 +37,11 @@ usc::DBusConnectionThread::DBusConnectionThread(std::string const& address)
 
 usc::DBusConnectionThread::~DBusConnectionThread()
 {
-    dbus_event_loop.stop();
+    dbus_event_loop->stop();
     dbus_loop_thread.join();
-}
-
-usc::DBusConnectionHandle const& usc::DBusConnectionThread::connection() const
-{
-    return dbus_connection;
 }
 
 usc::DBusEventLoop & usc::DBusConnectionThread::loop()
 {
-    return dbus_event_loop;
+    return *dbus_event_loop;
 }
