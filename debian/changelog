@@ -1,3 +1,9 @@
+unity-system-compositor (0.4.0) UNRELEASED; urgency=medium
+
+  * 0.4 placeholder
+
+ -- Brandon Schaefer <brandontschaefer@gmail.com>  Tue, 26 Jan 2016 09:39:53 -0800
+
 unity-system-compositor (0.3.1+16.04.20160121.1-0ubuntu1) xenial; urgency=medium
 
   [ CI Train Bot ]
