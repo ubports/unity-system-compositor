@@ -90,51 +90,51 @@ struct AScreenEventHandler : testing::Test
 
     mir::EventUPtr power_key_down_event = mir::events::make_event(
         MirInputDeviceId{1}, std::chrono::nanoseconds(0),
-	    0, mir_keyboard_action_down,
+	    std::vector<uint8_t>{}, mir_keyboard_action_down,
         0, KEY_POWER, mir_input_event_modifier_none);
 
     mir::EventUPtr power_key_up_event = mir::events::make_event(
         MirInputDeviceId{1}, std::chrono::nanoseconds(0),
-	    0, mir_keyboard_action_up,
+	    std::vector<uint8_t>{}, mir_keyboard_action_up,
         0, KEY_POWER, mir_input_event_modifier_none);
 
     mir::EventUPtr vol_plus_key_down_event = mir::events::make_event(
         MirInputDeviceId{1}, std::chrono::nanoseconds(0),
-	    0, mir_keyboard_action_down,
+	    std::vector<uint8_t>{}, mir_keyboard_action_down,
         0, KEY_VOLUMEUP, mir_input_event_modifier_none);
 
     mir::EventUPtr vol_plus_key_up_event = mir::events::make_event(
         MirInputDeviceId{1}, std::chrono::nanoseconds(0),
-	    0, mir_keyboard_action_up,
+	    std::vector<uint8_t>{}, mir_keyboard_action_up,
         0, KEY_VOLUMEUP, mir_input_event_modifier_none);
 
     mir::EventUPtr vol_minus_key_down_event = mir::events::make_event(
         MirInputDeviceId{1}, std::chrono::nanoseconds(0),
-	    0, mir_keyboard_action_down,
+	    std::vector<uint8_t>{}, mir_keyboard_action_down,
         0, KEY_VOLUMEDOWN, mir_input_event_modifier_none);
 
     mir::EventUPtr vol_minus_key_up_event = mir::events::make_event(
         MirInputDeviceId{1}, std::chrono::nanoseconds(0),
-	    0, mir_keyboard_action_up,
+	    std::vector<uint8_t>{}, mir_keyboard_action_up,
         0, KEY_VOLUMEDOWN, mir_input_event_modifier_none);
 
     mir::EventUPtr another_key_down_event = mir::events::make_event(
         MirInputDeviceId{1}, std::chrono::nanoseconds(0),
-	    0, mir_keyboard_action_down,
+	    std::vector<uint8_t>{}, mir_keyboard_action_down,
         0, KEY_A, mir_input_event_modifier_none);
 
     mir::EventUPtr another_key_up_event = mir::events::make_event(
         MirInputDeviceId{1}, std::chrono::nanoseconds(0),
-	    0, mir_keyboard_action_up,
+	    std::vector<uint8_t>{}, mir_keyboard_action_up,
         0, KEY_A, mir_input_event_modifier_none);
 
     mir::EventUPtr touch_event = mir::events::make_event(
         MirInputDeviceId{1}, std::chrono::nanoseconds(0),
-	    0, mir_input_event_modifier_none);
+	    std::vector<uint8_t>{}, mir_input_event_modifier_none);
 
     mir::EventUPtr pointer_event = mir::events::make_event(
         MirInputDeviceId{1}, std::chrono::nanoseconds(0),
-	    0, mir_input_event_modifier_none,
+	    std::vector<uint8_t>{}, mir_input_event_modifier_none,
         mir_pointer_action_motion,
         {}, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 
