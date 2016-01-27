@@ -32,6 +32,7 @@
 #include "display_configuration_policy.h"
 #include "steady_clock.h"
 
+#include <mir/cookie/authority.h>
 #include <mir/input/cursor_listener.h>
 #include <mir/server_status_listener.h>
 #include <mir/shell/focus_controller.h>
@@ -99,6 +100,33 @@ struct ServerStatusListener : public mir::ServerStatusListener
 
     std::shared_ptr<msh::FocusController> const focus_controller;
 };
+
+struct StubCookie : public mir::cookie::Cookie
+{
+    uint64_t timestamp() const override
+    {
+        return 0;
+    }
+
+    std::vector<uint8_t> serialize() const override
+    {
+        return std::vector<uint8_t>();
+    }
+};
+
+struct StubCookieAuthority : public mir::cookie::Authority
+{
+    std::unique_ptr<mir::cookie::Cookie> make_cookie(uint64_t const& timestamp) override
+    {
+        return std::unique_ptr<StubCookie>(new StubCookie());
+    }
+
+    std::unique_ptr<mir::cookie::Cookie> make_cookie(std::vector<uint8_t> const& raw_cookie) override
+    {
+        return std::unique_ptr<StubCookie>(new StubCookie());
+    }
+};
+
 const char* const dm_from_fd = "from-dm-fd";
 const char* const dm_to_fd = "to-dm-fd";
 const char* const dm_stub = "debug-without-dm";
@@ -159,6 +187,12 @@ usc::Server::Server(int argc, char** argv)
              the_session_coordinator(),
              the_session_switcher());
        });
+
+    override_the_cookie_authority([this]()
+    -> std::shared_ptr<mir::cookie::Authority>
+    {
+        return std::make_unique<StubCookieAuthority>();
+    });
 
     set_config_filename("unity-system-compositor.conf");
 
