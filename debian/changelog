@@ -1,6 +1,7 @@
 unity-system-compositor (0.4.0) UNRELEASED; urgency=medium
 
-  * 0.4 placeholder
+  * New upstream release 0.4.0
+    . Stub the cookie authority so we dont depend on entropy (LP: #1536662)
 
  -- Brandon Schaefer <brandontschaefer@gmail.com>  Tue, 26 Jan 2016 09:39:53 -0800
 
