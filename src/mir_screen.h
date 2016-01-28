@@ -76,8 +76,8 @@ public:
 
 protected:
     // These are protected virtual because we need to override them in tests
-    virtual void power_off_alarm_notification();
-    virtual void dimmer_alarm_notification();
+    virtual void power_off_alarm_notification_l();
+    virtual void dimmer_alarm_notification_l();
 
 private:
     enum class ForceResetTimers { no, yes };
