@@ -99,7 +99,6 @@ struct ServerStatusListener : public mir::ServerStatusListener
 
     std::shared_ptr<msh::FocusController> const focus_controller;
 };
-
 const char* const dm_from_fd = "from-dm-fd";
 const char* const dm_to_fd = "to-dm-fd";
 const char* const dm_stub = "debug-without-dm";
