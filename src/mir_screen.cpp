@@ -26,6 +26,7 @@
 #include <mir/input/touch_visualizer.h>
 
 #include <cstdio>
+#include <assert.h>
 #include "screen_hardware.h"
 #include "power_state_change_reason.h"
 #include "server.h"
@@ -43,14 +44,17 @@ public:
 
     void lock() override
     {
+        guard_lock = std::unique_lock<std::mutex>{mir_screen->guard};
     }
 
     void unlock() override
     {
+        guard_lock.unlock();
     }
     
 protected:
     MirScreen* const mir_screen;
+    std::unique_lock<std::mutex> guard_lock;
 };
 
 class usc::MirScreen::PowerOffLockableCallback : public usc::MirScreen::LockableCallback
@@ -59,7 +63,11 @@ class usc::MirScreen::PowerOffLockableCallback : public usc::MirScreen::Lockable
 
     void operator()() override
     {
-        mir_screen->power_off_alarm_notification();
+        // We need to hold the lock before calling power_off_alarm_notification_l()
+        // (and not acquire it in that function) as we override the function to
+        // test for deadlock conditions. C.f. test_deadlock_lp1491566.cpp
+        assert(guard_lock.owns_lock());
+        mir_screen->power_off_alarm_notification_l();
     }
 };
 
@@ -69,7 +77,11 @@ class usc::MirScreen::DimmerLockableCallback : public usc::MirScreen::LockableCa
 
     void operator()() override
     {
-        mir_screen->dimmer_alarm_notification();
+        // We need to hold the lock before calling dimmer_alarm_notification_l()
+        // (and not acquire it in that function) as we override the function to
+        // test for deadlock conditions. C.f. test_deadlock_lp1491566.cpp
+        assert(guard_lock.owns_lock());
+        mir_screen->dimmer_alarm_notification_l();
     }
 };
 
@@ -388,16 +400,14 @@ bool usc::MirScreen::is_screen_change_allowed_l(MirPowerMode mode, PowerStateCha
     return true;
 }
 
-void usc::MirScreen::power_off_alarm_notification()
+void usc::MirScreen::power_off_alarm_notification_l()
 {
-    std::lock_guard<std::mutex> lock{guard};
     configure_display_l(MirPowerMode::mir_power_mode_off, PowerStateChangeReason::inactivity);
     next_power_off = {};
 }
 
-void usc::MirScreen::dimmer_alarm_notification()
+void usc::MirScreen::dimmer_alarm_notification_l()
 {
-    std::lock_guard<std::mutex> lock{guard};
     if (current_power_mode != MirPowerMode::mir_power_mode_off)
         screen_hardware->set_dim_backlight();
     next_dimming = {};
