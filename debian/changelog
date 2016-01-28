@@ -1,9 +1,13 @@
-unity-system-compositor (0.4.0) UNRELEASED; urgency=medium
+unity-system-compositor (0.4.0+16.04.20160128.1-0ubuntu1) xenial; urgency=medium
 
+  [ Brandon Schaefer ]
   * New upstream release 0.4.0
     . Server ABI break, update make_event
 
- -- Brandon Schaefer <brandontschaefer@gmail.com>  Tue, 26 Jan 2016 09:39:53 -0800
+  [ CI Train Bot ]
+  * No-change rebuild.
+
+ -- Brandon Schaefer <ci-train-bot@canonical.com>  Thu, 28 Jan 2016 14:20:54 +0000
 
 unity-system-compositor (0.3.1+16.04.20160121.1-0ubuntu1) xenial; urgency=medium
 
