@@ -24,8 +24,12 @@
 #include <mir/graphics/display.h>
 #include <mir/graphics/display_configuration.h>
 #include <mir/input/touch_visualizer.h>
+#include <mir/log.h>
+#include <mir/report_exception.h>
 
 #include <cstdio>
+#include <sstream>
+
 #include <assert.h>
 #include "screen_hardware.h"
 #include "power_state_change_reason.h"
@@ -33,6 +37,18 @@
 
 namespace mi = mir::input;
 namespace mg = mir::graphics;
+
+namespace
+{
+void log_exception_in(char const* const func)
+{
+    static char const* const warning_format = "%s failed: %s";
+    std::stringstream buffer;
+
+    mir::report_exception(buffer);
+    mir::log(::mir::logging::Severity::warning, "usc::MirScreen", warning_format, func, buffer.str().c_str());
+}
+}
 
 class usc::MirScreen::LockableCallback : public mir::LockableCallback
 {
@@ -114,13 +130,21 @@ usc::MirScreen::MirScreen(
       allow_proximity_to_turn_on_screen{false},
       turned_on_by_user{true}
 {
-    /*
-     * Make sure the compositor is running as certain conditions can
-     * cause Mir to tear down the compositor threads before we get
-     * to this point. See bug #1410381.
-     */
-    compositor->start();
-    reset_timers_l(PowerStateChangeReason::inactivity);
+    try
+    {
+        /*
+         * Make sure the compositor is running as certain conditions can
+         * cause Mir to tear down the compositor threads before we get
+         * to this point. See bug #1410381.
+         */
+        compositor->start();
+        reset_timers_l(PowerStateChangeReason::inactivity);
+    }
+    catch (...)
+    {
+        log_exception_in(__func__);
+        throw;
+    }
 }
 
 usc::MirScreen::~MirScreen() = default;
@@ -194,6 +218,7 @@ void usc::MirScreen::set_inactivity_timeouts(int raw_poweroff_timeout, int raw_d
 }
 
 void usc::MirScreen::set_screen_power_mode_l(MirPowerMode mode, PowerStateChangeReason reason)
+try
 {
     if (!is_screen_change_allowed_l(mode, reason))
         return;
@@ -241,8 +266,13 @@ void usc::MirScreen::set_screen_power_mode_l(MirPowerMode mode, PowerStateChange
         configure_display_l(mode, reason);
     }
 }
+catch (std::exception const&)
+{
+    log_exception_in(__func__);
+}
 
 void usc::MirScreen::configure_display_l(MirPowerMode mode, PowerStateChangeReason reason)
+try
 {
     if (reason != PowerStateChangeReason::proximity)
     {
@@ -299,6 +329,10 @@ void usc::MirScreen::configure_display_l(MirPowerMode mode, PowerStateChangeReas
 
     if (!power_on)
         screen_hardware->allow_suspend();
+}
+catch (std::exception const&)
+{
+    log_exception_in(__func__);
 }
 
 void usc::MirScreen::cancel_timers_l(PowerStateChangeReason reason)
