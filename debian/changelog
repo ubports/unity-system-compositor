@@ -1,3 +1,52 @@
+unity-system-compositor (0.4.0+16.04.20160128.1-0ubuntu1) xenial; urgency=medium
+
+  [ Brandon Schaefer ]
+  * New upstream release 0.4.0
+    . Server ABI break, update make_event
+
+  [ CI Train Bot ]
+  * No-change rebuild.
+
+ -- Brandon Schaefer <ci-train-bot@canonical.com>  Thu, 28 Jan 2016 14:20:54 +0000
+
+unity-system-compositor (0.3.1+16.04.20160121.1-0ubuntu1) xenial; urgency=medium
+
+  [ CI Train Bot ]
+  * No-change rebuild.
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Thu, 21 Jan 2016 17:58:58 +0000
+
+unity-system-compositor (0.3.1+16.04.20160121-0ubuntu1) xenial; urgency=medium
+
+  [ Alexandros Frantzis ]
+  * Unblank the screen when a pointer or key event arrives. (LP: #1488413)
+
+  [ Andreas Pokorny ]
+  * Implement a DBus interface for setting pointer speed/acceleration.
+    (LP: #1536383)
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Thu, 21 Jan 2016 19:27:33 +0200
+
+unity-system-compositor (0.2.0+16.04.20151222.1-0ubuntu1) xenial; urgency=medium
+
+  [ Alexandros Frantzis ]
+  * tests: Fix build failure with gcc-4.9
+
+  [ Andrea Cimitan ]
+  * Updated wallpaper for spinner from unity8.
+
+  [ Andreas Pokorny ]
+  * Add clone method to StubdisplayConfigurations
+  * Change keyboard handling to scan codes. (LP: #1514059, #1520422)
+  * do not premultiply RGB images
+  * follow the deprecation warning and use tobytes instead of tostring.
+
+  [ Kevin DuBois ]
+  * Accommodate RGB images (LP: #1528279)
+  * Accommodate RGB images (LP: #1528279)
+
+ -- Kevin DuBois <kevin.dubois@canonical.com>  Tue, 22 Dec 2015 19:09:40 +0000
+
 unity-system-compositor (0.2.0+16.04.20151216.1-0ubuntu1) xenial; urgency=medium
 
   [ Alexandros Frantzis ]
