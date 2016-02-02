@@ -78,8 +78,8 @@ public:
 
 protected:
     // These are protected virtual because we need to override them in tests
-    virtual void power_off_alarm_notification();
-    virtual void dimmer_alarm_notification();
+    virtual void power_off_alarm_notification_l();
+    virtual void dimmer_alarm_notification_l();
 
 private:
     enum class ForceResetTimers { no, yes };
@@ -94,8 +94,8 @@ private:
     void reset_timers_l(PowerStateChangeReason reason);
     void reset_timers_ignoring_power_mode_l(PowerStateChangeReason reason, ForceResetTimers force);
     void enable_inactivity_timers_l(bool flag);
-    Timeouts timeouts_for(PowerStateChangeReason reason);
-    bool is_screen_change_allowed(MirPowerMode mode, PowerStateChangeReason reason);
+    Timeouts timeouts_for_l(PowerStateChangeReason reason);
+    bool is_screen_change_allowed_l(MirPowerMode mode, PowerStateChangeReason reason);
 
     void long_press_alarm_notification();
 

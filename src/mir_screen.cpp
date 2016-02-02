@@ -26,6 +26,8 @@
 #include <mir/input/touch_visualizer.h>
 
 #include <cstdio>
+#include <assert.h>
+
 #include "performance_booster.h"
 #include "screen_hardware.h"
 #include "power_state_change_reason.h"
@@ -49,8 +51,7 @@ public:
 
     void unlock() override
     {
-        if (guard_lock.owns_lock())
-            guard_lock.unlock();
+        guard_lock.unlock();
     }
     
 protected:
@@ -64,7 +65,11 @@ class usc::MirScreen::PowerOffLockableCallback : public usc::MirScreen::Lockable
 
     void operator()() override
     {
-        mir_screen->power_off_alarm_notification();
+        // We need to hold the lock before calling power_off_alarm_notification_l()
+        // (and not acquire it in that function) as we override the function to
+        // test for deadlock conditions. C.f. test_deadlock_lp1491566.cpp
+        assert(guard_lock.owns_lock());
+        mir_screen->power_off_alarm_notification_l();
     }
 };
 
@@ -74,7 +79,11 @@ class usc::MirScreen::DimmerLockableCallback : public usc::MirScreen::LockableCa
 
     void operator()() override
     {
-        mir_screen->dimmer_alarm_notification();
+        // We need to hold the lock before calling dimmer_alarm_notification_l()
+        // (and not acquire it in that function) as we override the function to
+        // test for deadlock conditions. C.f. test_deadlock_lp1491566.cpp
+        assert(guard_lock.owns_lock());
+        mir_screen->dimmer_alarm_notification_l();
     }
 };
 
@@ -190,7 +199,7 @@ void usc::MirScreen::set_inactivity_timeouts(int raw_poweroff_timeout, int raw_d
 
 void usc::MirScreen::set_screen_power_mode_l(MirPowerMode mode, PowerStateChangeReason reason)
 {
-    if (!is_screen_change_allowed(mode, reason))
+    if (!is_screen_change_allowed_l(mode, reason))
         return;
 
     // Notifications don't turn on the screen directly, they rely on proximity events
@@ -325,7 +334,7 @@ void usc::MirScreen::reset_timers_ignoring_power_mode_l(
     if (!restart_timers)
         return;
 
-    auto const timeouts = timeouts_for(reason);
+    auto const timeouts = timeouts_for_l(reason);
     auto const now = clock->now();
 
     if (timeouts.power_off_timeout.count() > 0)
@@ -367,7 +376,7 @@ void usc::MirScreen::enable_inactivity_timers_l(bool enable)
         cancel_timers_l(PowerStateChangeReason::inactivity);
 }
 
-usc::MirScreen::Timeouts usc::MirScreen::timeouts_for(PowerStateChangeReason reason)
+usc::MirScreen::Timeouts usc::MirScreen::timeouts_for_l(PowerStateChangeReason reason)
 {
     if (reason == PowerStateChangeReason::notification ||
         reason == PowerStateChangeReason::proximity ||
@@ -385,7 +394,7 @@ usc::MirScreen::Timeouts usc::MirScreen::timeouts_for(PowerStateChangeReason rea
     }
 }
 
-bool usc::MirScreen::is_screen_change_allowed(MirPowerMode mode, PowerStateChangeReason reason)
+bool usc::MirScreen::is_screen_change_allowed_l(MirPowerMode mode, PowerStateChangeReason reason)
 {
     if (mode == MirPowerMode::mir_power_mode_on &&
         reason == PowerStateChangeReason::proximity &&
@@ -397,13 +406,13 @@ bool usc::MirScreen::is_screen_change_allowed(MirPowerMode mode, PowerStateChang
     return true;
 }
 
-void usc::MirScreen::power_off_alarm_notification()
+void usc::MirScreen::power_off_alarm_notification_l()
 {
     configure_display_l(MirPowerMode::mir_power_mode_off, PowerStateChangeReason::inactivity);
     next_power_off = {};
 }
 
-void usc::MirScreen::dimmer_alarm_notification()
+void usc::MirScreen::dimmer_alarm_notification_l()
 {
     if (current_power_mode != MirPowerMode::mir_power_mode_off)
         screen_hardware->set_dim_backlight();
