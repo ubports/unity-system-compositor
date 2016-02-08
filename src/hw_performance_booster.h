@@ -35,7 +35,7 @@ public:
     void disable_performance_boost_during_user_interaction() override;
 
 protected:
-    UHardwareBooster* hw_booster;
+    const UHardwareBooster* hw_booster;
 };
 }
 
