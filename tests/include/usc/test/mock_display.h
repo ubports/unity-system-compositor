@@ -61,7 +61,7 @@ struct MockDisplay : mir::graphics::Display
     std::unique_ptr<mir::graphics::GLContext> create_gl_context() override
     { return std::unique_ptr<mir::graphics::GLContext>{};};
 
-    std::unique_ptr<mir::graphics::VirtualOutput> create_virtual_output(int, int)
+    std::unique_ptr<mir::graphics::VirtualOutput> create_virtual_output(int, int) override
     { return std::unique_ptr<mir::graphics::VirtualOutput>{}; }
 };
 }
