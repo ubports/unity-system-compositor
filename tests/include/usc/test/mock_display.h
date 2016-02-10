@@ -20,6 +20,7 @@
 #include "usc/test/stub_display_configuration.h"
 
 #include <mir/graphics/display.h>
+#include <mir/graphics/virtual_output.h>
 #include <gmock/gmock.h>
 
 namespace usc
