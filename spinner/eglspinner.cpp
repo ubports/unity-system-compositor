@@ -84,16 +84,17 @@ private:
     void parse_session_conf_file()
     {
         std::ifstream fs{default_file};
+
+    #ifdef HAVE_PROPS
         if (!fs.is_open())
         {
             fs.clear();
-    #ifdef HAVE_PROPS
             char const* default_value = "";
             char value[PROP_VALUE_MAX];
             property_get(device_property_key, value, default_value);
-    #endif
             fs.open(file_base + value + file_extension);
         }
+    #endif
 
         std::string line;
         while (std::getline(fs, line))
