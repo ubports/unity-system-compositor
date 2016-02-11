@@ -1,3 +1,11 @@
+unity-system-compositor (0.4.2+16.04.20160211-0ubuntu1) xenial; urgency=medium
+
+  * Orient the spinner according to the native orientation of the device.
+    (LP: #1543495)
+  * Implement a stub cookie authority (LP: #1536662)
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Thu, 11 Feb 2016 12:55:56 +0200
+
 unity-system-compositor (0.4.1+16.04.20160203-0ubuntu1) xenial; urgency=medium
 
   [ Kevin Gunn ]
