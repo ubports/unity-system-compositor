@@ -117,7 +117,9 @@ struct StubCookie : public mir::cookie::Cookie
 
     std::vector<uint8_t> serialize() const override
     {
-        return std::vector<uint8_t>();
+        // FIXME Workaround until mir fixes its internal message bliting
+        // This size needs to equal mir/src/include/cookie/mir/cookie/blob.h::default_blob_size
+        return std::vector<uint8_t>(29);
     }
 };
 
