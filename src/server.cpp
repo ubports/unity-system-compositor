@@ -215,7 +215,7 @@ std::shared_ptr<usc::PerformanceBooster> usc::Server::the_performance_booster()
     {
         return std::make_shared<HwPerformanceBooster>();
     }
-    catch (const boost::exception& e)
+    catch (boost::exception const& e)
     {
         mir::log_warning(boost::diagnostic_information(e));
     }
