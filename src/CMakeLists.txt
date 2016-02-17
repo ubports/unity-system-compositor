@@ -24,6 +24,7 @@ set(USC_SRCS
   hw_performance_booster.cpp
   mir_screen.cpp
   mir_input_configuration.cpp
+  null_performance_booster.cpp
   performance_booster.h
   powerd_mediator.cpp
   screen_event_handler.cpp

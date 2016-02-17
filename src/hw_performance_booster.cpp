@@ -18,21 +18,31 @@
 
 #include "hw_performance_booster.h"
 
-usc::HwPerformanceBooster::HwPerformanceBooster() : hw_booster{u_hardware_booster_new()}
+#include <boost/exception/all.hpp>
+
+#include <stdexcept>
+
+namespace
 {
+UHardwareBooster* create_hw_booster_or_throw()
+{
+    if (auto result = u_hardware_booster_new())
+        return result;
+
+    BOOST_THROW_EXCEPTION(std::runtime_error{"Failed to acquire a valid UHardwareBooster instance."});
+}
 }
 
-usc::HwPerformanceBooster::~HwPerformanceBooster()
+usc::HwPerformanceBooster::HwPerformanceBooster() : hw_booster{create_hw_booster_or_throw(), [](UHardwareBooster* booster) { if (booster) u_hardware_booster_unref(booster); }}
 {
-    u_hardware_booster_unref(hw_booster);
 }
 
 void usc::HwPerformanceBooster::enable_performance_boost_during_user_interaction()
 {
-    u_hardware_booster_enable_scenario(hw_booster, U_HARDWARE_BOOSTER_SCENARIO_USER_INTERACTION);
+    u_hardware_booster_enable_scenario(hw_booster.get(), U_HARDWARE_BOOSTER_SCENARIO_USER_INTERACTION);
 }
 
 void usc::HwPerformanceBooster::disable_performance_boost_during_user_interaction()
 {
-    u_hardware_booster_disable_scenario(hw_booster, U_HARDWARE_BOOSTER_SCENARIO_USER_INTERACTION);
+    u_hardware_booster_disable_scenario(hw_booster.get(), U_HARDWARE_BOOSTER_SCENARIO_USER_INTERACTION);
 }

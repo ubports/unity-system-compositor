@@ -16,29 +16,19 @@
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
 
-#ifndef USC_HW_PERFORMANCE_BOOSTER_H_
-#define USC_HW_PERFORMANCE_BOOSTER_H_
+#ifndef USC_NULL_PERFORMANCE_BOOSTER_H_
+#define USC_NULL_PERFORMANCE_BOOSTER_H_
 
 #include "performance_booster.h"
 
-#include <ubuntu/hardware/booster.h>
-
-#include <memory>
-
 namespace usc
 {
-class HwPerformanceBooster : public PerformanceBooster
+class NullPerformanceBooster : public PerformanceBooster
 {
 public:
-    // Throws std::runtime_error if we fail to gain access to the hw booster.
-    HwPerformanceBooster();
-
     void enable_performance_boost_during_user_interaction() override;
     void disable_performance_boost_during_user_interaction() override;
-
-protected:
-    const std::shared_ptr<UHardwareBooster> hw_booster;
 };
 }
 
-#endif // USC_HW_PERFORMANCE_BOOSTER_H_
+#endif // USC_NULL_PERFORMANCE_BOOSTER_H_
