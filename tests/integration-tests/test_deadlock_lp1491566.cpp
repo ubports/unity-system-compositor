@@ -41,7 +41,7 @@ namespace ut = usc::test;
 
 namespace
 {
-auto constexpr timeout = std::chrono::seconds{3};
+auto constexpr timeout = std::chrono::seconds{9};
 
 struct NullCompositor : mir::compositor::Compositor
 {
