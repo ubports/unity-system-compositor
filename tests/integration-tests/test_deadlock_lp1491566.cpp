@@ -21,7 +21,6 @@
 #include "src/performance_booster.h"
 #include "src/screen_hardware.h"
 #include "src/power_state_change_reason.h"
-#include "spin_wait.h"
 #include "usc/test/stub_display_configuration.h"
 #include "usc/test/mock_display.h"
 
@@ -35,12 +34,14 @@
 
 #include <thread>
 #include <future>
+#include <condition_variable>
 
 namespace mg = mir::graphics;
 namespace ut = usc::test;
 
 namespace
 {
+auto constexpr timeout = std::chrono::seconds{3};
 
 struct NullCompositor : mir::compositor::Compositor
 {
@@ -138,14 +139,19 @@ struct DeadlockLP1491566 : public testing::Test
 
     void wait_for_async_operation(std::future<void>& future)
     {
-        if (!usc::test::spin_wait_for_condition_or_timeout(
-                [&future] { return future.valid(); },
-                std::chrono::seconds{3}))
         {
-            throw std::runtime_error{"Future is not valid!"};
+            std::unique_lock<decltype(set_screen_power_mode_init)> lock(set_screen_power_mode_init);
+            if (!set_screen_power_mode_valid.wait_for(lock, timeout, [&future] { return future.valid(); }))
+                throw std::runtime_error{"Future is not valid!"};
         }
 
-        if (future.wait_for(std::chrono::seconds{3}) != std::future_status::ready)
+        {
+            std::lock_guard<decltype(waiting_guard)> lock(waiting_guard);
+            waiting_for_future = true;
+            waiting_cv.notify_one();
+        }
+
+        if (future.wait_for(timeout) != std::future_status::ready)
         {
             std::cerr << "Deadlock detected. Aborting." << std::endl;
             abort();
@@ -171,6 +177,14 @@ struct DeadlockLP1491566 : public testing::Test
         {power_off_timeout, dimmer_timeout}};
 
     std::thread main_loop_thread;
+
+    std::mutex set_screen_power_mode_init;
+    std::condition_variable set_screen_power_mode_valid;
+    std::future<void> set_screen_power_mode;
+
+    std::mutex waiting_guard;
+    std::condition_variable waiting_cv;
+    bool waiting_for_future = false;
 };
 
 }
@@ -192,36 +206,40 @@ struct DeadlockLP1491566 : public testing::Test
 
 TEST_F(DeadlockLP1491566, between_dimmer_handler_and_screen_power_mode_request_is_averted)
 {
-    std::future<void> future;
-
-    mir_screen.before_dimmer_alarm_func = 
-        [this, &future]
+    mir_screen.before_dimmer_alarm_func =
+        [this]
         {
-            future = async_set_screen_power_mode();
-            // Wait a bit for async operation to get processed
-            std::this_thread::sleep_for(
-                std::chrono::milliseconds{500});
+            {
+                std::lock_guard<decltype(set_screen_power_mode_init)> lock(set_screen_power_mode_init);
+                set_screen_power_mode = async_set_screen_power_mode();
+                set_screen_power_mode_valid.notify_one();
+            }
+
+            std::unique_lock<decltype(waiting_guard)> lock(waiting_guard);
+            waiting_cv.wait_for(lock, timeout, [this] { return waiting_for_future; });
         };
 
     schedule_inactivity_handlers();
 
-    wait_for_async_operation(future);
+    wait_for_async_operation(set_screen_power_mode);
 }
 
 TEST_F(DeadlockLP1491566, between_power_off_handler_and_screen_power_mode_request_is_averted)
 {
-    std::future<void> future;
-
-    mir_screen.before_power_off_alarm_func = 
-        [this, &future]
+    mir_screen.before_power_off_alarm_func =
+        [this]
         {
-            future = async_set_screen_power_mode();
-            // Wait a bit for async operation to get processed
-            std::this_thread::sleep_for(
-                std::chrono::milliseconds{500});
+            {
+                std::lock_guard<decltype(set_screen_power_mode_init)> lock(set_screen_power_mode_init);
+                set_screen_power_mode = async_set_screen_power_mode();
+                set_screen_power_mode_valid.notify_one();
+            }
+
+            std::unique_lock<decltype(waiting_guard)> lock(waiting_guard);
+            waiting_cv.wait_for(lock, timeout, [this] { return waiting_for_future; });
         };
 
     schedule_inactivity_handlers();
 
-    wait_for_async_operation(future);
+    wait_for_async_operation(set_screen_power_mode);
 }
