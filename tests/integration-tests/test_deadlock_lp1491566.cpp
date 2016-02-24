@@ -137,24 +137,30 @@ struct DeadlockLP1491566 : public testing::Test
             PowerStateChangeReason::power_key);
     }
 
-    void wait_for_async_operation(std::future<void>& future)
+    void launch_async_set_screen_power_mode_then_try_to_deadlock()
     {
         {
-            std::unique_lock<decltype(set_screen_power_mode_init)> lock(set_screen_power_mode_init);
-            if (!set_screen_power_mode_valid.wait_for(lock, timeout, [&future] { return future.valid(); }))
-                throw std::runtime_error{"Future is not valid!"};
+            std::lock_guard<decltype(future_guard)> lock(future_guard);
+            future = async_set_screen_power_mode();
+            future_init.notify_one();
         }
 
+        // We're still holding a lock, so set_screen_power_mode should get scheduled and block
+        // This is not deterministic, but helped reproduce the deadlock scenario
+        std::this_thread::sleep_for(std::chrono::milliseconds{500});
+    };
+
+    void wait_for_async_set_screen_power_mode()
+    {
         {
-            std::lock_guard<decltype(waiting_guard)> lock(waiting_guard);
-            waiting_for_future = true;
-            waiting_cv.notify_one();
+            std::unique_lock<decltype(future_guard)> lock(future_guard);
+            if (!future_init.wait_for(lock, timeout, [this] { return future.valid(); }))
+                throw std::runtime_error{"Future is not valid!"};
         }
 
         if (future.wait_for(timeout) != std::future_status::ready)
         {
-            std::cerr << "Deadlock detected. Aborting." << std::endl;
-            abort();
+            FAIL() << "Deadlock detected";
         }
     }
 
@@ -178,13 +184,9 @@ struct DeadlockLP1491566 : public testing::Test
 
     std::thread main_loop_thread;
 
-    std::mutex set_screen_power_mode_init;
-    std::condition_variable set_screen_power_mode_valid;
-    std::future<void> set_screen_power_mode;
-
-    std::mutex waiting_guard;
-    std::condition_variable waiting_cv;
-    bool waiting_for_future = false;
+    std::mutex future_guard;
+    std::condition_variable future_init;
+    std::future<void> future;
 };
 
 }
@@ -206,40 +208,20 @@ struct DeadlockLP1491566 : public testing::Test
 
 TEST_F(DeadlockLP1491566, between_dimmer_handler_and_screen_power_mode_request_is_averted)
 {
-    mir_screen.before_dimmer_alarm_func =
-        [this]
-        {
-            {
-                std::lock_guard<decltype(set_screen_power_mode_init)> lock(set_screen_power_mode_init);
-                set_screen_power_mode = async_set_screen_power_mode();
-                set_screen_power_mode_valid.notify_one();
-            }
-
-            std::unique_lock<decltype(waiting_guard)> lock(waiting_guard);
-            waiting_cv.wait_for(lock, timeout, [this] { return waiting_for_future; });
-        };
+    mir_screen.before_dimmer_alarm_func = [this]
+        { launch_async_set_screen_power_mode_then_try_to_deadlock(); };
 
     schedule_inactivity_handlers();
 
-    wait_for_async_operation(set_screen_power_mode);
+    wait_for_async_set_screen_power_mode();
 }
 
 TEST_F(DeadlockLP1491566, between_power_off_handler_and_screen_power_mode_request_is_averted)
 {
-    mir_screen.before_power_off_alarm_func =
-        [this]
-        {
-            {
-                std::lock_guard<decltype(set_screen_power_mode_init)> lock(set_screen_power_mode_init);
-                set_screen_power_mode = async_set_screen_power_mode();
-                set_screen_power_mode_valid.notify_one();
-            }
-
-            std::unique_lock<decltype(waiting_guard)> lock(waiting_guard);
-            waiting_cv.wait_for(lock, timeout, [this] { return waiting_for_future; });
-        };
+    mir_screen.before_power_off_alarm_func = [this]
+        { launch_async_set_screen_power_mode_then_try_to_deadlock(); };
 
     schedule_inactivity_handlers();
 
-    wait_for_async_operation(set_screen_power_mode);
+    wait_for_async_set_screen_power_mode();
 }
