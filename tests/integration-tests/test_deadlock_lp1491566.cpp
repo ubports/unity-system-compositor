@@ -160,7 +160,8 @@ struct DeadlockLP1491566 : public testing::Test
 
         if (future.wait_for(timeout) != std::future_status::ready)
         {
-            FAIL() << "Deadlock detected";
+            std::cerr << "Deadlock detected. Aborting." << std::endl;
+            abort();
         }
     }
 
