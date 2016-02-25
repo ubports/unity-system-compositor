@@ -21,7 +21,6 @@
 #include "src/performance_booster.h"
 #include "src/screen_hardware.h"
 #include "src/power_state_change_reason.h"
-#include "spin_wait.h"
 #include "usc/test/stub_display_configuration.h"
 #include "usc/test/mock_display.h"
 
@@ -35,12 +34,14 @@
 
 #include <thread>
 #include <future>
+#include <condition_variable>
 
 namespace mg = mir::graphics;
 namespace ut = usc::test;
 
 namespace
 {
+auto constexpr timeout = std::chrono::seconds{9};
 
 struct NullCompositor : mir::compositor::Compositor
 {
@@ -136,16 +137,28 @@ struct DeadlockLP1491566 : public testing::Test
             PowerStateChangeReason::power_key);
     }
 
-    void wait_for_async_operation(std::future<void>& future)
+    void launch_async_set_screen_power_mode_then_try_to_deadlock()
     {
-        if (!usc::test::spin_wait_for_condition_or_timeout(
-                [&future] { return future.valid(); },
-                std::chrono::seconds{3}))
         {
-            throw std::runtime_error{"Future is not valid!"};
+            std::lock_guard<decltype(future_guard)> lock(future_guard);
+            future = async_set_screen_power_mode();
+            future_init.notify_one();
         }
 
-        if (future.wait_for(std::chrono::seconds{3}) != std::future_status::ready)
+        // We're still holding a lock, so set_screen_power_mode should get scheduled and block
+        // This is not deterministic, but helped reproduce the deadlock scenario
+        std::this_thread::sleep_for(std::chrono::milliseconds{500});
+    };
+
+    void wait_for_async_set_screen_power_mode()
+    {
+        {
+            std::unique_lock<decltype(future_guard)> lock(future_guard);
+            if (!future_init.wait_for(lock, timeout, [this] { return future.valid(); }))
+                throw std::runtime_error{"Future is not valid!"};
+        }
+
+        if (future.wait_for(timeout) != std::future_status::ready)
         {
             std::cerr << "Deadlock detected. Aborting." << std::endl;
             abort();
@@ -171,6 +184,10 @@ struct DeadlockLP1491566 : public testing::Test
         {power_off_timeout, dimmer_timeout}};
 
     std::thread main_loop_thread;
+
+    std::mutex future_guard;
+    std::condition_variable future_init;
+    std::future<void> future;
 };
 
 }
@@ -192,36 +209,20 @@ struct DeadlockLP1491566 : public testing::Test
 
 TEST_F(DeadlockLP1491566, between_dimmer_handler_and_screen_power_mode_request_is_averted)
 {
-    std::future<void> future;
-
-    mir_screen.before_dimmer_alarm_func = 
-        [this, &future]
-        {
-            future = async_set_screen_power_mode();
-            // Wait a bit for async operation to get processed
-            std::this_thread::sleep_for(
-                std::chrono::milliseconds{500});
-        };
+    mir_screen.before_dimmer_alarm_func = [this]
+        { launch_async_set_screen_power_mode_then_try_to_deadlock(); };
 
     schedule_inactivity_handlers();
 
-    wait_for_async_operation(future);
+    wait_for_async_set_screen_power_mode();
 }
 
 TEST_F(DeadlockLP1491566, between_power_off_handler_and_screen_power_mode_request_is_averted)
 {
-    std::future<void> future;
-
-    mir_screen.before_power_off_alarm_func = 
-        [this, &future]
-        {
-            future = async_set_screen_power_mode();
-            // Wait a bit for async operation to get processed
-            std::this_thread::sleep_for(
-                std::chrono::milliseconds{500});
-        };
+    mir_screen.before_power_off_alarm_func = [this]
+        { launch_async_set_screen_power_mode_then_try_to_deadlock(); };
 
     schedule_inactivity_handlers();
 
-    wait_for_async_operation(future);
+    wait_for_async_set_screen_power_mode();
 }
