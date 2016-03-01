@@ -21,6 +21,7 @@
 #endif
 
 #include "dbus_event_loop.h"
+#include "dbus_connection_handle.h"
 
 #include <algorithm>
 
@@ -78,9 +79,8 @@ timespec msec_to_timespec(int msec)
 
 }
 
-usc::DBusEventLoop::DBusEventLoop(DBusConnection* connection)
-    : connection{connection},
-      running{false},
+usc::DBusEventLoop::DBusEventLoop()
+    : running{false},
       epoll_fd{epoll_create1(EPOLL_CLOEXEC)}
 {
     if (epoll_fd == -1)
@@ -109,9 +109,17 @@ usc::DBusEventLoop::DBusEventLoop(DBusConnection* connection)
         BOOST_THROW_EXCEPTION(
             std::system_error(errno, std::system_category(), "epoll_ctl"));
     }
+}
+
+void usc::DBusEventLoop::add_connection(std::shared_ptr<DBusConnectionHandle> const& connection)
+{
+    if (running)
+        BOOST_THROW_EXCEPTION(std::logic_error("Connection added after dbus event loop started"));
+
+    connections.push_back(connection);
 
     dbus_connection_set_watch_functions(
-        connection,
+        *connection,
         DBusEventLoop::static_add_watch,
         DBusEventLoop::static_remove_watch,
         DBusEventLoop::static_toggle_watch,
@@ -119,7 +127,7 @@ usc::DBusEventLoop::DBusEventLoop(DBusConnection* connection)
         nullptr);
 
     dbus_connection_set_timeout_functions(
-        connection,
+        *connection,
         DBusEventLoop::static_add_timeout,
         DBusEventLoop::static_remove_timeout,
         DBusEventLoop::static_toggle_timeout,
@@ -127,7 +135,7 @@ usc::DBusEventLoop::DBusEventLoop(DBusConnection* connection)
         nullptr);
 
     dbus_connection_set_wakeup_main_function(
-        connection,
+        *connection,
         DBusEventLoop::static_wake_up_loop,
         this, nullptr);
 }
@@ -136,14 +144,17 @@ usc::DBusEventLoop::~DBusEventLoop()
 {
     stop();
 
-    dbus_connection_set_watch_functions(
-        connection, nullptr, nullptr, nullptr, nullptr, nullptr);
+    for(auto connection : connections)
+    {
+        dbus_connection_set_watch_functions(
+            *connection, nullptr, nullptr, nullptr, nullptr, nullptr);
 
-    dbus_connection_set_timeout_functions(
-        connection, nullptr, nullptr, nullptr, nullptr, nullptr);
+        dbus_connection_set_timeout_functions(
+            *connection, nullptr, nullptr, nullptr, nullptr, nullptr);
 
-    dbus_connection_set_wakeup_main_function(
-        connection, nullptr, nullptr, nullptr);
+        dbus_connection_set_wakeup_main_function(
+            *connection, nullptr, nullptr, nullptr);
+    }
 }
 
 void usc::DBusEventLoop::run(std::promise<void>& started)
@@ -187,14 +198,17 @@ void usc::DBusEventLoop::run(std::promise<void>& started)
 
         dispatch_actions();
 
-        dbus_connection_flush(connection);
+        for (auto connection : connections)
+        {
+            dbus_connection_flush(*connection);
 
-        while (dbus_connection_dispatch(connection) == DBUS_DISPATCH_DATA_REMAINS)
-            continue;
+            while (dbus_connection_dispatch(*connection) == DBUS_DISPATCH_DATA_REMAINS);
+        }
     }
 
     // Flush any remaining outgoing messages
-    dbus_connection_flush(connection);
+    for (auto connection : connections)
+        dbus_connection_flush(*connection);
 }
 
 void usc::DBusEventLoop::stop()

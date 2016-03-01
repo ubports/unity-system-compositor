@@ -34,13 +34,14 @@ enum class PowerStateChangeReason;
 namespace usc
 {
 class Screen;
-class DBusConnectionThread;
+class DBusEventLoop;
 
 class UnityScreenService
 {
 public:
     UnityScreenService(
-        std::shared_ptr<usc::DBusConnectionThread> const& connection,
+        std::shared_ptr<usc::DBusEventLoop> const& loop,
+        std::string const& address,
         std::shared_ptr<usc::Screen> const& screen);
 
 private:
@@ -64,7 +65,8 @@ private:
         MirPowerMode power_mode, PowerStateChangeReason reason);
 
     std::shared_ptr<usc::Screen> const screen;
-    std::shared_ptr<DBusConnectionThread> const dbus;
+    std::shared_ptr<DBusEventLoop> const loop;
+    std::shared_ptr<DBusConnectionHandle> connection;
 
     std::mutex keep_display_on_mutex;
     std::unordered_multimap<std::string,int32_t> keep_display_on_ids;

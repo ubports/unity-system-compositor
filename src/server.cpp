@@ -16,6 +16,8 @@
  * Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
+#define MIR_LOG_COMPONENT "UnitySystemCompositor"
+
 #include "server.h"
 #include "external_spinner.h"
 #include "asio_dm_connection.h"
@@ -28,15 +30,22 @@
 #include "unity_screen_service.h"
 #include "unity_input_service.h"
 #include "dbus_connection_thread.h"
+#include "dbus_event_loop.h"
+#include "hw_performance_booster.h"
+#include "null_performance_booster.h"
 #include "display_configuration_policy.h"
 #include "steady_clock.h"
 
+#include <mir/cookie/authority.h>
 #include <mir/input/cursor_listener.h>
 #include <mir/server_status_listener.h>
 #include <mir/shell/focus_controller.h>
 #include <mir/scene/session.h>
+#include <mir/log.h>
 #include <mir/abnormal_exit.h>
 #include <mir/main_loop.h>
+
+#include <boost/exception/all.hpp>
 
 #include <iostream>
 
@@ -98,6 +107,35 @@ struct ServerStatusListener : public mir::ServerStatusListener
 
     std::shared_ptr<msh::FocusController> const focus_controller;
 };
+
+struct StubCookie : public mir::cookie::Cookie
+{
+    uint64_t timestamp() const override
+    {
+        return 0;
+    }
+
+    std::vector<uint8_t> serialize() const override
+    {
+        // FIXME Workaround until mir fixes its internal message bliting
+        // This size needs to equal mir/src/include/cookie/mir/cookie/blob.h::default_blob_size
+        return std::vector<uint8_t>(29);
+    }
+};
+
+struct StubCookieAuthority : public mir::cookie::Authority
+{
+    std::unique_ptr<mir::cookie::Cookie> make_cookie(uint64_t const& timestamp) override
+    {
+        return std::unique_ptr<StubCookie>(new StubCookie());
+    }
+
+    std::unique_ptr<mir::cookie::Cookie> make_cookie(std::vector<uint8_t> const& raw_cookie) override
+    {
+        return std::unique_ptr<StubCookie>(new StubCookie());
+    }
+};
+
 const char* const dm_from_fd = "from-dm-fd";
 const char* const dm_to_fd = "to-dm-fd";
 const char* const dm_stub = "debug-without-dm";
@@ -159,9 +197,32 @@ usc::Server::Server(int argc, char** argv)
              the_session_switcher());
        });
 
+    override_the_cookie_authority([this]()
+    -> std::shared_ptr<mir::cookie::Authority>
+    {
+        return std::make_unique<StubCookieAuthority>();
+    });
+
     set_config_filename("unity-system-compositor.conf");
 
     apply_settings();
+}
+
+std::shared_ptr<usc::PerformanceBooster> usc::Server::the_performance_booster()
+{
+    // We are treating access to a functional implementation of PerformanceBooster as optional.
+    // With that, we gracefully fall back to a NullImplementation if we cannot gain access
+    // to hw-provided booster capabilities.
+    try
+    {
+        return std::make_shared<HwPerformanceBooster>();
+    }
+    catch (boost::exception const& e)
+    {
+        mir::log_warning(boost::diagnostic_information(e));
+    }
+
+    return std::make_shared<NullPerformanceBooster>();
 }
 
 std::shared_ptr<usc::Spinner> usc::Server::the_spinner()
@@ -241,7 +302,7 @@ std::shared_ptr<usc::InputConfiguration> usc::Server::the_input_configuration()
     return input_configuration(
         [this]
         {
-            return std::make_shared<MirInputConfiguration>();
+            return std::make_shared<MirInputConfiguration>(the_input_device_hub());
         });
 }
 
@@ -251,6 +312,7 @@ std::shared_ptr<usc::Screen> usc::Server::the_screen()
         [this]
         {
             return std::make_shared<MirScreen>(
+                the_performance_booster(),
                 the_screen_hardware(),
                 the_compositor(),
                 the_display(),
@@ -292,12 +354,22 @@ std::shared_ptr<usc::ScreenHardware> usc::Server::the_screen_hardware()
         });
 }
 
+std::shared_ptr<usc::DBusEventLoop> usc::Server::the_dbus_event_loop()
+{
+    return dbus_loop(
+        [this]
+        {
+            return std::make_shared<DBusEventLoop>();
+        });
+
+}
+
 std::shared_ptr<usc::DBusConnectionThread> usc::Server::the_dbus_connection_thread()
 {
     return dbus_thread(
         [this]
         {
-            return std::make_shared<DBusConnectionThread>(dbus_bus_address());
+            return std::make_shared<DBusConnectionThread>(the_dbus_event_loop());
         });
 }
 
@@ -307,7 +379,8 @@ std::shared_ptr<usc::UnityScreenService> usc::Server::the_unity_screen_service()
         [this]
         {
             return std::make_shared<UnityScreenService>(
-                    the_dbus_connection_thread(),
+                    the_dbus_event_loop(),
+                    dbus_bus_address(),
                     the_screen());
         });
 }
@@ -318,7 +391,8 @@ std::shared_ptr<usc::UnityInputService> usc::Server::the_unity_input_service()
         [this]
         {
             return std::make_shared<UnityInputService>(
-                    the_dbus_connection_thread(),
+                    the_dbus_event_loop(),
+                    dbus_bus_address(),
                     the_input_configuration());
         });
 }

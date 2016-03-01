@@ -88,7 +88,7 @@ private:
     void invoke(char const* method, int first_arg_type, ...);
     usc::DBusMessageHandle invoke_with_reply(char const* method, int first_arg_type, ...);
 
-    usc::DBusConnectionHandle connection;
+    std::shared_ptr<usc::DBusConnectionHandle> connection;
     usc::DBusEventLoop dbus_event_loop;
     std::thread dbus_loop_thread;
 

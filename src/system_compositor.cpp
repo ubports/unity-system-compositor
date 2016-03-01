@@ -22,6 +22,7 @@
 #include "dm_connection.h"
 
 #include <mir/input/composite_event_filter.h>
+#include <mir/input/input_device_hub.h>
 #include <mir/abnormal_exit.h>
 
 #include <cerrno>
@@ -123,6 +124,7 @@ void usc::SystemCompositor::run()
 
                 unity_screen_service = server->the_unity_screen_service();
                 unity_input_service = server->the_unity_input_service();
+                dbus_service_thread = server->the_dbus_connection_thread();
             }
         });
 

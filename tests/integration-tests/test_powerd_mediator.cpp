@@ -41,9 +41,10 @@ public:
         dbus_bool_t auto_brightness_supported,
         StartNow start_now)
         : auto_brightness_supported{auto_brightness_supported},
-          connection{address.c_str()},
-          dbus_event_loop{connection}
+          connection{std::make_shared<usc::DBusConnectionHandle>(address)},
+          dbus_event_loop{}
     {
+        dbus_event_loop.add_connection(connection);
         if (start_now == StartNow::yes)
             start();
     }
@@ -60,8 +61,8 @@ public:
         ON_CALL(*this, dbus_setUserBrightness(normal_brightness))
             .WillByDefault(WakeUp(&initial_setup_done));
 
-        connection.request_name(powerd_service_name);
-        connection.add_filter(handle_dbus_message_thunk, this);
+        connection->request_name(powerd_service_name);
+        connection->add_filter(handle_dbus_message_thunk, this);
 
         std::promise<void> event_loop_started;
         auto event_loop_started_future = event_loop_started.get_future();
@@ -104,7 +105,7 @@ public:
             DBUS_TYPE_INT32, &state,
             DBUS_TYPE_INVALID};
 
-        dbus_connection_send(connection, signal, nullptr);
+        dbus_connection_send(*connection, signal, nullptr);
     }
 
 private:
@@ -230,7 +231,7 @@ private:
 
     ut::WaitCondition initial_setup_done;
 
-    usc::DBusConnectionHandle connection;
+    std::shared_ptr<usc::DBusConnectionHandle> connection;
     usc::DBusEventLoop dbus_event_loop;
     std::thread dbus_loop_thread;
 };

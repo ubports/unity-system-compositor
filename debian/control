@@ -11,17 +11,22 @@ Build-Depends: cmake,
                libboost-dev,
                libboost-system-dev,
                libdbus-1-dev,
-               libgles2-mesa-dev,
                libglib2.0-dev,
+               libgles2-mesa-dev,
                libmirclient-dev (>= 0.13.0),
                libmirserver-dev (>= 0.13.0),
+               libglm-dev,
                libprotobuf-dev,
                pkg-config,
-               python-pil,
-               python-setuptools,
                python:any (>= 2.7),
+               python-setuptools,
+               python-pil,
+               libubuntu-platform-hardware-api-dev,
 Standards-Version: 3.9.4
 Homepage: https://launchpad.net/unity-system-compositor
+# if you don't have have commit access to this branch but would like to upload
+# directly to Ubuntu, don't worry: your changes will be merged back into the
+# upstream branch
 Vcs-Bzr: lp:unity-system-compositor
 
 Package: unity-system-compositor

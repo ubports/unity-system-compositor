@@ -18,14 +18,14 @@
 
 #include "src/server.h"
 #include "src/mir_screen.h"
+#include "src/performance_booster.h"
 #include "src/screen_hardware.h"
 #include "src/power_state_change_reason.h"
-#include "spin_wait.h"
+#include "usc/test/stub_display_configuration.h"
+#include "usc/test/mock_display.h"
 
 #include <mir/compositor/compositor.h>
 #include <mir/main_loop.h>
-#include <mir/graphics/display.h>
-#include <mir/graphics/display_configuration.h>
 #include <mir/graphics/gl_context.h>
 #include <mir/input/touch_visualizer.h>
 
@@ -34,11 +34,14 @@
 
 #include <thread>
 #include <future>
+#include <condition_variable>
 
 namespace mg = mir::graphics;
+namespace ut = usc::test;
 
 namespace
 {
+auto constexpr timeout = std::chrono::seconds{9};
 
 struct NullCompositor : mir::compositor::Compositor
 {
@@ -46,70 +49,10 @@ struct NullCompositor : mir::compositor::Compositor
     void stop() override {}
 };
 
-struct StubDisplayConfiguration : mg::DisplayConfiguration
+struct StubPerformanceBooster : usc::PerformanceBooster
 {
-    StubDisplayConfiguration()
-    {
-        conf_output.power_mode = MirPowerMode::mir_power_mode_on;
-    }
-
-    void for_each_card(std::function<void(mg::DisplayConfigurationCard const&)> f) const override
-    {
-    }
-
-    void for_each_output(std::function<void(mg::DisplayConfigurationOutput const&)> f) const override
-    {
-        f(conf_output);
-    }
-
-    void for_each_output(std::function<void(mg::UserDisplayConfigurationOutput&)> f)
-    {
-        mg::UserDisplayConfigurationOutput user{conf_output};
-        f(user);
-    }
-
-    mg::DisplayConfigurationOutput conf_output;
-};
-
-struct StubDisplay : mg::Display
-{
-    void for_each_display_sync_group(std::function<void(mg::DisplaySyncGroup&)> const& f) override
-    {
-    }
-
-    std::unique_ptr<mg::DisplayConfiguration> configuration() const override
-    { 
-        return std::unique_ptr<mg::DisplayConfiguration>{new StubDisplayConfiguration{}};
-    }
-
-    void configure(mg::DisplayConfiguration const&) override {}
-
-    void register_configuration_change_handler(
-        mg::EventHandlerRegister& ,
-        mg::DisplayConfigurationChangeHandler const& ) override
-    {
-    }
-
-    void register_pause_resume_handlers(
-        mg::EventHandlerRegister&,
-        mg::DisplayPauseHandler const&,
-        mg::DisplayResumeHandler const&) override
-    {
-    }
-
-    void pause() override {}
-    void resume() override {}
-
-    std::shared_ptr<mg::Cursor> create_hardware_cursor(
-        std::shared_ptr<mg::CursorImage> const&) override
-    {
-        return{};
-    }
-
-    std::unique_ptr<mg::GLContext> create_gl_context() override
-    { 
-        return std::unique_ptr<mg::GLContext>{};
-    }
+    void enable_performance_boost_during_user_interaction() override {}
+    void disable_performance_boost_during_user_interaction() override {}
 };
 
 struct StubScreenHardware : usc::ScreenHardware
@@ -144,16 +87,16 @@ class TestMirScreen : public usc::MirScreen
 public:
     using usc::MirScreen::MirScreen;
 
-    void dimmer_alarm_notification() override
+    void dimmer_alarm_notification_l() override
     {
         before_dimmer_alarm_func();
-        usc::MirScreen::dimmer_alarm_notification();
+        usc::MirScreen::dimmer_alarm_notification_l();
     }
 
-    void power_off_alarm_notification() override
+    void power_off_alarm_notification_l() override
     {
         before_power_off_alarm_func();
-        usc::MirScreen::power_off_alarm_notification();
+        usc::MirScreen::power_off_alarm_notification_l();
     }
 
     std::function<void()> before_dimmer_alarm_func = []{};
@@ -194,16 +137,28 @@ struct DeadlockLP1491566 : public testing::Test
             PowerStateChangeReason::power_key);
     }
 
-    void wait_for_async_operation(std::future<void>& future)
+    void launch_async_set_screen_power_mode_then_try_to_deadlock()
     {
-        if (!usc::test::spin_wait_for_condition_or_timeout(
-                [&future] { return future.valid(); },
-                std::chrono::seconds{3}))
         {
-            throw std::runtime_error{"Future is not valid!"};
+            std::lock_guard<decltype(future_guard)> lock(future_guard);
+            future = async_set_screen_power_mode();
+            future_init.notify_one();
         }
 
-        if (future.wait_for(std::chrono::seconds{3}) != std::future_status::ready)
+        // We're still holding a lock, so set_screen_power_mode should get scheduled and block
+        // This is not deterministic, but helped reproduce the deadlock scenario
+        std::this_thread::sleep_for(std::chrono::milliseconds{500});
+    };
+
+    void wait_for_async_set_screen_power_mode()
+    {
+        {
+            std::unique_lock<decltype(future_guard)> lock(future_guard);
+            if (!future_init.wait_for(lock, timeout, [this] { return future.valid(); }))
+                throw std::runtime_error{"Future is not valid!"};
+        }
+
+        if (future.wait_for(timeout) != std::future_status::ready)
         {
             std::cerr << "Deadlock detected. Aborting." << std::endl;
             abort();
@@ -217,9 +172,10 @@ struct DeadlockLP1491566 : public testing::Test
     std::chrono::milliseconds const dimmer_timeout{100};
 
     TestMirScreen mir_screen{
+        std::make_shared<StubPerformanceBooster>(),
         std::make_shared<StubScreenHardware>(),
         std::make_shared<NullCompositor>(),
-        std::make_shared<StubDisplay>(),
+        std::make_shared<::testing::NiceMock<ut::MockDisplay>>(),
         std::make_shared<NullTouchVisualizer>(),
         main_loop,
         server.the_clock(),
@@ -228,6 +184,10 @@ struct DeadlockLP1491566 : public testing::Test
         {power_off_timeout, dimmer_timeout}};
 
     std::thread main_loop_thread;
+
+    std::mutex future_guard;
+    std::condition_variable future_init;
+    std::future<void> future;
 };
 
 }
@@ -249,36 +209,20 @@ struct DeadlockLP1491566 : public testing::Test
 
 TEST_F(DeadlockLP1491566, between_dimmer_handler_and_screen_power_mode_request_is_averted)
 {
-    std::future<void> future;
-
-    mir_screen.before_dimmer_alarm_func = 
-        [this, &future]
-        {
-            future = async_set_screen_power_mode();
-            // Wait a bit for async operation to get processed
-            std::this_thread::sleep_for(
-                std::chrono::milliseconds{500});
-        };
+    mir_screen.before_dimmer_alarm_func = [this]
+        { launch_async_set_screen_power_mode_then_try_to_deadlock(); };
 
     schedule_inactivity_handlers();
 
-    wait_for_async_operation(future);
+    wait_for_async_set_screen_power_mode();
 }
 
 TEST_F(DeadlockLP1491566, between_power_off_handler_and_screen_power_mode_request_is_averted)
 {
-    std::future<void> future;
-
-    mir_screen.before_power_off_alarm_func = 
-        [this, &future]
-        {
-            future = async_set_screen_power_mode();
-            // Wait a bit for async operation to get processed
-            std::this_thread::sleep_for(
-                std::chrono::milliseconds{500});
-        };
+    mir_screen.before_power_off_alarm_func = [this]
+        { launch_async_set_screen_power_mode_then_try_to_deadlock(); };
 
     schedule_inactivity_handlers();
 
-    wait_for_async_operation(future);
+    wait_for_async_set_screen_power_mode();
 }

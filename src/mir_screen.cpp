@@ -24,14 +24,33 @@
 #include <mir/graphics/display.h>
 #include <mir/graphics/display_configuration.h>
 #include <mir/input/touch_visualizer.h>
+#include <mir/log.h>
+#include <mir/report_exception.h>
 
 #include <cstdio>
+#include <sstream>
+
+#include <assert.h>
+
+#include "performance_booster.h"
 #include "screen_hardware.h"
 #include "power_state_change_reason.h"
 #include "server.h"
 
 namespace mi = mir::input;
 namespace mg = mir::graphics;
+
+namespace
+{
+void log_exception_in(char const* const func)
+{
+    static char const* const warning_format = "%s failed: %s";
+    std::stringstream buffer;
+
+    mir::report_exception(buffer);
+    mir::log(::mir::logging::Severity::warning, "usc::MirScreen", warning_format, func, buffer.str().c_str());
+}
+}
 
 class usc::MirScreen::LockableCallback : public mir::LockableCallback
 {
@@ -48,8 +67,7 @@ public:
 
     void unlock() override
     {
-        if (guard_lock.owns_lock())
-            guard_lock.unlock();
+        guard_lock.unlock();
     }
     
 protected:
@@ -63,7 +81,11 @@ class usc::MirScreen::PowerOffLockableCallback : public usc::MirScreen::Lockable
 
     void operator()() override
     {
-        mir_screen->power_off_alarm_notification();
+        // We need to hold the lock before calling power_off_alarm_notification_l()
+        // (and not acquire it in that function) as we override the function to
+        // test for deadlock conditions. C.f. test_deadlock_lp1491566.cpp
+        assert(guard_lock.owns_lock());
+        mir_screen->power_off_alarm_notification_l();
     }
 };
 
@@ -73,11 +95,16 @@ class usc::MirScreen::DimmerLockableCallback : public usc::MirScreen::LockableCa
 
     void operator()() override
     {
-        mir_screen->dimmer_alarm_notification();
+        // We need to hold the lock before calling dimmer_alarm_notification_l()
+        // (and not acquire it in that function) as we override the function to
+        // test for deadlock conditions. C.f. test_deadlock_lp1491566.cpp
+        assert(guard_lock.owns_lock());
+        mir_screen->dimmer_alarm_notification_l();
     }
 };
 
 usc::MirScreen::MirScreen(
+    std::shared_ptr<usc::PerformanceBooster> const& perf_booster,
     std::shared_ptr<usc::ScreenHardware> const& screen_hardware,
     std::shared_ptr<mir::compositor::Compositor> const& compositor,
     std::shared_ptr<mir::graphics::Display> const& display,
@@ -87,7 +114,8 @@ usc::MirScreen::MirScreen(
     Timeouts inactivity_timeouts,
     Timeouts notification_timeouts,
     Timeouts snap_decision_timeouts)
-    : screen_hardware{screen_hardware},
+    : perf_booster{perf_booster},
+      screen_hardware{screen_hardware},
       compositor{compositor},
       display{display},
       touch_visualizer{touch_visualizer},
@@ -106,13 +134,21 @@ usc::MirScreen::MirScreen(
       allow_proximity_to_turn_on_screen{false},
       turned_on_by_user{true}
 {
-    /*
-     * Make sure the compositor is running as certain conditions can
-     * cause Mir to tear down the compositor threads before we get
-     * to this point. See bug #1410381.
-     */
-    compositor->start();
-    reset_timers_l(PowerStateChangeReason::inactivity);
+    try
+    {
+        /*
+         * Make sure the compositor is running as certain conditions can
+         * cause Mir to tear down the compositor threads before we get
+         * to this point. See bug #1410381.
+         */
+        compositor->start();
+        reset_timers_l(PowerStateChangeReason::inactivity);
+    }
+    catch (...)
+    {
+        log_exception_in(__func__);
+        throw;
+    }
 }
 
 usc::MirScreen::~MirScreen() = default;
@@ -186,8 +222,9 @@ void usc::MirScreen::set_inactivity_timeouts(int raw_poweroff_timeout, int raw_d
 }
 
 void usc::MirScreen::set_screen_power_mode_l(MirPowerMode mode, PowerStateChangeReason reason)
+try
 {
-    if (!is_screen_change_allowed(mode, reason))
+    if (!is_screen_change_allowed_l(mode, reason))
         return;
 
     // Notifications don't turn on the screen directly, they rely on proximity events
@@ -233,8 +270,13 @@ void usc::MirScreen::set_screen_power_mode_l(MirPowerMode mode, PowerStateChange
         configure_display_l(mode, reason);
     }
 }
+catch (std::exception const&)
+{
+    log_exception_in(__func__);
+}
 
 void usc::MirScreen::configure_display_l(MirPowerMode mode, PowerStateChangeReason reason)
+try
 {
     if (reason != PowerStateChangeReason::proximity)
     {
@@ -268,11 +310,13 @@ void usc::MirScreen::configure_display_l(MirPowerMode mode, PowerStateChangeReas
     bool const power_on = mode == MirPowerMode::mir_power_mode_on;
     if (power_on)
     {
+        perf_booster->enable_performance_boost_during_user_interaction();
         //Some devices do not turn screen on properly from suspend mode
         screen_hardware->disable_suspend();
     }
     else
     {
+        perf_booster->disable_performance_boost_during_user_interaction();
         screen_hardware->turn_off_backlight();
     }
 
@@ -291,6 +335,10 @@ void usc::MirScreen::configure_display_l(MirPowerMode mode, PowerStateChangeReas
 
     if (!power_on)
         screen_hardware->allow_suspend();
+}
+catch (std::exception const&)
+{
+    log_exception_in(__func__);
 }
 
 void usc::MirScreen::cancel_timers_l(PowerStateChangeReason reason)
@@ -320,7 +368,7 @@ void usc::MirScreen::reset_timers_ignoring_power_mode_l(
     if (!restart_timers)
         return;
 
-    auto const timeouts = timeouts_for(reason);
+    auto const timeouts = timeouts_for_l(reason);
     auto const now = clock->now();
 
     if (timeouts.power_off_timeout.count() > 0)
@@ -362,7 +410,7 @@ void usc::MirScreen::enable_inactivity_timers_l(bool enable)
         cancel_timers_l(PowerStateChangeReason::inactivity);
 }
 
-usc::MirScreen::Timeouts usc::MirScreen::timeouts_for(PowerStateChangeReason reason)
+usc::MirScreen::Timeouts usc::MirScreen::timeouts_for_l(PowerStateChangeReason reason)
 {
     if (reason == PowerStateChangeReason::notification ||
         reason == PowerStateChangeReason::proximity ||
@@ -380,7 +428,7 @@ usc::MirScreen::Timeouts usc::MirScreen::timeouts_for(PowerStateChangeReason rea
     }
 }
 
-bool usc::MirScreen::is_screen_change_allowed(MirPowerMode mode, PowerStateChangeReason reason)
+bool usc::MirScreen::is_screen_change_allowed_l(MirPowerMode mode, PowerStateChangeReason reason)
 {
     if (mode == MirPowerMode::mir_power_mode_on &&
         reason == PowerStateChangeReason::proximity &&
@@ -392,13 +440,13 @@ bool usc::MirScreen::is_screen_change_allowed(MirPowerMode mode, PowerStateChang
     return true;
 }
 
-void usc::MirScreen::power_off_alarm_notification()
+void usc::MirScreen::power_off_alarm_notification_l()
 {
     configure_display_l(MirPowerMode::mir_power_mode_off, PowerStateChangeReason::inactivity);
     next_power_off = {};
 }
 
-void usc::MirScreen::dimmer_alarm_notification()
+void usc::MirScreen::dimmer_alarm_notification_l()
 {
     if (current_power_mode != MirPowerMode::mir_power_mode_off)
         screen_hardware->set_dim_backlight();

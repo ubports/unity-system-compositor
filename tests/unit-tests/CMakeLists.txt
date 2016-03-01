@@ -25,6 +25,7 @@ add_executable(
   test_session_switcher.cpp
   test_screen_event_handler.cpp
   test_mir_screen.cpp
+  test_mir_input_configuration.cpp
 
   advanceable_timer.cpp
 )
@@ -38,6 +39,6 @@ target_link_libraries(
    ${GMOCK_MAIN_LIBRARY}
 )
 
-add_test(usc_unit_tests ${EXECUTABLE_OUTPUT_PATH}/usc_unit_tests)
+add_test(usc_unit_tests ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/usc_unit_tests)
 
 add_dependencies(usc_unit_tests GMock)

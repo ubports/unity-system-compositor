@@ -25,25 +25,25 @@
 #include <glib.h>
 #include <string.h>
 #include <GLES2/gl2.h>
-#include <sys/stat.h>
 #if HAVE_PROPS
 #include <hybris/properties/properties.h>
 #endif
 #include <signal.h>
 
+#include <fstream>
+#include <algorithm>
+#include <cctype>
+#include <map>
+#include <iostream>
+
+#define GLM_FORCE_RADIANS
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include "wallpaper.h"
 #include "logo.h"
 #include "white_dot.h"
 #include "orange_dot.h"
-
-// this is needed for get_gu() to obtain the grid-unit value
-#define MAX_LENGTH       256
-#define VALUE_KEY        "GRID_UNIT_PX"
-#define VALUE_KEY_LENGTH 12
-#define PROP_KEY         "ro.product.device"
-#define DEFAULT_FILE     "/etc/ubuntu-touch-session.d/android.conf"
-#define FILE_BASE        "/etc/ubuntu-touch-session.d/"
-#define FILE_EXTENSION   ".conf"
 
 enum TextureIds {
     WALLPAPER = 0,
@@ -53,66 +53,78 @@ enum TextureIds {
     MAX_TEXTURES
 };
 
-int get_gu ()
+class SessionConfig
 {
-    int   gu           = 13; // use 13 as a default value
-    FILE* handle       = NULL;
-    int   i            = 0;
-    int   j            = 0;
-    int   len          = 0;
-    char  line[MAX_LENGTH];
-    char  filename[MAX_LENGTH];
-
-    // get name of file to read from
-    bzero ((void*) filename, MAX_LENGTH);
-    strcpy (filename, FILE_BASE);
-
-    struct stat buf;   
-    if (stat(DEFAULT_FILE, &buf) == 0)
+public:
+    SessionConfig()
     {
-        strcpy (filename, DEFAULT_FILE);
-    }
-    else
-    {        
-#ifdef HAVE_PROPS
-        char const* defaultValue = "";
-        char  value[PROP_VALUE_MAX];
-        property_get (PROP_KEY, value, defaultValue);
-        strcat (filename, value);
-#endif
-        strcat (filename, FILE_EXTENSION);
+        parse_session_conf_file();
     }
 
-    // try to open it
-    handle = fopen ((const char*) filename, "r");
-    if (!handle)
-        return gu;
-
-    // read one line at a time
-    while (fgets (line, MAX_LENGTH, handle))
+    int get_int(std::string const& key, int default_value)
     {
-        // strip line of whitespaces
-        i = 0;
-        j = 0;
-        len = (int) strlen (line);
-        while (i != len)
+        try
         {
-            if (line[i] != ' ' && line[i] != '\t')
-                line[j++] = line[i];
-            i++;
+            if (conf_map.find(key) != conf_map.end())
+                return std::stoi(conf_map[key]);
         }
-        line[j] = 0;
-
-        // parse the line for GU-value
-        if (!strncmp (line, VALUE_KEY, VALUE_KEY_LENGTH))
-            sscanf (line, VALUE_KEY"=%d", &gu);
+        catch (...)
+        {
+        }
+        
+        return default_value;
     }
 
-    // clean up
-    fclose (handle);
+    std::string get_string(std::string const& key, std::string const& default_value)
+    {
+        return conf_map.find(key) != conf_map.end() ? conf_map[key] : default_value;
+    }
 
-    return gu;
-}
+private:
+    void parse_session_conf_file()
+    {
+        std::ifstream fs{default_file};
+
+    #ifdef HAVE_PROPS
+        if (!fs.is_open())
+        {
+            fs.clear();
+            char const* default_value = "";
+            char value[PROP_VALUE_MAX];
+            property_get(device_property_key, value, default_value);
+            fs.open(file_base + value + file_extension);
+        }
+    #endif
+
+        std::string line;
+        while (std::getline(fs, line))
+            conf_map.insert(parse_key_value_pair(line));
+    }
+
+    std::string trim(std::string const& s)
+    {
+       auto const wsfront = std::find_if_not(s.begin(), s.end(), [](int c) { return std::isspace(c); });
+       auto const wsback = std::find_if_not(s.rbegin(), s.rend(), [](int c) { return std::isspace(c); }).base();
+       return (wsback <= wsfront ? std::string() : std::string(wsfront, wsback));
+    }
+
+    std::pair<std::string,std::string> parse_key_value_pair(std::string kv)
+    {
+        auto const separator = kv.find("=");
+        auto const key = kv.substr(0, separator);
+        auto const value = separator != std::string::npos ? 
+                           kv.substr(separator + 1, std::string::npos) :
+                           std::string{};
+
+        return {trim(key), trim(value)};
+    }
+
+    std::string const default_file{"/etc/ubuntu-touch-session.d/android.conf"};
+    std::string const file_base{"/etc/ubuntu-touch-session.d/"};
+    std::string const file_extension{".conf"};
+    char const* device_property_key = "ro.product.device";
+    std::map<std::string,std::string> conf_map;
+};
 
 static GLuint load_shader(const char *src, GLenum type)
 {
@@ -150,14 +162,17 @@ template <typename Image>
 void uploadTexture (GLuint id, Image& image)
 {
     glBindTexture(GL_TEXTURE_2D, id);
+    GLint format = GL_RGBA;
+    if (image.bytes_per_pixel == 3)
+        format = GL_RGB;
 
     glTexImage2D(GL_TEXTURE_2D,
                  0,
-                 GL_RGBA,
+                 format,
                  image.width,
                  image.height,
                  0,
-                 GL_RGBA,
+                 format,
                  GL_UNSIGNED_BYTE,
                  image.pixel_data);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -208,49 +223,6 @@ typedef struct _AnimationValues
     GLfloat fadeBackground;
     int dot_mask;
 } AnimationValues;
-
-void ortho(GLfloat* mat,
-           GLfloat left,
-           GLfloat right,
-           GLfloat bottom,
-           GLfloat top,
-           GLfloat near,
-           GLfloat far)
-{
-    if (right == left ||
-        top == bottom ||
-        far == near ||
-        mat == NULL)
-    {
-        return;
-    }
-
-    mat[0]  = 2.0f / (right - left);
-    mat[1]  = 0.0f;
-    mat[2]  = 0.0f;
-    mat[3]  = 0.0f;
-
-    mat[4]  = 0.0f;
-    mat[5]  = 2.0f / (top - bottom);
-    mat[6]  = 0.0f;
-    mat[7]  = 0.0f;
-
-    mat[8]  = 0.0f;
-    mat[9]  = 0.0f;
-    mat[10] = -2.0f / (far - near);
-    mat[11] = 0.0f;
-
-    mat[12] = -(right + left) / (right - left);
-    mat[13] = -(top + bottom) / (top - bottom);
-    mat[14] = -(far + near) / (far - near);
-    mat[15] = 1.0f;
-}
-
-GLfloat gu2px(GLfloat gu) {
-    static GLfloat pixelsPerGU = get_gu();
-
-    return gu * pixelsPerGU;
-}
 
 void
 updateAnimation (GTimer* timer, AnimationValues* anim)
@@ -326,6 +298,8 @@ try
     GLint offset[MAX_TEXTURES];
     GLint projMat[MAX_TEXTURES];
 
+    SessionConfig session_config;
+
     auto const surfaces = mir_eglapp_init(argc, argv);
 
     if (!surfaces.size())
@@ -397,23 +371,43 @@ try
     AnimationValues anim = {0.0, 0.0, 0};
     GTimer* timer = g_timer_new();
 
+    auto const pixels_per_gu = session_config.get_int("GRID_UNIT_PX", 13);
+    auto const gu2px =
+        [pixels_per_gu] (float gu)
+        { 
+            return pixels_per_gu * gu;
+        };
+    auto const native_orientation = session_config.get_string("NATIVE_ORIENTATION", "");
+
+    std::cout << "Spinner using pixels per grid unit: " <<  pixels_per_gu << std::endl;
+    std::cout << "Spinner using native orientation: '" << native_orientation << "'" << std::endl; 
+
     while (mir_eglapp_running())
     {
         for (auto const& surface : surfaces)
             surface->paint([&](unsigned int width, unsigned int height)
             {
+                bool const needs_rotation =
+                    (width < height && native_orientation == "landscape") ||
+                    (width > height && native_orientation == "portrait");
+
                 GLfloat logoWidth = gu2px (14.5f);
                 GLfloat logoHeight = gu2px (3.0f);
                 GLfloat logoXOffset = gu2px (1.0f);
                 GLfloat dotSize = gu2px (0.5f);
                 GLfloat dotXGap = gu2px (2.5f);
                 GLfloat dotYGap = gu2px (2.0f);
+                
+                auto render_width = width;
+                auto render_height = height;
+                if (needs_rotation)
+                    std::swap(render_width, render_height);
 
                 const GLfloat fullscreen[] = {
-                    (GLfloat) width, 0.0f,
-                    (GLfloat) width, (GLfloat) height,
+                    (GLfloat) render_width, 0.0f,
+                    (GLfloat) render_width, (GLfloat) render_height,
                     0.0f,            0.0f,
-                    0.0f,            (GLfloat) height
+                    0.0f,            (GLfloat) render_height
                 };
 
                 const GLfloat logo[] = {
@@ -430,8 +424,14 @@ try
                     0.0f,    dotSize
                 };
 
-                GLfloat projMatrix[16];
-                ortho(&projMatrix[0], 0.0f, (GLfloat) width, (GLfloat) height, 0.0f, -1.0f, 1.0f);
+                auto mvpMatrix = glm::mat4(1.0f);
+                if (needs_rotation)
+                    mvpMatrix = glm::rotate(mvpMatrix, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+                mvpMatrix = glm::translate(mvpMatrix, glm::vec3(-1.0, -1.0, 0.0f));
+                mvpMatrix = glm::scale(mvpMatrix,
+                                       glm::vec3(2.0f / render_width, 2.0f / render_height, 1.0f));
+                auto const projMatrix = glm::ortho(-1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f);
+                mvpMatrix = projMatrix * mvpMatrix;
 
                 glViewport(0, 0, width, height);
 
@@ -444,7 +444,7 @@ try
                 glBindTexture(GL_TEXTURE_2D, texture[WALLPAPER]);
                 glUniform1i(sampler[WALLPAPER], 0);
                 glUniform2f(offset[WALLPAPER], 0.0f, 0.0f);
-                glUniformMatrix4fv(projMat[WALLPAPER], 1, GL_FALSE,  projMatrix);
+                glUniformMatrix4fv(projMat[WALLPAPER], 1, GL_FALSE, glm::value_ptr(mvpMatrix));
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
                 // draw logo
@@ -452,18 +452,18 @@ try
                 glUseProgram(prog[LOGO]);
                 glBindTexture(GL_TEXTURE_2D, texture[LOGO]);
                 glUniform1i(sampler[LOGO], 0);
-                glUniform2f(offset[LOGO], width/2.0f - logoWidth / 2.0f + logoXOffset, height / 2.0f - logoHeight * 0.75f);
-                glUniformMatrix4fv(projMat[LOGO], 1, GL_FALSE,  projMatrix);
+                glUniform2f(offset[LOGO], render_width/2.0f - logoWidth / 2.0f + logoXOffset, render_height / 2.0f - logoHeight * 0.75f);
+                glUniformMatrix4fv(projMat[LOGO], 1, GL_FALSE, glm::value_ptr(mvpMatrix));
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
                 // draw white/orange dots
                 glVertexAttribPointer(vpos[WHITE_DOT], 2, GL_FLOAT, GL_FALSE, 0, dot);
                 glUseProgram(prog[WHITE_DOT]);
                 glUniform1i(sampler[WHITE_DOT], 0);
-                glUniformMatrix4fv(projMat[WHITE_DOT], 1, GL_FALSE,  projMatrix);
+                glUniformMatrix4fv(projMat[WHITE_DOT], 1, GL_FALSE, glm::value_ptr(mvpMatrix));
                 for (int i = -2; i < 3; i++) {
                     glBindTexture(GL_TEXTURE_2D, texture[anim.dot_mask >> (i + 2) ? ORANGE_DOT : WHITE_DOT]);
-                    glUniform2f(offset[WHITE_DOT], width/2.0f + i * dotXGap, height / 2.0f + logoHeight / 2.0f + dotYGap - logoHeight * 0.25f);
+                    glUniform2f(offset[WHITE_DOT], render_width/2.0f + i * dotXGap, render_height / 2.0f + logoHeight / 2.0f + dotYGap - logoHeight * 0.25f);
                     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);                    
                 }
             });

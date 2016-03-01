@@ -19,25 +19,21 @@
 #ifndef USC_DBUS_CONNECTION_THREAD_H_
 #define USC_DBUS_CONNECTION_THREAD_H_
 
-#include "dbus_connection_handle.h"
-#include "dbus_event_loop.h"
-
 #include <thread>
 
 namespace usc
 {
 
+class DBusEventLoop;
 class DBusConnectionThread
 {
 public:
-    DBusConnectionThread(std::string const& address);
+    DBusConnectionThread(std::shared_ptr<DBusEventLoop> const& thread);
     ~DBusConnectionThread();
-    DBusConnectionHandle const& connection() const;
     DBusEventLoop & loop();
 
 private:
-    DBusConnectionHandle dbus_connection;
-    DBusEventLoop dbus_event_loop;
+    std::shared_ptr<DBusEventLoop> dbus_event_loop;
     std::thread dbus_loop_thread;
 };
 

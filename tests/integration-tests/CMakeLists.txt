@@ -33,9 +33,12 @@ add_executable(
   dbus_bus.cpp
   dbus_client.cpp
   spin_wait.cpp
+  unity_screen_dbus_client.cpp
+  unity_input_dbus_client.cpp
   test_dbus_event_loop.cpp
   test_unity_screen_service.cpp
   test_unity_input_service.cpp
+  test_unity_services.cpp
   test_external_spinner.cpp
   test_powerd_mediator.cpp
   test_deadlock_lp1491566.cpp
@@ -50,7 +53,7 @@ target_link_libraries(
    ${GMOCK_MAIN_LIBRARY}
 )
 
-add_test(usc_integration_tests ${EXECUTABLE_OUTPUT_PATH}/usc_integration_tests)
+add_test(usc_integration_tests ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/usc_integration_tests)
 
 add_dependencies(usc_integration_tests GMock)
 add_dependencies(usc_integration_tests usc_test_helper_wait_for_signal)

@@ -39,12 +39,14 @@ class Spinner;
 class SessionSwitcher;
 class DMMessageHandler;
 class DMConnection;
+class PerformanceBooster;
 class Screen;
 class ScreenHardware;
 class UnityScreenService;
 class InputConfiguration;
 class UnityInputService;
 class DBusConnectionThread;
+class DBusEventLoop;
 class Clock;
 
 class Server : private mir::Server
@@ -60,6 +62,7 @@ public:
     using mir::Server::the_compositor;
     using mir::Server::the_touch_visualizer;
 
+    virtual std::shared_ptr<PerformanceBooster> the_performance_booster();
     virtual std::shared_ptr<Spinner> the_spinner();
     virtual std::shared_ptr<DMMessageHandler> the_dm_message_handler();
     virtual std::shared_ptr<DMConnection> the_dm_connection();
@@ -69,6 +72,7 @@ public:
     virtual std::shared_ptr<ScreenHardware> the_screen_hardware();
     virtual std::shared_ptr<UnityScreenService> the_unity_screen_service();
     virtual std::shared_ptr<UnityInputService> the_unity_input_service();
+    virtual std::shared_ptr<DBusEventLoop> the_dbus_event_loop();
     virtual std::shared_ptr<DBusConnectionThread> the_dbus_connection_thread();
     virtual std::shared_ptr<Clock> the_clock();
 
@@ -182,6 +186,7 @@ private:
     mir::CachedPtr<mir::input::EventFilter> screen_event_handler;
     mir::CachedPtr<ScreenHardware> screen_hardware;
     mir::CachedPtr<DBusConnectionThread> dbus_thread;
+    mir::CachedPtr<DBusEventLoop> dbus_loop;
     mir::CachedPtr<UnityScreenService> unity_screen_service;
     mir::CachedPtr<UnityInputService> unity_input_service;
     mir::CachedPtr<Clock> clock;

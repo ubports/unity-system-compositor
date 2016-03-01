@@ -67,7 +67,7 @@ def export(image, variable_name):
     print "    unsigned char pixel_data[%d * %d * %d + 1];" % image_info
     print "} %s = {" % variable_name
     print "    %d, %d, %d," % image_info
-    print tocstring(image.tostring())
+    print tocstring(image.tobytes())
     print "};"
 
 def show_usage():
@@ -82,5 +82,6 @@ image_filename = sys.argv[1]
 variable_name = sys.argv[2]
 
 image = Image.open(image_filename)
-premultiply(image)
+if image.mode == 'RGBA':
+    premultiply(image)
 export(image, variable_name)
