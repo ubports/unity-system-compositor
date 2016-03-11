@@ -16,6 +16,8 @@
  * Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
+#define MIR_LOG_COMPONENT "UnitySystemCompositor"
+
 #include "server.h"
 #include "external_spinner.h"
 #include "asio_dm_connection.h"
@@ -29,6 +31,8 @@
 #include "unity_input_service.h"
 #include "dbus_connection_thread.h"
 #include "dbus_event_loop.h"
+#include "hw_performance_booster.h"
+#include "null_performance_booster.h"
 #include "display_configuration_policy.h"
 #include "steady_clock.h"
 
@@ -37,8 +41,11 @@
 #include <mir/server_status_listener.h>
 #include <mir/shell/focus_controller.h>
 #include <mir/scene/session.h>
+#include <mir/log.h>
 #include <mir/abnormal_exit.h>
 #include <mir/main_loop.h>
+
+#include <boost/exception/all.hpp>
 
 #include <iostream>
 
@@ -201,6 +208,23 @@ usc::Server::Server(int argc, char** argv)
     apply_settings();
 }
 
+std::shared_ptr<usc::PerformanceBooster> usc::Server::the_performance_booster()
+{
+    // We are treating access to a functional implementation of PerformanceBooster as optional.
+    // With that, we gracefully fall back to a NullImplementation if we cannot gain access
+    // to hw-provided booster capabilities.
+    try
+    {
+        return std::make_shared<HwPerformanceBooster>();
+    }
+    catch (boost::exception const& e)
+    {
+        mir::log_warning(boost::diagnostic_information(e));
+    }
+
+    return std::make_shared<NullPerformanceBooster>();
+}
+
 std::shared_ptr<usc::Spinner> usc::Server::the_spinner()
 {
     return spinner(
@@ -288,6 +312,7 @@ std::shared_ptr<usc::Screen> usc::Server::the_screen()
         [this]
         {
             return std::make_shared<MirScreen>(
+                the_performance_booster(),
                 the_screen_hardware(),
                 the_compositor(),
                 the_display(),

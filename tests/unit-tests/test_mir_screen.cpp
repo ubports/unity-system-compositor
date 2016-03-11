@@ -17,6 +17,7 @@
  */
 
 #include "src/mir_screen.h"
+#include "src/performance_booster.h"
 #include "src/screen_hardware.h"
 #include "src/power_state_change_reason.h"
 #include "advanceable_timer.h"
@@ -43,6 +44,12 @@ struct MockCompositor : mir::compositor::Compositor
 {
     MOCK_METHOD0(start, void());
     MOCK_METHOD0(stop, void());
+};
+
+struct MockPerformanceBooster : usc::PerformanceBooster
+{
+    MOCK_METHOD0(enable_performance_boost_during_user_interaction, void());
+    MOCK_METHOD0(disable_performance_boost_during_user_interaction, void());
 };
 
 struct MockScreenHardware : usc::ScreenHardware
@@ -136,6 +143,18 @@ struct AMirScreen : testing::Test
     std::chrono::seconds const thirty_seconds{30};
     std::chrono::seconds const fourty_seconds{40};
     std::chrono::seconds const fifty_seconds{50};
+
+    void expect_performance_boost_is_enabled()
+    {
+        using namespace testing;
+        EXPECT_CALL(*performance_booster, enable_performance_boost_during_user_interaction());
+    }
+
+    void expect_performance_boost_is_disabled()
+    {
+        using namespace testing;
+        EXPECT_CALL(*performance_booster, disable_performance_boost_during_user_interaction());
+    }
 
     void expect_screen_is_turned_off()
     {
@@ -274,6 +293,8 @@ struct AMirScreen : testing::Test
         Mock::VerifyAndClearExpectations(compositor.get());
     }
 
+    std::shared_ptr<MockPerformanceBooster> performance_booster{
+        std::make_shared<testing::NiceMock<MockPerformanceBooster>>()};
     std::shared_ptr<MockScreenHardware> screen_hardware{
         std::make_shared<testing::NiceMock<MockScreenHardware>>()};
     std::shared_ptr<MockCompositor> compositor{
@@ -286,6 +307,7 @@ struct AMirScreen : testing::Test
         std::make_shared<AdvanceableTimer>()};
 
     usc::MirScreen mir_screen{
+        performance_booster,
         screen_hardware,
         compositor,
         display,
@@ -297,7 +319,50 @@ struct AMirScreen : testing::Test
         {call_power_off_timeout, call_dimmer_timeout}};
 };
 
+struct AParameterizedMirScreen : public AMirScreen, public ::testing::WithParamInterface<PowerStateChangeReason> {};
+struct ImmediatePowerOnMirScreen : public AParameterizedMirScreen {};
+struct DeferredPowerOnMirScreen : public AParameterizedMirScreen {};
+
 }
+
+TEST_P(ImmediatePowerOnMirScreen, enables_performance_boost_for_screen_on)
+{
+    turn_screen_off();
+    expect_performance_boost_is_enabled();
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on, GetParam());
+}
+
+TEST_P(DeferredPowerOnMirScreen, enables_performance_boost_for_screen_on_with_reason_proximity)
+{
+    turn_screen_off();
+    expect_performance_boost_is_enabled();
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on, GetParam());
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_on, PowerStateChangeReason::proximity);
+}
+
+TEST_P(AParameterizedMirScreen, disables_performance_boost_for_screen_off)
+{
+    turn_screen_on();
+    expect_performance_boost_is_disabled();
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_off, GetParam());
+}
+
+INSTANTIATE_TEST_CASE_P(
+        AParameterizedMirScreen,
+        AParameterizedMirScreen,
+        ::testing::Values(PowerStateChangeReason::unknown, PowerStateChangeReason::inactivity, PowerStateChangeReason::power_key,
+                          PowerStateChangeReason::proximity, PowerStateChangeReason::notification, PowerStateChangeReason::snap_decision,
+                          PowerStateChangeReason::call_done));
+
+INSTANTIATE_TEST_CASE_P(
+        ImmediatePowerOnMirScreen,
+        ImmediatePowerOnMirScreen,
+        ::testing::Values(PowerStateChangeReason::unknown, PowerStateChangeReason::inactivity, PowerStateChangeReason::power_key));
+
+INSTANTIATE_TEST_CASE_P(
+        DeferredPowerOnMirScreen,
+        DeferredPowerOnMirScreen,
+        ::testing::Values(PowerStateChangeReason::notification, PowerStateChangeReason::snap_decision, PowerStateChangeReason::call_done));
 
 TEST_F(AMirScreen, turns_screen_off_after_power_off_timeout)
 {
