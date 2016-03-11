@@ -36,6 +36,7 @@ namespace time { class AlarmFactory; class Alarm; }
 
 namespace usc
 {
+class PerformanceBooster;
 class Server;
 class ScreenHardware;
 class Clock;
@@ -49,7 +50,8 @@ public:
         std::chrono::milliseconds dimming_timeout;
     };
 
-    MirScreen(std::shared_ptr<usc::ScreenHardware> const& screen_hardware,
+    MirScreen(std::shared_ptr<usc::PerformanceBooster> const& perf_booster,
+              std::shared_ptr<usc::ScreenHardware> const& screen_hardware,
               std::shared_ptr<mir::compositor::Compositor> const& compositor,
               std::shared_ptr<mir::graphics::Display> const& display,
               std::shared_ptr<mir::input::TouchVisualizer> const& touch_visualizer,
@@ -97,6 +99,7 @@ private:
 
     void long_press_alarm_notification();
 
+    std::shared_ptr<usc::PerformanceBooster> const perf_booster;
     std::shared_ptr<usc::ScreenHardware> const screen_hardware;
     std::shared_ptr<mir::compositor::Compositor> const compositor;
     std::shared_ptr<mir::graphics::Display> const display;
