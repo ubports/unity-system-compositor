@@ -210,19 +210,7 @@ usc::Server::Server(int argc, char** argv)
 
 std::shared_ptr<usc::PerformanceBooster> usc::Server::the_performance_booster()
 {
-    // We are treating access to a functional implementation of PerformanceBooster as optional.
-    // With that, we gracefully fall back to a NullImplementation if we cannot gain access
-    // to hw-provided booster capabilities.
-    try
-    {
-        return std::make_shared<HwPerformanceBooster>();
-    }
-    catch (boost::exception const& e)
-    {
-        mir::log_warning(boost::diagnostic_information(e));
-    }
-
-    return std::make_shared<NullPerformanceBooster>();
+    return platform_default_performance_booster();
 }
 
 std::shared_ptr<usc::Spinner> usc::Server::the_spinner()
