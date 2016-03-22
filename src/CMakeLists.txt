@@ -14,6 +14,12 @@
 #
 # Authored by: Robert Ancell <robert.ancell@canonical.com>
 
+if (UBUNTU_PLATFORM_HARDWARE_API_FOUND)
+  set(PERFORMANCE_BOOSTER_IMPL_SRCS hw_performance_booster.cpp null_performance_booster.cpp)
+else()
+  set(PERFORMANCE_BOOSTER_IMPL_SRCS null_performance_booster.cpp)
+endif()
+
 set(USC_SRCS
   asio_dm_connection.cpp
   dbus_connection_handle.cpp
@@ -21,11 +27,10 @@ set(USC_SRCS
   dbus_message_handle.cpp
   display_configuration_policy.cpp
   external_spinner.cpp  
-  hw_performance_booster.cpp
   mir_screen.cpp
   mir_input_configuration.cpp
-  null_performance_booster.cpp
   performance_booster.h
+  performance_booster.cpp
   powerd_mediator.cpp
   screen_event_handler.cpp
   server.cpp
@@ -39,6 +44,8 @@ set(USC_SRCS
   unity_screen_service.cpp
   unity_screen_service_introspection.h
   window_manager.cpp
+
+  ${PERFORMANCE_BOOSTER_IMPL_SRCS}
 )
 
 # Generate unity_screen_service_introspection.h from the introspection XML file

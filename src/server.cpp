@@ -26,13 +26,12 @@
 #include "mir_screen.h"
 #include "mir_input_configuration.h"
 #include "screen_event_handler.h"
+#include "performance_booster.h"
 #include "powerd_mediator.h"
 #include "unity_screen_service.h"
 #include "unity_input_service.h"
 #include "dbus_connection_thread.h"
 #include "dbus_event_loop.h"
-#include "hw_performance_booster.h"
-#include "null_performance_booster.h"
 #include "display_configuration_policy.h"
 #include "steady_clock.h"
 
@@ -210,19 +209,7 @@ usc::Server::Server(int argc, char** argv)
 
 std::shared_ptr<usc::PerformanceBooster> usc::Server::the_performance_booster()
 {
-    // We are treating access to a functional implementation of PerformanceBooster as optional.
-    // With that, we gracefully fall back to a NullImplementation if we cannot gain access
-    // to hw-provided booster capabilities.
-    try
-    {
-        return std::make_shared<HwPerformanceBooster>();
-    }
-    catch (boost::exception const& e)
-    {
-        mir::log_warning(boost::diagnostic_information(e));
-    }
-
-    return std::make_shared<NullPerformanceBooster>();
+    return platform_default_performance_booster();
 }
 
 std::shared_ptr<usc::Spinner> usc::Server::the_spinner()
