@@ -19,6 +19,8 @@
 #ifndef USC_PERFORMANCE_BOOSTER_H_
 #define USC_PERFORMANCE_BOOSTER_H_
 
+#include <memory>
+
 namespace usc
 {
 class PerformanceBooster
@@ -32,6 +34,8 @@ public:
     virtual void enable_performance_boost_during_user_interaction() = 0;
     virtual void disable_performance_boost_during_user_interaction() = 0;
 };
+
+std::shared_ptr<PerformanceBooster> platform_default_performance_booster();
 }
 
 #endif // USC_PERFORMANCE_BOOSTER_H_
