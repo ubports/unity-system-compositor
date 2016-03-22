@@ -21,7 +21,7 @@ Build-Depends: cmake,
                python:any (>= 2.7),
                python-setuptools,
                python-pil,
-               libubuntu-platform-hardware-api-dev [!arm64 !ppc64el !powerpc],
+               libubuntu-platform-hardware-api-dev [!arm64 !ppc64el !powerpc !s390x],
 Standards-Version: 3.9.4
 Homepage: https://launchpad.net/unity-system-compositor
 # if you don't have have commit access to this branch but would like to upload
