@@ -1,4 +1,4 @@
-unity-system-compositor (0.4.2+16.04.20160219.1-0ubuntu2) xenial; urgency=medium
+unity-system-compositor (0.4.3) xenial; urgency=medium
 
   * Gracefully fallback if ubuntu's platform hw api is not available.
 
