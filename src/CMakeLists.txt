@@ -14,15 +14,23 @@
 #
 # Authored by: Robert Ancell <robert.ancell@canonical.com>
 
+if (UBUNTU_PLATFORM_HARDWARE_API_FOUND)
+  set(PERFORMANCE_BOOSTER_IMPL_SRCS hw_performance_booster.cpp null_performance_booster.cpp)
+else()
+  set(PERFORMANCE_BOOSTER_IMPL_SRCS null_performance_booster.cpp)
+endif()
+
 set(USC_SRCS
   asio_dm_connection.cpp
   dbus_connection_handle.cpp
   dbus_event_loop.cpp
   dbus_message_handle.cpp
   display_configuration_policy.cpp
-  external_spinner.cpp
+  external_spinner.cpp  
   mir_screen.cpp
   mir_input_configuration.cpp
+  performance_booster.h
+  performance_booster.cpp
   powerd_mediator.cpp
   screen_event_handler.cpp
   server.cpp
@@ -36,6 +44,8 @@ set(USC_SRCS
   unity_screen_service.cpp
   unity_screen_service_introspection.h
   window_manager.cpp
+
+  ${PERFORMANCE_BOOSTER_IMPL_SRCS}
 )
 
 # Generate unity_screen_service_introspection.h from the introspection XML file
@@ -74,6 +84,7 @@ include_directories(
   ${MIRSERVER_INCLUDE_DIRS}
   ${MIRCLIENT_INCLUDE_DIRS}
   ${DBUS_INCLUDE_DIRS}
+  ${UBUNTU_PLATFORM_HARDWARE_API_INCLUDE_DIRS}
 )
 add_definitions(
   -DDEFAULT_SPINNER="${CMAKE_INSTALL_FULL_BINDIR}/unity-system-compositor-spinner"
@@ -87,6 +98,7 @@ target_link_libraries(usc
   ${Boost_LIBRARIES}
   ${GLESv2_LIBRARIES}
   ${DBUS_LIBRARIES}
+  ${UBUNTU_PLATFORM_HARDWARE_API_LIBRARIES}
 )
 
 target_link_libraries(unity-system-compositor

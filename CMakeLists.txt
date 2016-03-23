@@ -17,7 +17,7 @@
 project(UnitySystemCompositor)
 set(USC_VERSION_MAJOR 0)
 set(USC_VERSION_MINOR 4)
-set(USC_VERSION_PATCH 2)
+set(USC_VERSION_PATCH 3)
 set(USC_VERSION "${USC_VERSION_MAJOR}.${USC_VERSION_MINOR}.${USC_VERSION_PATCH}")
 
 cmake_minimum_required(VERSION 2.8)
@@ -43,10 +43,15 @@ pkg_check_modules(GLIB REQUIRED glib-2.0)
 pkg_check_modules(MIRCLIENT REQUIRED mirclient)
 pkg_check_modules(MIRSERVER REQUIRED mirserver)
 pkg_check_modules(DBUS REQUIRED dbus-1)
+pkg_check_modules(UBUNTU_PLATFORM_HARDWARE_API ubuntu-platform-hardware-api)
 
 find_package(Boost 1.48.0 COMPONENTS system REQUIRED)
 find_package(GLESv2 REQUIRED)
 find_package(PIL REQUIRED)
+
+if (UBUNTU_PLATFORM_HARDWARE_API_FOUND)
+  add_definitions(-DUSC_HAVE_UBUNTU_PLATFORM_HARDWARE_API)
+endif()
 
 add_subdirectory(spinner/)
 add_subdirectory(src/)

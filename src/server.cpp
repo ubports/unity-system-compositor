@@ -16,6 +16,8 @@
  * Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
+#define MIR_LOG_COMPONENT "UnitySystemCompositor"
+
 #include "server.h"
 #include "external_spinner.h"
 #include "asio_dm_connection.h"
@@ -24,6 +26,7 @@
 #include "mir_screen.h"
 #include "mir_input_configuration.h"
 #include "screen_event_handler.h"
+#include "performance_booster.h"
 #include "powerd_mediator.h"
 #include "unity_screen_service.h"
 #include "unity_input_service.h"
@@ -37,8 +40,11 @@
 #include <mir/server_status_listener.h>
 #include <mir/shell/focus_controller.h>
 #include <mir/scene/session.h>
+#include <mir/log.h>
 #include <mir/abnormal_exit.h>
 #include <mir/main_loop.h>
+
+#include <boost/exception/all.hpp>
 
 #include <iostream>
 
@@ -201,6 +207,11 @@ usc::Server::Server(int argc, char** argv)
     apply_settings();
 }
 
+std::shared_ptr<usc::PerformanceBooster> usc::Server::the_performance_booster()
+{
+    return platform_default_performance_booster();
+}
+
 std::shared_ptr<usc::Spinner> usc::Server::the_spinner()
 {
     return spinner(
@@ -288,6 +299,7 @@ std::shared_ptr<usc::Screen> usc::Server::the_screen()
         [this]
         {
             return std::make_shared<MirScreen>(
+                the_performance_booster(),
                 the_screen_hardware(),
                 the_compositor(),
                 the_display(),

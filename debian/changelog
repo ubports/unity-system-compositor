@@ -1,3 +1,9 @@
+unity-system-compositor (0.4.3) xenial; urgency=medium
+
+  * Gracefully fallback if ubuntu's platform hw api is not available.
+
+ -- Thomas Voß <thomas.voss@canonical.com>  Tue, 22 Mar 2016 16:34:23 +0100
+
 unity-system-compositor (0.4.2+16.04.20160219.1-0ubuntu1) xenial; urgency=medium
 
   [ Alan Griffiths, Alexandros Frantzis, Brandon Schaefer ]
