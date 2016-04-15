@@ -49,7 +49,10 @@ usc::MirScreen::MirScreen(
     std::shared_ptr<usc::PerformanceBooster> const& perf_booster,
     std::shared_ptr<mir::compositor::Compositor> const& compositor,
     std::shared_ptr<mir::graphics::Display> const& display)
-    : current_power_mode{MirPowerMode::mir_power_mode_on}
+    : perf_booster{perf_booster},
+      compositor{compositor},
+      display{display},
+      current_power_mode{MirPowerMode::mir_power_mode_on}
 {
     try
     {
