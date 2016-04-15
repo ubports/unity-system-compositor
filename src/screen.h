@@ -20,31 +20,16 @@
 #include <mir_toolkit/common.h>
 #include <functional>
 
-enum class PowerStateChangeReason;
-
 namespace usc
 {
-
-using PowerStateChangeHandler = std::function<void(MirPowerMode, PowerStateChangeReason)>;
 
 class Screen
 {
 public:
     virtual ~Screen() = default;
 
-    virtual void enable_inactivity_timers(bool enable) = 0;
-    virtual void keep_display_on_temporarily() = 0;
-
-    virtual MirPowerMode get_screen_power_mode() = 0;
-    virtual void set_screen_power_mode(MirPowerMode mode, PowerStateChangeReason reason) = 0;
-    virtual void keep_display_on(bool on) = 0;
-    virtual void set_brightness(int brightness) = 0;
-    virtual void enable_auto_brightness(bool enable) = 0;
-    virtual void set_inactivity_timeouts(int power_off_timeout, int dimmer_timeout) = 0;
-
-    virtual void set_touch_visualization_enabled(bool enabled) = 0;
-    virtual void register_power_state_change_handler(
-            PowerStateChangeHandler const& handler) = 0;
+    virtual void turn_on() = 0;
+    virtual void turn_off() = 0;
 
 protected:
     Screen() = default;

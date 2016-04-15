@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Canonical Ltd.
+ * Copyright © 2016 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -14,9 +14,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "steady_clock.h"
+#ifndef USC_UNITY_POWER_BUTTON_EVENT_SINK_H_
+#define USC_UNITY_POWER_BUTTON_EVENT_SINK_H_
 
-mir::time::Timestamp usc::SteadyClock::now() const
+#include "power_button_event_sink.h"
+#include "dbus_connection_handle.h"
+
+namespace usc
 {
-    return clock.now();
+
+class UnityPowerButtonEventSink : public PowerButtonEventSink
+{
+public:
+    UnityPowerButtonEventSink(std::string const& dbus_address);
+
+    void notify_press() override;
+    void notify_release() override;
+
+private:
+    DBusConnectionHandle dbus_connection;
+};
+
 }
+
+#endif

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Canonical Ltd.
+ * Copyright © 2016 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -14,28 +14,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef USC_CLOCK_H_
-#define USC_CLOCK_H_
-
-#include <mir/time/types.h>
-#include <chrono>
+#ifndef USC_USER_ACTIVITY_EVENT_SINK_H_
+#define USC_USER_ACTIVITY_EVENT_SINK_H_
 
 namespace usc
 {
 
-class Clock
+class UserActivityEventSink
 {
 public:
-    virtual ~Clock() = default;
+    virtual ~UserActivityEventSink() = default;
 
-    virtual mir::time::Timestamp now() const = 0;
+    virtual void notify_activity_changing_power_state() = 0;
+    virtual void notify_activity_extending_power_state() = 0;
 
 protected:
-    Clock() = default;
-    Clock(Clock const&) = delete;
-    Clock& operator=(Clock const&) = delete;
+    UserActivityEventSink() = default;
+    UserActivityEventSink(UserActivityEventSink const&) = delete;
+    UserActivityEventSink& operator=(UserActivityEventSink const&) = delete;
 };
 
 }
 
 #endif
+

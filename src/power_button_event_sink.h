@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014 Canonical Ltd.
+ * Copyright © 2016 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -14,18 +14,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef POWER_STATE_CHANGE_REASON_H_
-#define POWER_STATE_CHANGE_REASON_H_
+#ifndef USC_POWER_BUTTON_EVENT_SINK_H_
+#define USC_POWER_BUTTON_EVENT_SINK_H_
 
-enum class PowerStateChangeReason
+namespace usc
 {
-    unknown = 0,
-    inactivity = 1,
-    power_key = 2,
-    proximity = 3,
-    notification = 4,
-    snap_decision = 5,
-    call_done = 6
+
+class PowerButtonEventSink
+{
+public:
+    virtual ~PowerButtonEventSink() = default;
+
+    virtual void notify_press() = 0;
+    virtual void notify_release() = 0;
+
+protected:
+    PowerButtonEventSink() = default;
+    PowerButtonEventSink(PowerButtonEventSink const&) = delete;
+    PowerButtonEventSink& operator=(PowerButtonEventSink const&) = delete;
 };
+
+}
 
 #endif

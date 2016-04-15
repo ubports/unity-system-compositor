@@ -41,13 +41,13 @@ class DMMessageHandler;
 class DMConnection;
 class PerformanceBooster;
 class Screen;
-class ScreenHardware;
-class UnityScreenService;
+class UnityDisplayService;
+class PowerButtonEventSink;
+class UserActivityEventSink;
 class InputConfiguration;
 class UnityInputService;
 class DBusConnectionThread;
 class DBusEventLoop;
-class Clock;
 
 class Server : private mir::Server
 {
@@ -69,21 +69,16 @@ public:
     virtual std::shared_ptr<Screen> the_screen();
     virtual std::shared_ptr<InputConfiguration> the_input_configuration();
     virtual std::shared_ptr<mir::input::EventFilter> the_screen_event_handler();
-    virtual std::shared_ptr<ScreenHardware> the_screen_hardware();
-    virtual std::shared_ptr<UnityScreenService> the_unity_screen_service();
+    virtual std::shared_ptr<UnityDisplayService> the_unity_display_service();
     virtual std::shared_ptr<UnityInputService> the_unity_input_service();
+    virtual std::shared_ptr<PowerButtonEventSink> the_power_button_event_sink();
+    virtual std::shared_ptr<UserActivityEventSink> the_user_activity_event_sink();
     virtual std::shared_ptr<DBusEventLoop> the_dbus_event_loop();
     virtual std::shared_ptr<DBusConnectionThread> the_dbus_connection_thread();
-    virtual std::shared_ptr<Clock> the_clock();
 
     bool show_version()
     {
         return the_options()->is_set("version");
-    }
-
-    bool disable_inactivity_policy()
-    {
-        return the_options()->get("disable-inactivity-policy", false);
     }
 
     std::string blacklist()
@@ -108,60 +103,6 @@ private:
     -> decltype(mir::Server::get_options())
     { return mir::Server::get_options(); }
 
-    std::chrono::milliseconds inactivity_display_off_timeout()
-    {
-        using namespace std::chrono;
-        return duration_cast<milliseconds>(
-            seconds{the_options()->get("inactivity-display-off-timeout", 60)});
-    }
-
-    std::chrono::milliseconds inactivity_display_dim_timeout()
-    {
-        using namespace std::chrono;
-        return duration_cast<milliseconds>(
-            seconds{the_options()->get("inactivity-display-dim-timeout", 45)});
-    }
-
-    std::chrono::milliseconds notification_display_off_timeout()
-    {
-        using namespace std::chrono;
-        return duration_cast<milliseconds>(
-            seconds{the_options()->get("notification-display-off-timeout", 15)});
-    }
-
-    std::chrono::milliseconds notification_display_dim_timeout()
-    {
-        using namespace std::chrono;
-        return duration_cast<milliseconds>(
-            seconds{the_options()->get("notification-display-dim-timeout", 12)});
-    }
-
-    std::chrono::milliseconds snap_decision_display_off_timeout()
-    {
-        using namespace std::chrono;
-        return duration_cast<milliseconds>(
-            seconds{the_options()->get("snap-decision-display-off-timeout", 60)});
-    }
-
-    std::chrono::milliseconds snap_decision_display_dim_timeout()
-    {
-        using namespace std::chrono;
-        return duration_cast<milliseconds>(
-            seconds{the_options()->get("snap-decision-display-dim-timeout", 50)});
-    }
-
-    std::chrono::milliseconds shutdown_timeout()
-    {
-        return std::chrono::milliseconds{
-            the_options()->get("shutdown-timeout", 5000)};
-    }
-
-    std::chrono::milliseconds power_key_ignore_timeout()
-    {
-        return std::chrono::milliseconds{
-            the_options()->get("power-key-ignore-timeout", 2000)};
-    }
-
     bool enable_hardware_cursor()
     {
         return the_options()->get("enable-hardware-cursor", false);
@@ -184,12 +125,12 @@ private:
     mir::CachedPtr<Screen> screen;
     mir::CachedPtr<InputConfiguration> input_configuration;
     mir::CachedPtr<mir::input::EventFilter> screen_event_handler;
-    mir::CachedPtr<ScreenHardware> screen_hardware;
     mir::CachedPtr<DBusConnectionThread> dbus_thread;
     mir::CachedPtr<DBusEventLoop> dbus_loop;
-    mir::CachedPtr<UnityScreenService> unity_screen_service;
+    mir::CachedPtr<UnityDisplayService> unity_display_service;
+    mir::CachedPtr<PowerButtonEventSink> power_button_event_sink;
+    mir::CachedPtr<UserActivityEventSink> user_activity_event_sink;
     mir::CachedPtr<UnityInputService> unity_input_service;
-    mir::CachedPtr<Clock> clock;
 };
 
 }

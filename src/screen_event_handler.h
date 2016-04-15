@@ -19,56 +19,27 @@
 
 #include "mir/input/event_filter.h"
 
-#include <mutex>
 #include <memory>
-#include <atomic>
-#include <chrono>
-
-namespace mir
-{
-namespace time
-{
-class Alarm;
-class AlarmFactory;
-}
-}
 
 namespace usc
 {
-class Screen;
+class PowerButtonEventSink;
+class UserActivityEventSink;
 
 class ScreenEventHandler : public mir::input::EventFilter
 {
 public:
     ScreenEventHandler(
-        std::shared_ptr<Screen> const& screen,
-        std::shared_ptr<mir::time::AlarmFactory> const& alarm_factory,
-        std::chrono::milliseconds power_key_ignore_timeout,
-        std::chrono::milliseconds shutdown_timeout,
-        std::function<void()> const& shutdown);
+        std::shared_ptr<PowerButtonEventSink> const& power_button_event_sink,
+        std::shared_ptr<UserActivityEventSink> const& user_activity_event_sink);
 
     ~ScreenEventHandler();
 
     bool handle(MirEvent const& event) override;
 
 private:
-    void power_key_up();
-    void power_key_down();
-    void shutdown_alarm_notification();
-    void long_press_notification();
-    void keep_or_turn_screen_on();
-
-    std::mutex guard;
-    std::shared_ptr<Screen> const screen;
-    std::shared_ptr<mir::time::AlarmFactory> const alarm_factory;
-    std::chrono::milliseconds const power_key_ignore_timeout;
-    std::chrono::milliseconds const shutdown_timeout;
-    std::function<void()> const shutdown;
-
-    std::atomic<bool> long_press_detected;
-    std::atomic<MirPowerMode> mode_at_press_start;
-    std::unique_ptr<mir::time::Alarm> shutdown_alarm;
-    std::unique_ptr<mir::time::Alarm> long_press_alarm;
+    std::shared_ptr<PowerButtonEventSink> const& power_button_event_sink;
+    std::shared_ptr<UserActivityEventSink> const& user_activity_event_sink;
 };
 
 }

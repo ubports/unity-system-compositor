@@ -31,28 +31,28 @@ set(USC_SRCS
   mir_input_configuration.cpp
   performance_booster.h
   performance_booster.cpp
-  powerd_mediator.cpp
   screen_event_handler.cpp
   server.cpp
   session_switcher.cpp
-  steady_clock.cpp
   system_compositor.cpp
   thread_name.cpp
   dbus_connection_thread.cpp
   unity_input_service.cpp
   unity_input_service_introspection.h
-  unity_screen_service.cpp
-  unity_screen_service_introspection.h
+  unity_display_service.cpp
+  unity_display_service_introspection.h
+  unity_power_button_event_sink.cpp
+  unity_user_activity_event_sink.cpp
   window_manager.cpp
 
   ${PERFORMANCE_BOOSTER_IMPL_SRCS}
 )
 
-# Generate unity_screen_service_introspection.h from the introspection XML file
+# Generate unity_display_service_introspection.h from the introspection XML file
 add_custom_command(
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unity_screen_service_introspection.h
-  COMMAND sh generate_header_with_string_from_file.sh ${CMAKE_CURRENT_BINARY_DIR}/unity_screen_service_introspection.h unity_screen_service_introspection com.canonical.Unity.Screen.xml
-  DEPENDS com.canonical.Unity.Screen.xml generate_header_with_string_from_file.sh
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unity_display_service_introspection.h
+  COMMAND sh generate_header_with_string_from_file.sh ${CMAKE_CURRENT_BINARY_DIR}/unity_display_service_introspection.h unity_display_service_introspection com.canonical.Unity.Display.xml
+  DEPENDS com.canonical.Unity.Display.xml generate_header_with_string_from_file.sh
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   VERBATIM
 )
@@ -116,7 +116,7 @@ install(FILES
   DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/dbus-1/system.d
 )
 install(FILES
-    com.canonical.Unity.Screen.xml
+    com.canonical.Unity.Display.xml
     com.canonical.Unity.Input.xml
   DESTINATION ${CMAKE_INSTALL_DATADIR}/dbus-1/interfaces
 )

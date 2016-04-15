@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Canonical Ltd.
+ * Copyright © 2016 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -14,21 +14,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef USC_STEADY_CLOCK_H_
-#define USC_STEADY_CLOCK_H_
+#ifndef USC_UNITY_USER_ACTIVITY_EVENT_SINK_H_
+#define USC_UNITY_USER_ACTIVITY_EVENT_SINK_H_
 
-#include "clock.h"
+#include "user_activity_event_sink.h"
+#include "dbus_connection_handle.h"
 
 namespace usc
 {
 
-class SteadyClock : public Clock
+class UnityUserActivityEventSink : public UserActivityEventSink
 {
 public:
-    mir::time::Timestamp now() const override;
+    UnityUserActivityEventSink(std::string const& dbus_address);
+
+    void notify_activity_changing_power_state() override;
+    void notify_activity_extending_power_state() override;
 
 private:
-    std::chrono::steady_clock clock;
+    DBusConnectionHandle dbus_connection;
 };
 
 }
