@@ -19,15 +19,24 @@
 #include "user_activity_event_sink.h"
 
 #include <mir_toolkit/events/input/input_event.h>
+#include <mir/time/alarm_factory.h>
 
 #include "linux/input.h"
 #include <cstdio>
 
 usc::ScreenEventHandler::ScreenEventHandler(
     std::shared_ptr<PowerButtonEventSink> const& power_button_event_sink,
-    std::shared_ptr<UserActivityEventSink> const& user_activity_event_sink)
+    std::shared_ptr<UserActivityEventSink> const& user_activity_event_sink,
+    std::shared_ptr<mir::time::AlarmFactory> const& alarm_factory)
     : power_button_event_sink{power_button_event_sink},
-      user_activity_event_sink{user_activity_event_sink}
+      user_activity_event_sink{user_activity_event_sink},
+      alarm_factory{alarm_factory},
+      activity_changing_power_state_alarm{
+          alarm_factory->create_alarm(
+              [this] { activity_changing_power_state_alarm_handler(); })},
+      activity_extending_power_state_alarm{
+          alarm_factory->create_alarm(
+              [this] { activity_extending_power_state_alarm_handler(); })} 
 {
 }
 
@@ -60,17 +69,75 @@ bool usc::ScreenEventHandler::handle(MirEvent const& event)
         }
         else
         {
-            user_activity_event_sink->notify_activity_changing_power_state();
+            notify_activity_changing_power_state();
         }
     }
     else if (input_event_type == mir_input_event_type_touch)
     {
-        user_activity_event_sink->notify_activity_extending_power_state();
+        notify_activity_extending_power_state();
     }
     else if (input_event_type == mir_input_event_type_pointer)
     {
-        user_activity_event_sink->notify_activity_changing_power_state();
+        notify_activity_changing_power_state();
     }
 
     return false;
+}
+
+void usc::ScreenEventHandler::notify_activity_changing_power_state()
+{
+    std::lock_guard<std::mutex> lock{alarm_mutex};
+
+    if (!activity_changing_power_state_alarm_pending)
+    {
+        user_activity_event_sink->notify_activity_changing_power_state();
+        activity_changing_power_state_alarm->reschedule_in(event_period);
+        activity_changing_power_state_alarm_pending = true;
+        have_activity_changing_power_state = false;
+    }
+    else
+    {
+        have_activity_changing_power_state = true;
+    }
+}
+
+void usc::ScreenEventHandler::notify_activity_extending_power_state()
+{
+    std::lock_guard<std::mutex> lock{alarm_mutex};
+
+    if (!activity_extending_power_state_alarm_pending)
+    {
+        user_activity_event_sink->notify_activity_extending_power_state();
+        activity_extending_power_state_alarm->reschedule_in(event_period);
+        activity_extending_power_state_alarm_pending = true;
+        have_activity_extending_power_state = false;
+    }
+    else
+    {
+        have_activity_extending_power_state = true;
+    }
+}
+
+void usc::ScreenEventHandler::activity_changing_power_state_alarm_handler()
+{
+    std::lock_guard<std::mutex> lock{alarm_mutex};
+
+    activity_changing_power_state_alarm_pending = false;
+    if (have_activity_changing_power_state)
+    {
+        user_activity_event_sink->notify_activity_changing_power_state();
+        have_activity_changing_power_state = false;
+    }
+}
+
+void usc::ScreenEventHandler::activity_extending_power_state_alarm_handler()
+{
+    std::lock_guard<std::mutex> lock{alarm_mutex};
+
+    activity_extending_power_state_alarm_pending = false;
+    if (have_activity_extending_power_state)
+    {
+        user_activity_event_sink->notify_activity_extending_power_state();
+        have_activity_extending_power_state = false;
+    }
 }

@@ -20,6 +20,17 @@
 #include "mir/input/event_filter.h"
 
 #include <memory>
+#include <mutex>
+#include <chrono>
+
+namespace mir
+{
+namespace time
+{
+class Alarm;
+class AlarmFactory;
+}
+}
 
 namespace usc
 {
@@ -31,15 +42,31 @@ class ScreenEventHandler : public mir::input::EventFilter
 public:
     ScreenEventHandler(
         std::shared_ptr<PowerButtonEventSink> const& power_button_event_sink,
-        std::shared_ptr<UserActivityEventSink> const& user_activity_event_sink);
+        std::shared_ptr<UserActivityEventSink> const& user_activity_event_sink,
+        std::shared_ptr<mir::time::AlarmFactory> const& alarm_factory);
 
     ~ScreenEventHandler();
 
     bool handle(MirEvent const& event) override;
 
 private:
+    void notify_activity_changing_power_state();
+    void notify_activity_extending_power_state();
+    void activity_changing_power_state_alarm_handler();
+    void activity_extending_power_state_alarm_handler();
+
     std::shared_ptr<PowerButtonEventSink> const power_button_event_sink;
     std::shared_ptr<UserActivityEventSink> const user_activity_event_sink;
+    std::shared_ptr<mir::time::AlarmFactory> const alarm_factory;
+    std::chrono::milliseconds const event_period{500};
+
+    std::mutex alarm_mutex;
+    std::unique_ptr<mir::time::Alarm> activity_changing_power_state_alarm;
+    std::unique_ptr<mir::time::Alarm> activity_extending_power_state_alarm;
+    bool activity_changing_power_state_alarm_pending;
+    bool activity_extending_power_state_alarm_pending;
+    bool have_activity_changing_power_state;
+    bool have_activity_extending_power_state;
 };
 
 }

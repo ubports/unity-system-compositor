@@ -303,7 +303,8 @@ std::shared_ptr<mi::EventFilter> usc::Server::the_screen_event_handler()
         {
             return std::make_shared<ScreenEventHandler>(
                 the_power_button_event_sink(),
-                the_user_activity_event_sink());
+                the_user_activity_event_sink(),
+                the_main_loop());
         });
 }
 
