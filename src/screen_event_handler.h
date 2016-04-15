@@ -38,8 +38,8 @@ public:
     bool handle(MirEvent const& event) override;
 
 private:
-    std::shared_ptr<PowerButtonEventSink> const& power_button_event_sink;
-    std::shared_ptr<UserActivityEventSink> const& user_activity_event_sink;
+    std::shared_ptr<PowerButtonEventSink> const power_button_event_sink;
+    std::shared_ptr<UserActivityEventSink> const user_activity_event_sink;
 };
 
 }
