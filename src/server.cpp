@@ -34,6 +34,7 @@
 #include "dbus_connection_thread.h"
 #include "dbus_event_loop.h"
 #include "display_configuration_policy.h"
+#include "steady_clock.h"
 
 #include <mir/cookie/authority.h>
 #include <mir/input/cursor_listener.h>
@@ -304,7 +305,16 @@ std::shared_ptr<mi::EventFilter> usc::Server::the_screen_event_handler()
             return std::make_shared<ScreenEventHandler>(
                 the_power_button_event_sink(),
                 the_user_activity_event_sink(),
-                the_main_loop());
+                the_clock());
+        });
+}
+
+std::shared_ptr<usc::Clock> usc::Server::the_clock()
+{
+    return clock(
+        [this]
+        {
+            return std::make_shared<SteadyClock>();
         });
 }
 

@@ -48,6 +48,7 @@ class InputConfiguration;
 class UnityInputService;
 class DBusConnectionThread;
 class DBusEventLoop;
+class Clock;
 
 class Server : private mir::Server
 {
@@ -75,6 +76,7 @@ public:
     virtual std::shared_ptr<UserActivityEventSink> the_user_activity_event_sink();
     virtual std::shared_ptr<DBusEventLoop> the_dbus_event_loop();
     virtual std::shared_ptr<DBusConnectionThread> the_dbus_connection_thread();
+    virtual std::shared_ptr<Clock> the_clock();
 
     bool show_version()
     {
@@ -131,6 +133,7 @@ private:
     mir::CachedPtr<PowerButtonEventSink> power_button_event_sink;
     mir::CachedPtr<UserActivityEventSink> user_activity_event_sink;
     mir::CachedPtr<UnityInputService> unity_input_service;
+    mir::CachedPtr<Clock> clock;
 };
 
 }

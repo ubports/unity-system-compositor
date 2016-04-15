@@ -34,6 +34,7 @@ set(USC_SRCS
   screen_event_handler.cpp
   server.cpp
   session_switcher.cpp
+  steady_clock.cpp
   system_compositor.cpp
   thread_name.cpp
   dbus_connection_thread.cpp
