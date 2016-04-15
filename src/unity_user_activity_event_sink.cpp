@@ -49,7 +49,7 @@ void usc::UnityUserActivityEventSink::notify_activity_changing_power_state()
 
 void usc::UnityUserActivityEventSink::notify_activity_extending_power_state()
 {
-    int const extending_power_state = 0;
+    int const extending_power_state = 1;
 
     DBusMessageHandle signal{
         dbus_message_new_signal(
