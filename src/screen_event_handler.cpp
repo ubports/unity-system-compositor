@@ -30,7 +30,9 @@ usc::ScreenEventHandler::ScreenEventHandler(
     std::shared_ptr<Clock> const& clock)
     : power_button_event_sink{power_button_event_sink},
       user_activity_event_sink{user_activity_event_sink},
-      clock{clock}
+      clock{clock},
+      last_activity_changing_power_state_event_time{-event_period},
+      last_activity_extending_power_state_event_time{-event_period}
 {
 }
 
@@ -59,9 +61,13 @@ bool usc::ScreenEventHandler::handle(MirEvent const& event)
         {
             // do not keep display on when interacting with media player
         }
-        else
+        else if (mir_keyboard_event_action(kev) == mir_keyboard_action_down)
         {
             notify_activity_changing_power_state();
+        }
+        else
+        {
+            notify_activity_extending_power_state();
         }
     }
     else if (input_event_type == mir_input_event_type_touch)
@@ -80,7 +86,7 @@ void usc::ScreenEventHandler::notify_activity_changing_power_state()
 {
     std::lock_guard<std::mutex> lock{event_mutex};
 
-    if (last_activity_changing_power_state_event_time < clock->now() - event_period)
+    if (clock->now() >= last_activity_changing_power_state_event_time + event_period)
     {
         user_activity_event_sink->notify_activity_changing_power_state();
         last_activity_changing_power_state_event_time = clock->now();
@@ -91,7 +97,7 @@ void usc::ScreenEventHandler::notify_activity_extending_power_state()
 {
     std::lock_guard<std::mutex> lock{event_mutex};
 
-    if (last_activity_extending_power_state_event_time < clock->now() - event_period)
+    if (clock->now() >= last_activity_extending_power_state_event_time + event_period)
     {
         user_activity_event_sink->notify_activity_extending_power_state();
         last_activity_extending_power_state_event_time = clock->now();

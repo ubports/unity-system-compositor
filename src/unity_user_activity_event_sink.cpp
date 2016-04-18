@@ -15,6 +15,7 @@
  */
 
 #include "unity_user_activity_event_sink.h"
+#include "unity_user_activity_type.h"
 #include "dbus_message_handle.h"
 
 namespace
@@ -33,7 +34,8 @@ usc::UnityUserActivityEventSink::UnityUserActivityEventSink(
 
 void usc::UnityUserActivityEventSink::notify_activity_changing_power_state()
 {
-    int const changing_power_state = 0;
+    int const changing_power_state =
+        static_cast<int>(UnityUserActivityType::changing_power_state);
 
     DBusMessageHandle signal{
         dbus_message_new_signal(
@@ -49,7 +51,8 @@ void usc::UnityUserActivityEventSink::notify_activity_changing_power_state()
 
 void usc::UnityUserActivityEventSink::notify_activity_extending_power_state()
 {
-    int const extending_power_state = 1;
+    int const extending_power_state =
+        static_cast<int>(UnityUserActivityType::extending_power_state);
 
     DBusMessageHandle signal{
         dbus_message_new_signal(
