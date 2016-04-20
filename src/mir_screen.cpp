@@ -122,9 +122,9 @@ usc::MirScreen::MirScreen(
       alarm_factory{alarm_factory},
       clock{clock},
       power_off_alarm{alarm_factory->create_alarm(
-              std::make_shared<PowerOffLockableCallback>(this))},
+              std::make_unique<PowerOffLockableCallback>(this))},
       dimmer_alarm{alarm_factory->create_alarm(
-              std::make_shared<DimmerLockableCallback>(this))},
+              std::make_unique<DimmerLockableCallback>(this))},
       inactivity_timeouts(inactivity_timeouts),
       notification_timeouts(notification_timeouts),
       snap_decision_timeouts(snap_decision_timeouts),
