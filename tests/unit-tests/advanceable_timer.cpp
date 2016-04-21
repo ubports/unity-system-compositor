@@ -140,14 +140,14 @@ std::unique_ptr<mir::time::Alarm> AdvanceableTimer::create_alarm(
         std::function<void()> const callback;
     };
 
-    return create_alarm(std::make_shared<SimpleLockableCallback>(callback));
+    return create_alarm(std::make_unique<SimpleLockableCallback>(callback));
 }
 
 std::unique_ptr<mir::time::Alarm> AdvanceableTimer::create_alarm(
-    std::shared_ptr<mir::LockableCallback> const& callback)
+    std::unique_ptr<mir::LockableCallback> callback)
 {
     auto const adv_alarm =
-        std::make_shared<detail::AdvanceableAlarm>(now(), callback);
+        std::make_shared<detail::AdvanceableAlarm>(now(), std::move(callback));
 
     register_alarm(adv_alarm);
 
