@@ -1,3 +1,23 @@
+unity-system-compositor (0.4.3+16.04.20160323-0ubuntu1) xenial; urgency=medium
+
+  [ CI Train Bot ]
+  * No-change rebuild.
+
+ -- Thomas Voß <ci-train-bot@canonical.com>  Wed, 23 Mar 2016 11:06:43 +0000
+
+unity-system-compositor (0.4.3) xenial; urgency=medium
+
+  * Gracefully fallback if ubuntu's platform hw api is not available.
+
+ -- Thomas Voß <thomas.voss@canonical.com>  Tue, 22 Mar 2016 16:34:23 +0100
+
+unity-system-compositor (0.4.2+16.04.20160219.1-0ubuntu1) xenial; urgency=medium
+
+  [ Alan Griffiths, Alexandros Frantzis, Brandon Schaefer ]
+  * Picking up head for Mir 0.20
+
+ -- Alan Griffiths <ci-train-bot@canonical.com>  Fri, 19 Feb 2016 14:55:30 +0000
+
 unity-system-compositor (0.4.2+16.04.20160211.2-0ubuntu1) xenial; urgency=medium
 
   [ CI Train Bot ]
