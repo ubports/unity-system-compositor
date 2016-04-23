@@ -39,6 +39,6 @@ target_link_libraries(
    ${GMOCK_MAIN_LIBRARY}
 )
 
-add_test(usc_unit_tests ${EXECUTABLE_OUTPUT_PATH}/usc_unit_tests)
+add_test(usc_unit_tests ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/usc_unit_tests)
 
 add_dependencies(usc_unit_tests GMock)

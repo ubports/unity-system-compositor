@@ -20,11 +20,7 @@
 #include "usc/test/stub_display_configuration.h"
 
 #include <mir/graphics/display.h>
-#include <mir/version.h>
-#if MIR_SERVER_VERSION >= MIR_VERSION_NUMBER(0, 20, 0)
 #include <mir/graphics/virtual_output.h>
-#endif
-
 #include <gmock/gmock.h>
 
 namespace usc
@@ -66,10 +62,8 @@ struct MockDisplay : mir::graphics::Display
     std::unique_ptr<mir::graphics::GLContext> create_gl_context() override
     { return std::unique_ptr<mir::graphics::GLContext>{};};
 
-#if MIR_SERVER_VERSION >= MIR_VERSION_NUMBER(0, 20, 0)
     std::unique_ptr<mir::graphics::VirtualOutput> create_virtual_output(int, int) override
     { return std::unique_ptr<mir::graphics::VirtualOutput>{}; }
-#endif
 };
 }
 }

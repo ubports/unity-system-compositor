@@ -103,6 +103,7 @@ public:
     void destroy_buffer_stream(mir::frontend::BufferStreamId /*stream*/) override {}
 
     std::string name() const override { return name_; }
+    void send_display_config(mir::graphics::DisplayConfiguration const&) override {}
 
 private:
     std::string const name_;

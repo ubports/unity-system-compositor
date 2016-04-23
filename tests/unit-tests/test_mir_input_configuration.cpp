@@ -56,6 +56,7 @@ struct MockInputDeviceHub : mi::InputDeviceHub
 {
     MOCK_METHOD1(add_observer,void(std::shared_ptr<mi::InputDeviceObserver> const&));
     MOCK_METHOD1(remove_observer,void(std::weak_ptr<mi::InputDeviceObserver> const&));
+    MOCK_METHOD1(for_each_input_device, void(std::function<void(mi::Device const&)> const&));
 };
 
 struct MirInputConfiguration : ::testing::Test
