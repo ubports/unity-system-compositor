@@ -437,6 +437,13 @@ bool usc::MirScreen::is_screen_change_allowed_l(MirPowerMode mode, PowerStateCha
         return false;
     }
 
+    if (mode == MirPowerMode::mir_power_mode_off &&
+        (reason == PowerStateChangeReason::notification ||
+         reason == PowerStateChangeReason::snap_decision))
+    {
+        return false;
+    }
+
     return true;
 }
 

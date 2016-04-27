@@ -343,7 +343,17 @@ TEST_P(DeferredPowerOnMirScreen, enables_performance_boost_for_screen_on_with_re
 TEST_P(AParameterizedMirScreen, disables_performance_boost_for_screen_off)
 {
     turn_screen_on();
-    expect_performance_boost_is_disabled();
+
+    if (GetParam() == PowerStateChangeReason::notification ||
+        GetParam() == PowerStateChangeReason::snap_decision)
+    {
+        expect_no_reconfiguration();
+    }
+    else
+    {
+        expect_performance_boost_is_disabled();
+    }
+
     mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_off, GetParam());
 }
 
@@ -1126,4 +1136,22 @@ TEST_F(AMirScreen,
 
     EXPECT_CALL(*screen_hardware, set_normal_backlight());
     receive_call();
+}
+
+TEST_F(AMirScreen, ignores_screen_off_request_for_notification)
+{
+    turn_screen_on();
+
+    expect_no_reconfiguration();
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_off,
+                                     PowerStateChangeReason::notification);
+}
+
+TEST_F(AMirScreen, ignores_screen_off_request_for_snap_decision)
+{
+    turn_screen_on();
+
+    expect_no_reconfiguration();
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_off,
+                                     PowerStateChangeReason::snap_decision);
 }
