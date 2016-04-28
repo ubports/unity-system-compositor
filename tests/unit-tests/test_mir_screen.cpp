@@ -217,6 +217,17 @@ struct AMirScreen : testing::Test
         }
     }
 
+    void verify_proximity_enabled_until_screen_on()
+    {
+        verify_and_clear_expectations();
+
+        expect_screen_is_turned_on();
+        uncover_screen();
+        verify_and_clear_expectations();
+
+        verify_proximity_disabled();
+    }
+
     void verify_proximity_disabled()
     {
         verify_and_clear_expectations();
@@ -343,7 +354,17 @@ TEST_P(DeferredPowerOnMirScreen, enables_performance_boost_for_screen_on_with_re
 TEST_P(AParameterizedMirScreen, disables_performance_boost_for_screen_off)
 {
     turn_screen_on();
-    expect_performance_boost_is_disabled();
+
+    if (GetParam() == PowerStateChangeReason::notification ||
+        GetParam() == PowerStateChangeReason::snap_decision)
+    {
+        expect_no_reconfiguration();
+    }
+    else
+    {
+        expect_performance_boost_is_disabled();
+    }
+
     mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_off, GetParam());
 }
 
@@ -775,24 +796,6 @@ TEST_F(AMirScreen, does_not_allow_proximity_to_turn_on_screen_not_turned_off_by_
         PowerStateChangeReason::proximity);
 }
 
-TEST_F(AMirScreen, does_not_allow_proximity_to_turn_on_screen_not_turned_off_by_proximity_2)
-{
-    mir_screen.set_screen_power_mode(
-        MirPowerMode::mir_power_mode_off,
-        PowerStateChangeReason::proximity);
-
-    mir_screen.set_screen_power_mode(
-        MirPowerMode::mir_power_mode_off,
-        PowerStateChangeReason::power_key);
-
-    verify_and_clear_expectations();
-
-    expect_no_reconfiguration();
-    mir_screen.set_screen_power_mode(
-        MirPowerMode::mir_power_mode_on,
-        PowerStateChangeReason::proximity);
-}
-
 TEST_F(AMirScreen, proximity_can_affect_screen_after_keep_display_on)
 {
     mir_screen.keep_display_on(true);
@@ -974,7 +977,7 @@ TEST_F(AMirScreen, does_not_turn_on_screen_when_call_arrives_with_phone_covered)
     receive_call();
 }
 
-TEST_F(AMirScreen, enables_proximity_when_call_arrives)
+TEST_F(AMirScreen, enables_proximity_when_call_arrives_until_screen_on)
 {
     turn_screen_off();
     cover_screen();
@@ -983,7 +986,7 @@ TEST_F(AMirScreen, enables_proximity_when_call_arrives)
     receive_call();
     verify_and_clear_expectations();
 
-    verify_proximity_enabled();
+    verify_proximity_enabled_until_screen_on();
 }
 
 TEST_F(AMirScreen, cancels_proximity_handling_when_screen_is_turned_off_by_call_timeout)
@@ -1023,7 +1026,7 @@ TEST_F(AMirScreen, retains_proximity_handling_when_call_done_arrives_when_screen
     receive_call();
     receive_call_done();
 
-    verify_proximity_enabled();
+    verify_proximity_enabled_until_screen_on();
 }
 
 TEST_F(AMirScreen,
@@ -1126,4 +1129,22 @@ TEST_F(AMirScreen,
 
     EXPECT_CALL(*screen_hardware, set_normal_backlight());
     receive_call();
+}
+
+TEST_F(AMirScreen, ignores_screen_off_request_for_notification)
+{
+    turn_screen_on();
+
+    expect_no_reconfiguration();
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_off,
+                                     PowerStateChangeReason::notification);
+}
+
+TEST_F(AMirScreen, ignores_screen_off_request_for_snap_decision)
+{
+    turn_screen_on();
+
+    expect_no_reconfiguration();
+    mir_screen.set_screen_power_mode(MirPowerMode::mir_power_mode_off,
+                                     PowerStateChangeReason::snap_decision);
 }

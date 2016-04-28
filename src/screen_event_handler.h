@@ -57,6 +57,7 @@ private:
     void shutdown_alarm_notification();
     void long_press_notification();
     void keep_or_turn_screen_on();
+    void keep_screen_on();
 
     std::mutex guard;
     std::shared_ptr<Screen> const screen;
