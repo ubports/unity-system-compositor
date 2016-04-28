@@ -69,15 +69,18 @@ bool usc::ScreenEventHandler::handle(MirEvent const& event)
         {
             // do not keep display on when interacting with media player
         }
-        else
+        else if (mir_keyboard_event_action(kev) == mir_keyboard_action_down)
         {
             keep_or_turn_screen_on();
+        }
+        else
+        {
+            keep_screen_on();
         }
     }
     else if (input_event_type == mir_input_event_type_touch)
     {
-        std::lock_guard<std::mutex> lock{guard};
-        screen->keep_display_on_temporarily();
+        keep_screen_on();
     }
     else if (input_event_type == mir_input_event_type_pointer)
     {
@@ -156,4 +159,10 @@ void usc::ScreenEventHandler::keep_or_turn_screen_on()
     {
         screen->keep_display_on_temporarily();
     }
+}
+
+void usc::ScreenEventHandler::keep_screen_on()
+{
+    std::lock_guard<std::mutex> lock{guard};
+    screen->keep_display_on_temporarily();
 }
