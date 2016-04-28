@@ -70,6 +70,16 @@ struct AScreenEventHandler : testing::Test
         screen_event_handler.handle(*another_key_down_event);
     }
 
+    void repeat_a_key()
+    {
+        screen_event_handler.handle(*another_key_repeat_event);
+    }
+
+    void release_a_key()
+    {
+        screen_event_handler.handle(*another_key_up_event);
+    }
+
     void press_volume_keys()
     {
         screen_event_handler.handle(*vol_plus_key_down_event);
@@ -126,6 +136,11 @@ struct AScreenEventHandler : testing::Test
     mir::EventUPtr another_key_up_event = mir::events::make_event(
         MirInputDeviceId{1}, std::chrono::nanoseconds(0),
 	    std::vector<uint8_t>{}, mir_keyboard_action_up,
+        0, KEY_A, mir_input_event_modifier_none);
+
+    mir::EventUPtr another_key_repeat_event = mir::events::make_event(
+        MirInputDeviceId{1}, std::chrono::nanoseconds(0),
+	    std::vector<uint8_t>{}, mir_keyboard_action_repeat,
         0, KEY_A, mir_input_event_modifier_none);
 
     mir::EventUPtr touch_event = mir::events::make_event(
@@ -214,7 +229,7 @@ TEST_F(AScreenEventHandler, turns_on_screen_and_filters_first_pointer_event_when
     EXPECT_TRUE(event_filtered);
 }
 
-TEST_F(AScreenEventHandler, turns_on_screen_and_propagates_keys_when_screen_is_off)
+TEST_F(AScreenEventHandler, turns_on_screen_and_propagates_key_down_events_when_screen_is_off)
 {
     mock_screen.mock_mode = MirPowerMode::mir_power_mode_off;
     EXPECT_CALL(mock_screen,
@@ -223,6 +238,22 @@ TEST_F(AScreenEventHandler, turns_on_screen_and_propagates_keys_when_screen_is_o
 
     auto const event_filtered = screen_event_handler.handle(*another_key_down_event);
     EXPECT_FALSE(event_filtered);
+}
+
+TEST_F(AScreenEventHandler,
+       does_not_turn_on_screen_for_key_repeat_or_up_events_when_screen_is_off)
+{
+    using namespace testing;
+
+    mock_screen.mock_mode = MirPowerMode::mir_power_mode_off;
+    EXPECT_CALL(mock_screen,
+                set_screen_power_mode(MirPowerMode::mir_power_mode_on,_)).Times(0);
+
+    auto const key_up_event_filtered = screen_event_handler.handle(*another_key_up_event);
+    auto const key_repeat_event_filtered = screen_event_handler.handle(*another_key_repeat_event);
+
+    EXPECT_FALSE(key_up_event_filtered);
+    EXPECT_FALSE(key_repeat_event_filtered);
 }
 
 TEST_F(AScreenEventHandler, keeps_display_on_temporarily_for_pointer_event_when_screen_is_on)
@@ -236,9 +267,11 @@ TEST_F(AScreenEventHandler, keeps_display_on_temporarily_for_pointer_event_when_
 TEST_F(AScreenEventHandler, keeps_display_on_temporarily_key_event_when_screen_is_on)
 {
     mock_screen.mock_mode = MirPowerMode::mir_power_mode_on;
-    EXPECT_CALL(mock_screen, keep_display_on_temporarily());
+    EXPECT_CALL(mock_screen, keep_display_on_temporarily()).Times(3);
 
     press_a_key();
+    repeat_a_key();
+    release_a_key();
 }
 
 TEST_F(AScreenEventHandler, does_not_affect_screen_state_for_volume_keys)

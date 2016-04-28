@@ -278,14 +278,10 @@ catch (std::exception const&)
 void usc::MirScreen::configure_display_l(MirPowerMode mode, PowerStateChangeReason reason)
 try
 {
-    if (reason != PowerStateChangeReason::proximity)
-    {
-        screen_hardware->enable_proximity(false);
-        allow_proximity_to_turn_on_screen = reason != PowerStateChangeReason::power_key;
-    }
-
     if (current_power_mode == mode)
         return;
+
+    screen_hardware->enable_proximity(false);
 
     allow_proximity_to_turn_on_screen =
         mode == mir_power_mode_off &&
@@ -437,11 +433,19 @@ bool usc::MirScreen::is_screen_change_allowed_l(MirPowerMode mode, PowerStateCha
         return false;
     }
 
+    if (mode == MirPowerMode::mir_power_mode_off &&
+        (reason == PowerStateChangeReason::notification ||
+         reason == PowerStateChangeReason::snap_decision))
+    {
+        return false;
+    }
+
     return true;
 }
 
 void usc::MirScreen::power_off_alarm_notification_l()
 {
+    screen_hardware->enable_proximity(false);
     configure_display_l(MirPowerMode::mir_power_mode_off, PowerStateChangeReason::inactivity);
     next_power_off = {};
 }
