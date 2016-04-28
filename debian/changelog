@@ -1,3 +1,14 @@
+unity-system-compositor (0.5.1-0ubuntu1) xenial; urgency=medium
+
+  * Change proximity behavior to trigger only once for notifications
+    and snap-decisions.
+  * Allow only key down events (not repeat or up events) to turn on
+    the screen.
+  * Ignore requests to turn off the screen with reason 'notification' or
+    'snap-decision'.
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Thu, 28 Apr 2016 19:47:53 +0300
+
 unity-system-compositor (0.5.0+16.04.20160423-0ubuntu1) xenial; urgency=medium
 
   [ Alberto Aguirre ]
