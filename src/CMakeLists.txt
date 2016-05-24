@@ -107,6 +107,8 @@ install(FILES
 install(FILES
     com.canonical.Unity.Display.xml
     com.canonical.Unity.Input.xml
+    com.canonical.Unity.PowerButton.xml
+    com.canonical.Unity.UserActivity.xml
   DESTINATION ${CMAKE_INSTALL_DATADIR}/dbus-1/interfaces
 )
 
