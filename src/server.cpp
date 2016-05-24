@@ -26,7 +26,6 @@
 #include "mir_screen.h"
 #include "mir_input_configuration.h"
 #include "screen_event_handler.h"
-#include "performance_booster.h"
 #include "unity_display_service.h"
 #include "unity_input_service.h"
 #include "unity_power_button_event_sink.h"
@@ -199,11 +198,6 @@ usc::Server::Server(int argc, char** argv)
     apply_settings();
 }
 
-std::shared_ptr<usc::PerformanceBooster> usc::Server::the_performance_booster()
-{
-    return platform_default_performance_booster();
-}
-
 std::shared_ptr<usc::Spinner> usc::Server::the_spinner()
 {
     return spinner(
@@ -291,7 +285,6 @@ std::shared_ptr<usc::Screen> usc::Server::the_screen()
         [this]
         {
             return std::make_shared<MirScreen>(
-                the_performance_booster(),
                 the_compositor(),
                 the_display());
         });

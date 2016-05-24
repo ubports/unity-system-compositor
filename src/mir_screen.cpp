@@ -27,7 +27,6 @@
 
 #include <assert.h>
 
-#include "performance_booster.h"
 #include "server.h"
 
 namespace mi = mir::input;
@@ -46,11 +45,9 @@ void log_exception_in(char const* const func)
 }
 
 usc::MirScreen::MirScreen(
-    std::shared_ptr<usc::PerformanceBooster> const& perf_booster,
     std::shared_ptr<mir::compositor::Compositor> const& compositor,
     std::shared_ptr<mir::graphics::Display> const& display)
-    : perf_booster{perf_booster},
-      compositor{compositor},
+    : compositor{compositor},
       display{display},
       current_power_mode{MirPowerMode::mir_power_mode_on}
 {
@@ -98,19 +95,9 @@ try
 
     compositor->stop();
 
-    bool const power_on = mode == MirPowerMode::mir_power_mode_on;
-    if (power_on)
-    {
-        perf_booster->enable_performance_boost_during_user_interaction();
-    }
-    else
-    {
-        perf_booster->disable_performance_boost_during_user_interaction();
-    }
-
     display->configure(*displayConfig.get());
 
-    if (power_on)
+    if (mode == MirPowerMode::mir_power_mode_on)
         compositor->start();
 
     current_power_mode = mode;

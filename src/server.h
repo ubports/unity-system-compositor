@@ -39,7 +39,6 @@ class Spinner;
 class SessionSwitcher;
 class DMMessageHandler;
 class DMConnection;
-class PerformanceBooster;
 class Screen;
 class UnityDisplayService;
 class PowerButtonEventSink;
@@ -63,7 +62,6 @@ public:
     using mir::Server::the_compositor;
     using mir::Server::the_touch_visualizer;
 
-    virtual std::shared_ptr<PerformanceBooster> the_performance_booster();
     virtual std::shared_ptr<Spinner> the_spinner();
     virtual std::shared_ptr<DMMessageHandler> the_dm_message_handler();
     virtual std::shared_ptr<DMConnection> the_dm_connection();

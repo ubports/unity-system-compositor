@@ -31,13 +31,11 @@ namespace graphics {class Display;}
 
 namespace usc
 {
-class PerformanceBooster;
 
 class MirScreen: public Screen
 {
 public:
-    MirScreen(std::shared_ptr<usc::PerformanceBooster> const& perf_booster,
-              std::shared_ptr<mir::compositor::Compositor> const& compositor,
+    MirScreen(std::shared_ptr<mir::compositor::Compositor> const& compositor,
               std::shared_ptr<mir::graphics::Display> const& display);
     ~MirScreen();
 
@@ -47,7 +45,6 @@ public:
 private:
     void set_power_mode(MirPowerMode mode);
 
-    std::shared_ptr<usc::PerformanceBooster> const perf_booster;
     std::shared_ptr<mir::compositor::Compositor> const compositor;
     std::shared_ptr<mir::graphics::Display> const display;
 

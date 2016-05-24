@@ -17,7 +17,6 @@
  */
 
 #include "src/mir_screen.h"
-#include "src/performance_booster.h"
 
 #include "usc/test/mock_display.h"
 
@@ -42,24 +41,8 @@ struct MockCompositor : mir::compositor::Compositor
     MOCK_METHOD0(stop, void());
 };
 
-struct MockPerformanceBooster : usc::PerformanceBooster
-{
-    MOCK_METHOD0(enable_performance_boost_during_user_interaction, void());
-    MOCK_METHOD0(disable_performance_boost_during_user_interaction, void());
-};
-
 struct AMirScreen : testing::Test
 {
-    void expect_performance_boost_is_enabled()
-    {
-        EXPECT_CALL(*performance_booster, enable_performance_boost_during_user_interaction());
-    }
-
-    void expect_performance_boost_is_disabled()
-    {
-        EXPECT_CALL(*performance_booster, disable_performance_boost_during_user_interaction());
-    }
-
     void turn_screen_off()
     {
         mir_screen.turn_off();
@@ -78,33 +61,16 @@ struct AMirScreen : testing::Test
         Mock::VerifyAndClearExpectations(compositor.get());
     }
 
-    std::shared_ptr<MockPerformanceBooster> performance_booster{
-        std::make_shared<testing::NiceMock<MockPerformanceBooster>>()};
     std::shared_ptr<MockCompositor> compositor{
         std::make_shared<testing::NiceMock<MockCompositor>>()};
     std::shared_ptr<ut::MockDisplay> display{
         std::make_shared<testing::NiceMock<ut::MockDisplay>>()};
 
     usc::MirScreen mir_screen{
-        performance_booster,
         compositor,
         display};
 };
 
-}
-
-TEST_F(AMirScreen, enables_performance_boost_for_screen_on)
-{
-    turn_screen_off();
-    expect_performance_boost_is_enabled();
-    mir_screen.turn_on();
-}
-
-TEST_F(AMirScreen, disables_performance_boost_for_screen_off)
-{
-    turn_screen_on();
-    expect_performance_boost_is_disabled();
-    turn_screen_off();
 }
 
 TEST_F(AMirScreen, stops_compositing_and_turns_off_display_when_turning_off)
