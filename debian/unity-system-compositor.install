@@ -3,5 +3,7 @@ debian/unity-system-compositor.sleep usr/sbin/
 etc/dbus-1/system.d/com.canonical.Unity.conf
 usr/bin/unity-system-compositor-spinner
 usr/sbin/unity-system-compositor
-usr/share/dbus-1/interfaces/com.canonical.Unity.Screen.xml
+usr/share/dbus-1/interfaces/com.canonical.Unity.PowerButton.xml
+usr/share/dbus-1/interfaces/com.canonical.Unity.Display.xml
 usr/share/dbus-1/interfaces/com.canonical.Unity.Input.xml
+usr/share/dbus-1/interfaces/com.canonical.Unity.UserActivity.xml

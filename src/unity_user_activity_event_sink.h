@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014 Canonical Ltd.
+ * Copyright © 2016 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -14,18 +14,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef POWER_STATE_CHANGE_REASON_H_
-#define POWER_STATE_CHANGE_REASON_H_
+#ifndef USC_UNITY_USER_ACTIVITY_EVENT_SINK_H_
+#define USC_UNITY_USER_ACTIVITY_EVENT_SINK_H_
 
-enum class PowerStateChangeReason
+#include "user_activity_event_sink.h"
+#include "dbus_connection_handle.h"
+
+namespace usc
 {
-    unknown = 0,
-    inactivity = 1,
-    power_key = 2,
-    proximity = 3,
-    notification = 4,
-    snap_decision = 5,
-    call_done = 6
+
+class UnityUserActivityEventSink : public UserActivityEventSink
+{
+public:
+    UnityUserActivityEventSink(std::string const& dbus_address);
+
+    void notify_activity_changing_power_state() override;
+    void notify_activity_extending_power_state() override;
+
+private:
+    DBusConnectionHandle dbus_connection;
 };
+
+}
 
 #endif

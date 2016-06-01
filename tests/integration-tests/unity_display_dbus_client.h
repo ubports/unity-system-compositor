@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Canonical Ltd.
+ * Copyright © 2016 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -13,26 +13,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Authored by: Andreas Pokorny <andreas.pokorny@canonical.com>
+ * Authored by: Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
-#ifndef USC_TEST_MOCK_SCREEN_H_
-#define USC_TEST_MOCK_SCREEN_H_
+#ifndef USC_TEST_UNITY_DISPLAY_DBUS_CLIENT_H_
+#define USC_TEST_UNITY_DISPLAY_DBUS_CLIENT_H_
 
-#include "src/screen.h"
-
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
+#include "dbus_client.h"
 
 namespace usc
 {
 namespace test
 {
 
-struct MockScreen : usc::Screen
+class UnityDisplayDBusClient : public DBusClient
 {
-    MOCK_METHOD0(turn_on, void());
-    MOCK_METHOD0(turn_off, void());
+public:
+    UnityDisplayDBusClient(std::string const& address);
+
+    DBusAsyncReplyString request_introspection();
+    DBusAsyncReplyVoid request_turn_on();
+    DBusAsyncReplyVoid request_turn_off();
+    DBusAsyncReply request_invalid_method();
+
+    char const* const unity_display_interface = "com.canonical.Unity.Display";
 };
 
 }
