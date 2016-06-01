@@ -1,3 +1,9 @@
+unity-system-compositor (0.6.0-0ubuntu1) xenial; urgency=medium
+
+  * Grand repowerd update.
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Wed, 01 Jun 2016 19:39:14 +0000
+
 unity-system-compositor (0.5.1+16.04.20160428-0ubuntu1) xenial; urgency=medium
 
   [ CI Train Bot ]
