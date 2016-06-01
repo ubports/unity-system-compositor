@@ -4,6 +4,12 @@ unity-system-compositor (0.6.0-0ubuntu1) xenial; urgency=medium
 
  -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Wed, 01 Jun 2016 19:39:14 +0000
 
+unity-system-compositor (0.5.1+16.04.20160428-0ubuntu2) yakkety; urgency=medium
+
+  * No-change rebuild of latest xenial trunk against current archive.
+
+ -- Łukasz 'sil2100' Zemczak <lukasz.zemczak@ubuntu.com>  Thu, 19 May 2016 21:02:28 +0200
+
 unity-system-compositor (0.5.1+16.04.20160428-0ubuntu1) xenial; urgency=medium
 
   [ CI Train Bot ]
