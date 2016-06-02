@@ -1,3 +1,10 @@
+unity-system-compositor (0.5.1+16.10.20160602.1-0ubuntu1) yakkety; urgency=medium
+
+  [ Alexandros Frantzis ]
+  * rebuild for mir 0.23
+
+ -- Kevin DuBois <kdub432@gmail.com>  Thu, 02 Jun 2016 17:53:14 +0000
+
 unity-system-compositor (0.5.1+16.04.20160428-0ubuntu1) xenial; urgency=medium
 
   [ CI Train Bot ]
