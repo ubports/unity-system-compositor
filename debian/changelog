@@ -1,3 +1,9 @@
+unity-system-compositor (0.6.0-0ubuntu1) yakkety; urgency=medium
+
+  * Update for compatibility with repowerd.
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Thu, 09 Jun 2016 11:34:40 +0300
+
 unity-system-compositor (0.5.1+16.10.20160602.1-0ubuntu1) yakkety; urgency=medium
 
   [ Alexandros Frantzis ]
