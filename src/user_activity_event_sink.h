@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Canonical Ltd.
+ * Copyright © 2016 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -12,30 +12,29 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * Authored by: Andreas Pokorny <andreas.pokorny@canonical.com>
  */
 
-#ifndef USC_TEST_MOCK_SCREEN_H_
-#define USC_TEST_MOCK_SCREEN_H_
-
-#include "src/screen.h"
-
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
+#ifndef USC_USER_ACTIVITY_EVENT_SINK_H_
+#define USC_USER_ACTIVITY_EVENT_SINK_H_
 
 namespace usc
 {
-namespace test
-{
 
-struct MockScreen : usc::Screen
+class UserActivityEventSink
 {
-    MOCK_METHOD0(turn_on, void());
-    MOCK_METHOD0(turn_off, void());
+public:
+    virtual ~UserActivityEventSink() = default;
+
+    virtual void notify_activity_changing_power_state() = 0;
+    virtual void notify_activity_extending_power_state() = 0;
+
+protected:
+    UserActivityEventSink() = default;
+    UserActivityEventSink(UserActivityEventSink const&) = delete;
+    UserActivityEventSink& operator=(UserActivityEventSink const&) = delete;
 };
 
 }
-}
 
 #endif
+
