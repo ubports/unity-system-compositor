@@ -113,19 +113,15 @@ void usc::SystemCompositor::run()
                 std::cerr << "Unable to chmod socket file " << server->get_socket_file() << ": " << strerror(errno) << std::endl;
 
             dm_connection->start();
+            screen = server->the_screen();
+            unity_display_service = server->the_unity_display_service();
+            screen_event_handler = server->the_screen_event_handler();
 
-            if (!server->disable_inactivity_policy())
-            {
-                screen = server->the_screen();
-                screen_event_handler = server->the_screen_event_handler();
+            auto composite_filter = server->the_composite_event_filter();
+            composite_filter->append(screen_event_handler);
 
-                auto composite_filter = server->the_composite_event_filter();
-                composite_filter->append(screen_event_handler);
-
-                unity_screen_service = server->the_unity_screen_service();
-                unity_input_service = server->the_unity_input_service();
-                dbus_service_thread = server->the_dbus_connection_thread();
-            }
+            unity_input_service = server->the_unity_input_service();
+            dbus_service_thread = server->the_dbus_connection_thread();
         });
 
     server->run();
