@@ -17,6 +17,7 @@
 #include "eglapp.h"
 #include "miregl.h"
 #include <assert.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <glib.h>
 #include <string.h>
 #include <GLES2/gl2.h>
@@ -35,10 +36,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "wallpaper.h"
 #include "logo.h"
 #include "white_dot.h"
 #include "orange_dot.h"
+
+#define WALLPAPER_FILE "/usr/share/backgrounds/warty-final-ubuntu.png"
 
 enum TextureIds {
     WALLPAPER = 0,
@@ -152,6 +154,13 @@ static GLuint load_shader(const char *src, GLenum type)
 //#define DARK_AUBERGINE  0.17254902f,  0.0f,         0.117647059f
 #define BLACK           0.0f,         0.0f,         0.0f
 //#define WHITE           1.0f,         1.0f,         1.0f
+
+static struct {
+    unsigned int width = 0;
+    unsigned int height = 0;
+    unsigned int bytes_per_pixel = 3; /* 3:RGB, 4:RGBA */
+    unsigned char *pixel_data = nullptr;
+} wallpaper;
 
 template <typename Image>
 void uploadTexture (GLuint id, Image& image)
@@ -293,6 +302,9 @@ try
     GLint offset[MAX_TEXTURES];
     GLint projMat[MAX_TEXTURES];
 
+    GdkPixbuf *wallpaperPixbuf;
+    GError *error = nullptr;
+
     SessionConfig session_config;
 
     auto const surfaces = mir_eglapp_init(argc, argv);
@@ -306,6 +318,18 @@ try
     running = 1;
     signal(SIGINT, shutdown);
     signal(SIGTERM, shutdown);
+
+    // Load wallpaper
+    wallpaperPixbuf = gdk_pixbuf_new_from_file(WALLPAPER_FILE, &error);
+    if (wallpaperPixbuf) {
+        wallpaper.width = gdk_pixbuf_get_width(wallpaperPixbuf);
+        wallpaper.height = gdk_pixbuf_get_height(wallpaperPixbuf);
+        wallpaper.bytes_per_pixel = gdk_pixbuf_get_has_alpha(wallpaperPixbuf) ? 4 : 3;
+        wallpaper.pixel_data = (unsigned char*)gdk_pixbuf_read_pixels(wallpaperPixbuf);
+    } else {
+        printf("Could not load wallpaper: %s\n", error->message);
+    }
+    g_clear_error(&error);
 
     const GLfloat texCoords[] =
     {

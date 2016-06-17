@@ -11,6 +11,7 @@ Build-Depends: cmake,
                libboost-dev,
                libboost-system-dev,
                libdbus-1-dev,
+               libgdk-pixbuf-dev,
                libglib2.0-dev,
                libgles2-mesa-dev,
                libglm-dev,
@@ -20,7 +21,6 @@ Build-Depends: cmake,
                python (>= 2.7),
                python-setuptools,
                python-pil,
-               ubuntu-wallpapers,
 Standards-Version: 3.9.7
 Homepage: https://launchpad.net/unity-system-compositor
 # if you don't have have commit access to this branch but would like to upload
@@ -32,6 +32,7 @@ Package: unity-system-compositor
 Architecture: any
 Depends: ${misc:Depends},
          ${shlibs:Depends},
+         ubuntu-wallpapers,
 Suggests: repowerd,
 Description: System compositor for Ubuntu
  System compositor used by the Mir display server in Ubuntu. If the Unity
