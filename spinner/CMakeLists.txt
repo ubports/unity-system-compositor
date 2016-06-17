@@ -61,7 +61,6 @@ add_executable(unity-system-compositor-spinner
   eglspinner.cpp
   miregl.h
   miregl.cpp
-  ${CMAKE_CURRENT_BINARY_DIR}/wallpaper.h
   ${CMAKE_CURRENT_BINARY_DIR}/logo.h
   ${CMAKE_CURRENT_BINARY_DIR}/white_dot.h
   ${CMAKE_CURRENT_BINARY_DIR}/orange_dot.h
