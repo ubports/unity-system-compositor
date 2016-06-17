@@ -302,10 +302,20 @@ try
     GLint offset[MAX_TEXTURES];
     GLint projMat[MAX_TEXTURES];
 
-    GdkPixbuf *wallpaperPixbuf;
-    GError *error = nullptr;
-
     SessionConfig session_config;
+
+    // Load wallpaper
+    GError *error = nullptr;
+    auto wallpaperPixbuf = gdk_pixbuf_new_from_file(WALLPAPER_FILE, &error);
+    if (wallpaperPixbuf) {
+        wallpaper.width = gdk_pixbuf_get_width(wallpaperPixbuf);
+        wallpaper.height = gdk_pixbuf_get_height(wallpaperPixbuf);
+        wallpaper.bytes_per_pixel = gdk_pixbuf_get_has_alpha(wallpaperPixbuf) ? 4 : 3;
+        wallpaper.pixel_data = (unsigned char*)gdk_pixbuf_read_pixels(wallpaperPixbuf);
+    } else {
+        printf("Could not load wallpaper: %s\n", error->message);
+    }
+    g_clear_error(&error);
 
     auto const surfaces = mir_eglapp_init(argc, argv);
 
@@ -318,18 +328,6 @@ try
     running = 1;
     signal(SIGINT, shutdown);
     signal(SIGTERM, shutdown);
-
-    // Load wallpaper
-    wallpaperPixbuf = gdk_pixbuf_new_from_file(WALLPAPER_FILE, &error);
-    if (wallpaperPixbuf) {
-        wallpaper.width = gdk_pixbuf_get_width(wallpaperPixbuf);
-        wallpaper.height = gdk_pixbuf_get_height(wallpaperPixbuf);
-        wallpaper.bytes_per_pixel = gdk_pixbuf_get_has_alpha(wallpaperPixbuf) ? 4 : 3;
-        wallpaper.pixel_data = (unsigned char*)gdk_pixbuf_read_pixels(wallpaperPixbuf);
-    } else {
-        printf("Could not load wallpaper: %s\n", error->message);
-    }
-    g_clear_error(&error);
 
     const GLfloat texCoords[] =
     {
