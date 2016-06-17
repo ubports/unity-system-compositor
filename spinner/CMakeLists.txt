@@ -23,7 +23,7 @@ function(png2header png header varname)
 endfunction()
 
 png2header(
-  ${CMAKE_CURRENT_SOURCE_DIR}/wallpaper.png
+  /usr/share/backgrounds/warty-final-ubuntu.png
   ${CMAKE_CURRENT_BINARY_DIR}/wallpaper.h
   wallpaper
 )

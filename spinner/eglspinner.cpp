@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015 Canonical Ltd.
+ * Copyright © 2013-2016 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -12,11 +12,6 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * Authors: Daniel van Vugt <daniel.van.vugt@canonical.com>
- *          Mirco Müller <mirco.mueller@canonical.com>
- *          Alan Griffiths <alan@octopull.co.uk>
- *          Kevin DuBois <kevin.dubois@canonical.com>
  */
 
 #include "eglapp.h"
@@ -430,6 +425,16 @@ try
                 mvpMatrix = glm::translate(mvpMatrix, glm::vec3(-1.0, -1.0, 0.0f));
                 mvpMatrix = glm::scale(mvpMatrix,
                                        glm::vec3(2.0f / render_width, 2.0f / render_height, 1.0f));
+
+                auto widthRatio = (1.0f * wallpaper.height * render_width) / (wallpaper.width * render_height);
+                auto heightRatio = 1.0f;
+                if (widthRatio > 1.0f) {
+                    heightRatio = 1.0f / widthRatio;
+                    widthRatio = 1.0f;
+                }
+                auto const wallpaperProjMatrix = glm::ortho(-widthRatio, widthRatio, heightRatio, -heightRatio, -1.0f, 1.0f);
+                auto wallpaperMatrix = wallpaperProjMatrix * mvpMatrix;
+
                 auto const projMatrix = glm::ortho(-1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f);
                 mvpMatrix = projMatrix * mvpMatrix;
 
@@ -444,7 +449,7 @@ try
                 glBindTexture(GL_TEXTURE_2D, texture[WALLPAPER]);
                 glUniform1i(sampler[WALLPAPER], 0);
                 glUniform2f(offset[WALLPAPER], 0.0f, 0.0f);
-                glUniformMatrix4fv(projMat[WALLPAPER], 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                glUniformMatrix4fv(projMat[WALLPAPER], 1, GL_FALSE, glm::value_ptr(wallpaperMatrix));
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
                 // draw logo
