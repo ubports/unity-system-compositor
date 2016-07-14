@@ -21,10 +21,6 @@ set(GMOCK_BINARY_DIR ${CMAKE_BINARY_DIR}/${GMOCK_PREFIX}/libs)
 set(GTEST_BINARY_DIR ${GMOCK_BINARY_DIR}/gtest)
 
 set(GTEST_CMAKE_ARGS "")
-if (${CMAKE_CROSSCOMPILING})
-    set(GTEST_CMAKE_ARGS
-        -DCMAKE_TOOLCHAIN_FILE=${CMAKE_MODULE_PATH}/LinuxCrossCompile.cmake)
-endif()
 
 ExternalProject_Add(
     GMock
