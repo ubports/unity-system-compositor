@@ -1,3 +1,9 @@
+unity-system-compositor (0.6.0-0ubuntu3) yakkety; urgency=medium
+
+  * No-change rebuild.
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Fri, 05 Aug 2016 13:15:36 +0300
+
 unity-system-compositor (0.6.0+16.10.20160609-0ubuntu2) yakkety; urgency=medium
 
   * No-change rebuild for boost soname change.
