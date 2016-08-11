@@ -1,8 +1,27 @@
-unity-system-compositor (0.6.0-0ubuntu1) yakkety; urgency=medium
+unity-system-compositor (0.7.0-0ubuntu1) UNRELEASED; urgency=medium
 
-  * Update for compatibility with repowerd.
+  * 0.7.0 release, containing compatibility fixes for mir 0.24 release.
+    Only test code changes. 
 
- -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Thu, 09 Jun 2016 11:34:40 +0300
+ -- Kevin DuBois <kevin.dubois@canonical.com>  Tue, 09 Aug 2016 14:05:30 -0400
+
+unity-system-compositor (0.6.0+16.10.20160805.1-0ubuntu1) yakkety; urgency=medium
+
+  * No-change rebuild.
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Fri, 05 Aug 2016 10:18:16 +0000
+
+unity-system-compositor (0.6.0+16.10.20160609-0ubuntu2) yakkety; urgency=medium
+
+  * No-change rebuild for boost soname change.
+
+ -- Matthias Klose <doko@ubuntu.com>  Thu, 04 Aug 2016 08:33:29 +0000
+
+unity-system-compositor (0.6.0+16.10.20160609-0ubuntu1) yakkety; urgency=medium
+
+  * 0.6.0 release
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Thu, 09 Jun 2016 09:05:15 +0000
 
 unity-system-compositor (0.5.1+16.10.20160602.1-0ubuntu1) yakkety; urgency=medium
 
