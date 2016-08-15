@@ -22,6 +22,7 @@
 #include "mir/input/device_capability.h"
 #include "mir/input/input_device_observer.h"
 #include "mir/input/device.h"
+#include "mir/input/keyboard_configuration.h"
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
@@ -40,8 +41,10 @@ struct MockDevice : mi::Device
     MOCK_CONST_METHOD0(unique_id, std::string());
     MOCK_CONST_METHOD0(pointer_configuration, mir::optional_value<mi::PointerConfiguration>());
     MOCK_METHOD1(apply_pointer_configuration, void(mi::PointerConfiguration const&));
-    MOCK_CONST_METHOD0(touchpad_configuration, mir::optional_value<mi::TouchpadConfiguration> ());
+    MOCK_CONST_METHOD0(touchpad_configuration, mir::optional_value<mi::TouchpadConfiguration>());
     MOCK_METHOD1(apply_touchpad_configuration, void(mi::TouchpadConfiguration const&));
+    MOCK_CONST_METHOD0(keyboard_configuration, mir::optional_value<mi::KeyboardConfiguration>());
+    MOCK_METHOD1(apply_keyboard_configuration, void(mi::KeyboardConfiguration const&));
 
     MockDevice(mi::DeviceCapabilities caps)
         : caps(caps)

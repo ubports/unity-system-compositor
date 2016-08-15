@@ -14,12 +14,12 @@ Build-Depends: cmake,
                libglib2.0-dev,
                libgles2-mesa-dev,
                libglm-dev,
-               libmirclient-dev (>= 0.22.0),
-               libmirserver-dev (>= 0.22.0),
+               libmirclient-dev (>= 0.24.0),
+               libmirserver-dev (>= 0.24.0),
                pkg-config,
-               python (>= 2.7),
+               python:any (>= 2.7),
                python-setuptools,
-               python-pil,
+               python-pil:native,
 Standards-Version: 3.9.7
 Homepage: https://launchpad.net/unity-system-compositor
 # if you don't have have commit access to this branch but would like to upload
