@@ -27,7 +27,7 @@ namespace usc
 {
 namespace test
 {
-struct MockDisplay : mir::graphics::Display
+struct MockDisplay : mir::graphics::Display, mir::graphics::NativeDisplay
 {
     void for_each_display_sync_group(std::function<void(mir::graphics::DisplaySyncGroup&)> const& f) override
     {
@@ -59,11 +59,13 @@ struct MockDisplay : mir::graphics::Display
         return {};
     };
 
-    std::unique_ptr<mir::graphics::GLContext> create_gl_context() override
-    { return std::unique_ptr<mir::graphics::GLContext>{};};
-
     std::unique_ptr<mir::graphics::VirtualOutput> create_virtual_output(int, int) override
     { return std::unique_ptr<mir::graphics::VirtualOutput>{}; }
+
+    mir::graphics::NativeDisplay* native_display() override
+    {
+        return this;
+    }
 };
 }
 }
