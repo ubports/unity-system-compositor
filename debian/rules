@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 
 %:
-	dh $@ --parallel --fail-missing --with python2
+	dh $@ --parallel --fail-missing --with python3
 
 override_dh_auto_configure:
 	# Debian defines CMAKE_INSTALL_SYSCONFDIR as /usr/etc, which is wrong.
@@ -11,7 +11,7 @@ override_dh_auto_configure:
 override_dh_install:
 	# install autopilot tests
 	cd tests/autopilot; \
-	set -ex; for python in $(shell pyversions -r); do \
+	set -ex; for python in $(shell py3versions -r); do \
 	    $$python setup.py install --root=$(CURDIR)/debian/tmp --install-layout=deb; \
 	done; \
 	cd $(CURDIR)
