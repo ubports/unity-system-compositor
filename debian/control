@@ -46,15 +46,3 @@ Depends: python3-autopilot,
          ${python3:Depends},
 Description: Test package for Unity System Compositor
  Autopilots tests for Unity System Compositor
-
-Package: ubuntu-desktop-mir
-Architecture: all
-Depends: lightdm (>= 1.9.4),
-         unity-system-compositor,
-         xmir,
-         ${misc:Depends},
-Replaces: unity-system-compositor (<< 0.0.2),
-Breaks: unity-system-compositor (<< 0.0.2),
-Description: System compositor for Ubuntu Desktop
- Settings package which installs everything Ubuntu Desktop needs to use Mir
- (via XMir).
