@@ -22,7 +22,6 @@
 
 #include <mir/compositor/compositor.h>
 #include <mir/graphics/display_configuration.h>
-#include <mir/graphics/gl_context.h>
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
