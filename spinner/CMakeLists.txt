@@ -17,7 +17,7 @@
 function(png2header png header varname)
   add_custom_command(
     OUTPUT ${header}
-    COMMAND python ${CMAKE_SOURCE_DIR}/tools/png2header.py ${png} ${varname} > ${header}
+    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/png2header.py ${png} ${varname} > ${header}
     DEPENDS ${png} ${CMAKE_SOURCE_DIR}/tools/png2header.py
   )
 endfunction()
