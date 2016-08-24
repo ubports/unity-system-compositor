@@ -6,8 +6,9 @@ Build-Depends: cmake,
                cmake-data,
                dbus,
                debhelper (>= 9),
+               dh-python,
                google-mock,
-               libandroid-properties-dev [i386 amd64 armhf],
+               libandroid-properties-dev [i386 amd64 armhf arm64],
                libboost-dev,
                libboost-system-dev,
                libdbus-1-dev,
@@ -17,9 +18,9 @@ Build-Depends: cmake,
                libmirclient-dev (>= 0.24.0),
                libmirserver-dev (>= 0.24.0),
                pkg-config,
-               python:any (>= 2.7),
-               python-setuptools,
-               python-pil:native,
+               python3,
+               python3-setuptools,
+               python3-pil:native,
 Standards-Version: 3.9.7
 Homepage: https://launchpad.net/unity-system-compositor
 # if you don't have have commit access to this branch but would like to upload
@@ -39,21 +40,9 @@ Description: System compositor for Ubuntu
 
 Package: unity-system-compositor-autopilot
 Architecture: all
-Depends: python-autopilot,
+Depends: python3-autopilot,
          unity-system-compositor (>= ${source:Version}),
          ${misc:Depends},
-         ${python:Depends},
+         ${python3:Depends},
 Description: Test package for Unity System Compositor
  Autopilots tests for Unity System Compositor
-
-Package: ubuntu-desktop-mir
-Architecture: all
-Depends: lightdm (>= 1.9.4),
-         unity-system-compositor,
-         xmir,
-         ${misc:Depends},
-Replaces: unity-system-compositor (<< 0.0.2),
-Breaks: unity-system-compositor (<< 0.0.2),
-Description: System compositor for Ubuntu Desktop
- Settings package which installs everything Ubuntu Desktop needs to use Mir
- (via XMir).

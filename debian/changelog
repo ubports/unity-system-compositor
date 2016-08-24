@@ -1,3 +1,12 @@
+unity-system-compositor (0.7.1-0ubuntu1) UNRELEASED; urgency=medium
+
+  * 0.7.1 release
+    - Use libandroid-properties-dev build-dep on arm64
+    - Use python3 for everything (autopilot tests and internal scripts)
+    - Remove obsolete ubuntu-desktop-mir binary package
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Wed, 24 Aug 2016 09:48:41 +0300
+
 unity-system-compositor (0.7.0+16.10.20160815-0ubuntu1) yakkety; urgency=medium
 
   * 0.7.0 release, containing compatibility fixes for mir 0.24 release.

@@ -78,7 +78,7 @@ class RuntimeEnvironmentTests(AutopilotTestCase):
 
 
 def _get_video_devices():
-    lspci_output = check_output(["lspci", "-vvv"]).strip()
+    lspci_output = check_output(["lspci", "-vvv"]).decode("utf-8").strip()
     devices = [s.strip() for s in re.split("\n\n", lspci_output, flags=re.M)]
     video_devices = [dev for dev in devices if _is_video_device(dev)]
     return video_devices
