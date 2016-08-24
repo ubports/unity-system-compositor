@@ -1,9 +1,9 @@
-unity-system-compositor (0.7.0-0ubuntu1) UNRELEASED; urgency=medium
+unity-system-compositor (0.7.0+16.10.20160815-0ubuntu1) yakkety; urgency=medium
 
   * 0.7.0 release, containing compatibility fixes for mir 0.24 release.
     Only test code changes. 
 
- -- Kevin DuBois <kevin.dubois@canonical.com>  Tue, 09 Aug 2016 14:05:30 -0400
+ -- Kevin DuBois <kevin.dubois@canonical.com>  Mon, 15 Aug 2016 18:57:15 +0000
 
 unity-system-compositor (0.6.0+16.10.20160805.1-0ubuntu1) yakkety; urgency=medium
 
