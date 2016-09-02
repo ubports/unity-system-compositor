@@ -39,6 +39,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall")
 
 find_package(PkgConfig)
 pkg_check_modules(ANDROIDPROPS libandroid-properties)
+pkg_check_modules(GDKPIXBUF REQUIRED gdk-pixbuf-2.0)
 pkg_check_modules(GLIB REQUIRED glib-2.0)
 pkg_check_modules(MIRCLIENT REQUIRED mirclient)
 pkg_check_modules(MIRSERVER REQUIRED mirserver)
