@@ -1,3 +1,10 @@
+unity-system-compositor (0.7.1+16.10.20160909.1-0ubuntu1) yakkety; urgency=medium
+
+  [ Michael Terry ]
+  * Use system wallpaper instead of custom built-in one.
+
+ -- Michał Sawicz <michal.sawicz@canonical.com>  Fri, 09 Sep 2016 14:39:40 +0000
+
 unity-system-compositor (0.7.1+16.10.20160824-0ubuntu1) yakkety; urgency=medium
 
   * 0.7.1 release
