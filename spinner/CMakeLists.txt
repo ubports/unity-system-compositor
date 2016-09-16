@@ -23,12 +23,6 @@ function(png2header png header varname)
 endfunction()
 
 png2header(
-  ${CMAKE_CURRENT_SOURCE_DIR}/wallpaper.png
-  ${CMAKE_CURRENT_BINARY_DIR}/wallpaper.h
-  wallpaper
-)
-
-png2header(
   ${CMAKE_CURRENT_SOURCE_DIR}/logo.png
   ${CMAKE_CURRENT_BINARY_DIR}/logo.h
   logo
@@ -47,6 +41,7 @@ png2header(
 )
 
 include_directories(
+  ${GDKPIXBUF_INCLUDE_DIRS}
   ${GLIB_INCLUDE_DIRS}
   ${ANDROIDPROPS_INCLUDE_DIRS}
   ${GLESv2_INCLUDE_DIRS}
@@ -66,7 +61,6 @@ add_executable(unity-system-compositor-spinner
   eglspinner.cpp
   miregl.h
   miregl.cpp
-  ${CMAKE_CURRENT_BINARY_DIR}/wallpaper.h
   ${CMAKE_CURRENT_BINARY_DIR}/logo.h
   ${CMAKE_CURRENT_BINARY_DIR}/white_dot.h
   ${CMAKE_CURRENT_BINARY_DIR}/orange_dot.h
@@ -74,6 +68,7 @@ add_executable(unity-system-compositor-spinner
 
 target_link_libraries(unity-system-compositor-spinner
   EGL
+  ${GDKPIXBUF_LDFLAGS}
   ${GLIB_LDFLAGS}
   ${ANDROIDPROPS_LDFLAGS}
   ${GLESv2_LIBRARIES}

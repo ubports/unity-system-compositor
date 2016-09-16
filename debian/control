@@ -12,6 +12,7 @@ Build-Depends: cmake,
                libboost-dev,
                libboost-system-dev,
                libdbus-1-dev,
+               libgdk-pixbuf2.0-dev,
                libglib2.0-dev,
                libgles2-mesa-dev,
                libglm-dev,
@@ -32,6 +33,7 @@ Package: unity-system-compositor
 Architecture: any
 Depends: ${misc:Depends},
          ${shlibs:Depends},
+         ubuntu-wallpapers,
 Suggests: repowerd,
 Description: System compositor for Ubuntu
  System compositor used by the Mir display server in Ubuntu. If the Unity
