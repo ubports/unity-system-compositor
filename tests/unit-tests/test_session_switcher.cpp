@@ -108,6 +108,9 @@ public:
     void destroy_buffer(mir::graphics::BufferID) override
     {
     }
+    void send_error(mir::ClientVisibleError const&) override
+    {
+    }
     std::shared_ptr<mir::graphics::Buffer> get_buffer(mir::graphics::BufferID) override
     {
         return nullptr;
