@@ -66,6 +66,17 @@ struct MockDisplay : mir::graphics::Display, mir::graphics::NativeDisplay
     {
         return this;
     }
+
+    bool apply_if_configuration_preserves_display_buffers(mir::graphics::DisplayConfiguration const& conf) override
+    {
+        return false;
+    }
+
+    mir::graphics::Frame last_frame_on(unsigned output_id) const override
+    {
+        return {};
+    }
+
 };
 }
 }
