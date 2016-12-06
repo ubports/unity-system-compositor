@@ -99,6 +99,14 @@ struct ServerStatusListener : public mir::ServerStatusListener
     {
     }
 
+    void ready_for_user_input() override
+    {
+    }
+
+    void stop_receiving_input() override
+    {
+    }
+
     std::weak_ptr<ms::Session> weak_active_session()
     {
         return focus_controller->focused_session();
