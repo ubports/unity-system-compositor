@@ -1,8 +1,8 @@
-unity-system-compositor (0.8.0-0ubuntu1) UNRELEASED; urgency=medium
+unity-system-compositor (0.8.0+17.04.20161206-0ubuntu1) zesty; urgency=medium
 
   * 0.8.0 release, containing compatibility fixes for mir 0.25 release
 
- -- Brandon Schaefer <brandontschaefer@gmail.com>  Wed, 09 Nov 2016 13:38:24 -0800
+ -- Brandon Schaefer <brandon.schaefer@canonical.com>  Tue, 06 Dec 2016 02:48:56 +0000
 
 unity-system-compositor (0.7.1+16.10.20160909.1-0ubuntu1) yakkety; urgency=medium
 
