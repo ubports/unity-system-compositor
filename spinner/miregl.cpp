@@ -60,7 +60,7 @@ std::shared_ptr<MirEglApp> make_mir_eglapp(
 
 namespace
 {
-MirSurface* create_surface(MirConnection* const connection, MirSurfaceParameters const& surfaceparm)
+MirWindow* create_surface(MirConnection* const connection, MirWindowParameters const& surfaceparm)
 {
     auto const spec = mir_connection_create_spec_for_normal_surface(
         connection,
@@ -85,7 +85,7 @@ MirSurface* create_surface(MirConnection* const connection, MirSurfaceParameters
 }
 }
 
-MirEglSurface::MirEglSurface(std::shared_ptr<MirEglApp> const& mir_egl_app, MirSurfaceParameters const& surfaceparm, int swapinterval) :
+MirEglSurface::MirEglSurface(std::shared_ptr<MirEglApp> const& mir_egl_app, MirWindowParameters const& surfaceparm, int swapinterval) :
     mir_egl_app{mir_egl_app},
     surface{create_surface(mir_egl_app->connection, surfaceparm)},
     eglsurface{mir_egl_app->create_surface(surface)},

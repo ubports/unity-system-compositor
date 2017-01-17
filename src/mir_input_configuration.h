@@ -19,8 +19,8 @@
 
 #include "input_configuration.h"
 
-#include "mir/input/touchpad_configuration.h"
-#include "mir/input/pointer_configuration.h"
+#include "mir/input/mir_touchpad_config.h"
+#include "mir/input/mir_pointer_config.h"
 
 #include <memory>
 #include <thread>
@@ -67,9 +67,9 @@ private:
     std::mutex devices_lock;
     std::unordered_set<std::shared_ptr<mir::input::Device>> touchpads;
     std::unordered_set<std::shared_ptr<mir::input::Device>> mice;
-    mir::input::PointerConfiguration mouse_pointer_config;
-    mir::input::PointerConfiguration touchpad_pointer_config;
-    mir::input::TouchpadConfiguration touchpad_config;
+    MirPointerConfig mouse_pointer_config;
+    MirPointerConfig touchpad_pointer_config;
+    MirTouchpadConfig touchpad_config;
 };
 
 }
