@@ -20,8 +20,10 @@
 #define USC_UNITY_DISPLAY_SERVICE_H_
 
 #include "dbus_connection_handle.h"
+#include "screen.h"
 
 #include <memory>
+#include <string>
 
 namespace usc
 {
@@ -35,6 +37,7 @@ public:
         std::shared_ptr<usc::DBusEventLoop> const& loop,
         std::string const& address,
         std::shared_ptr<usc::Screen> const& screen);
+    ~UnityDisplayService();
 
 private:
     static ::DBusHandlerResult handle_dbus_message_thunk(
@@ -44,10 +47,14 @@ private:
 
     void dbus_TurnOn();
     void dbus_TurnOff();
+    void dbus_emit_ActiveOutputs();
+    void dbus_properties_Get(DBusMessage* reply, std::string const& property);
+    void dbus_properties_GetAll(DBusMessage* reply);
 
     std::shared_ptr<usc::Screen> const screen;
     std::shared_ptr<DBusEventLoop> const loop;
     std::shared_ptr<DBusConnectionHandle> connection;
+    ActiveOutputs active_outputs;
 };
 
 }

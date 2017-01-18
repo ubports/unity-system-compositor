@@ -17,6 +17,7 @@
 #ifndef USC_MIR_SCREEN_H_
 #define USC_MIR_SCREEN_H_
 
+#include <mir/graphics/display_configuration_observer.h>
 #include "screen.h"
 
 #include <chrono>
@@ -32,15 +33,37 @@ namespace graphics {class Display;}
 namespace usc
 {
 
-class MirScreen: public Screen
+class MirScreen: public Screen, public mir::graphics::DisplayConfigurationObserver
 {
 public:
     MirScreen(std::shared_ptr<mir::compositor::Compositor> const& compositor,
               std::shared_ptr<mir::graphics::Display> const& display);
     ~MirScreen();
 
-    void turn_on();
-    void turn_off();
+    // From Screen
+    void turn_on() override;
+    void turn_off() override;
+    void register_active_outputs_handler(ActiveOutputsHandler const& handler) override;
+
+    // From DisplayConfigurationObserver
+    void initial_configuration(
+        std::shared_ptr<mir::graphics::DisplayConfiguration const> const& display_configuration) override;
+    void configuration_applied(
+        std::shared_ptr<mir::graphics::DisplayConfiguration const> const& display_configuration) override;
+
+    void base_configuration_updated(
+        std::shared_ptr<mir::graphics::DisplayConfiguration const> const&) override;
+    void session_configuration_applied(
+        std::shared_ptr<mir::frontend::Session> const&,
+        std::shared_ptr<mir::graphics::DisplayConfiguration> const&) override;
+    void session_configuration_removed(
+        std::shared_ptr<mir::frontend::Session> const&) override;
+    void configuration_failed(
+        std::shared_ptr<mir::graphics::DisplayConfiguration const> const&,
+        std::exception const&) override;
+    void catastrophic_configuration_error(
+        std::shared_ptr<mir::graphics::DisplayConfiguration const> const&,
+        std::exception const&) override;
 
 private:
     void set_power_mode(MirPowerMode mode);
@@ -49,6 +72,10 @@ private:
     std::shared_ptr<mir::graphics::Display> const display;
 
     MirPowerMode current_power_mode;
+
+    std::mutex active_outputs_mutex;
+    ActiveOutputsHandler active_outputs_handler;
+    ActiveOutputs active_outputs;
 };
 
 }

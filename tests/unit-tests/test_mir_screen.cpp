@@ -19,6 +19,8 @@
 #include "src/mir_screen.h"
 
 #include "usc/test/mock_display.h"
+#include "usc/test/stub_display_configuration.h"
+#include "fake_shared.h"
 
 #include <mir/compositor/compositor.h>
 #include <mir/graphics/display_configuration.h>
@@ -65,6 +67,21 @@ struct AMirScreen : testing::Test
     std::shared_ptr<ut::MockDisplay> display{
         std::make_shared<testing::NiceMock<ut::MockDisplay>>()};
 
+
+    usc::ActiveOutputs const config_active_outputs{1, 3};
+    int const config_inactive_outputs = 2;
+    ut::StubDisplayConfiguration stub_display_configuration{
+        config_active_outputs.internal,
+        config_active_outputs.external,
+        config_inactive_outputs};
+
+    usc::ActiveOutputs active_outputs{-1,-1};
+    usc::ActiveOutputsHandler active_outputs_handler =
+        [this] (usc::ActiveOutputs const& active_outputs_arg)
+        {
+            active_outputs = active_outputs_arg;
+        };
+
     usc::MirScreen mir_screen{
         compositor,
         display};
@@ -91,4 +108,29 @@ TEST_F(AMirScreen, starts_compositing_and_turns_on_display_when_turning_on)
     EXPECT_CALL(*compositor, start());
 
     turn_screen_on();
+}
+
+TEST_F(AMirScreen, registered_handler_is_called_immediately)
+{
+    mir_screen.register_active_outputs_handler(active_outputs_handler);
+
+    EXPECT_THAT(active_outputs, Eq(usc::ActiveOutputs{}));
+}
+
+TEST_F(AMirScreen, initial_configuration_calls_handler)
+{
+    mir_screen.register_active_outputs_handler(active_outputs_handler);
+
+    mir_screen.initial_configuration(ut::fake_shared(stub_display_configuration));
+
+    EXPECT_THAT(active_outputs, Eq(config_active_outputs));
+}
+
+TEST_F(AMirScreen, configuration_applied_calls_handler)
+{
+    mir_screen.register_active_outputs_handler(active_outputs_handler);
+
+    mir_screen.configuration_applied(ut::fake_shared(stub_display_configuration));
+
+    EXPECT_THAT(active_outputs, Eq(config_active_outputs));
 }
