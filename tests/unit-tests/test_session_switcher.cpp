@@ -117,6 +117,7 @@ public:
     }
     std::string name() const override { return name_; }
     void send_display_config(mir::graphics::DisplayConfiguration const&) override {}
+    void send_input_config(MirInputConfig const&) override {}
 
 private:
     std::string const name_;

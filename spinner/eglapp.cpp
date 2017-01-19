@@ -32,24 +32,27 @@ void for_each_active_output(
     MirConnection* const connection, ActiveOutputHandler const& handler)
 {
     /* eglapps are interested in the screen size, so
-    use mir_connection_create_display_config */
-    MirDisplayConfiguration* display_config =
-        mir_connection_create_display_config(connection);
+    use mir_connection_create_display_configuration */
+    MirDisplayConfig* display_config =
+        mir_connection_create_display_configuration(connection);
 
-    for (MirDisplayOutput* output = display_config->outputs;
-         output != display_config->outputs + display_config->num_outputs;
-         ++output)
+    auto const& num_outputs =
+        mir_display_config_get_num_outputs(display_config);
+
+    for (auto i = 0; i < num_outputs; ++i)
     {
-        if (output->used &&
-            output->connected &&
-            output->num_modes &&
-            output->current_mode < output->num_modes)
+        auto const& output = mir_display_config_get_output(display_config, i);
+        auto const& num_modes = mir_output_get_num_modes(output);
+        if (mir_output_is_enabled(output) &&
+            mir_output_get_connection_state(output) == mir_output_connection_state_connected &&
+            num_modes &&
+            mir_output_get_current_mode(output))
         {
             handler(output);
         }
     }
 
-    mir_display_config_destroy(display_config);
+    mir_display_config_release(display_config);
 }
 
 MirPixelFormat select_pixel_format(MirConnection* connection)
@@ -219,13 +222,13 @@ std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv
     // If an output has been specified just do that
     if (surfaceparm.output_id != mir_display_output_id_invalid)
     {
-        for_each_active_output(connection, [&](MirDisplayOutput const* output)
+        for_each_active_output(connection, [&](MirOutput const* output)
             {
-                if (output->output_id == surfaceparm.output_id)
+                if ((size_t)mir_output_get_id(output) == surfaceparm.output_id)
                 {
-                    auto const& mode = output->modes[output->current_mode];
-                    surfaceparm.width = mode.horizontal_resolution;
-                    surfaceparm.height = mode.vertical_resolution;
+                    auto const& mode = mir_output_get_current_mode(output);
+                    surfaceparm.width = mir_output_mode_get_width(mode);
+                    surfaceparm.height = mir_output_mode_get_height(mode);
                 }
             });
         result.push_back(std::make_shared<MirEglSurface>(mir_egl_app, surfaceparm, swapinterval));
@@ -233,19 +236,22 @@ std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv
     }
 
     // but normally, we're fullscreen on every active output
-    for_each_active_output(connection, [&](MirDisplayOutput const* output)
+    for_each_active_output(connection, [&](MirOutput const* output)
         {
-            auto const& mode = output->modes[output->current_mode];
+            auto const& mode = mir_output_get_current_mode(output);
 
-            printf("Active output [%u] at (%d, %d) is %dx%d\n",
-                   output->output_id,
-                   output->position_x, output->position_y,
-                   mode.horizontal_resolution, mode.vertical_resolution);
+            surfaceparm.width = mir_output_mode_get_width(mode);
+            surfaceparm.height = mir_output_mode_get_height(mode);
+            surfaceparm.output_id = mir_output_get_id(output);
 
-            surfaceparm.width = mode.horizontal_resolution;
-            surfaceparm.height = mode.vertical_resolution;
-            surfaceparm.output_id = output->output_id;
             result.push_back(std::make_shared<MirEglSurface>(mir_egl_app, surfaceparm, swapinterval));
+
+            printf("Active output [%d] at (%d, %d) is %dx%d\n",
+                   surfaceparm.output_id,
+                   mir_output_get_position_x(output),
+                   mir_output_get_position_y(output),
+                   surfaceparm.width,
+                   surfaceparm.height);
         });
 
     if (result.empty())
