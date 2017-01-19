@@ -36,13 +36,12 @@ void for_each_active_output(
     MirDisplayConfig* display_config =
         mir_connection_create_display_configuration(connection);
 
-    auto const& num_outputs =
-        mir_display_config_get_num_outputs(display_config);
+    auto num_outputs = mir_display_config_get_num_outputs(display_config);
 
     for (auto i = 0; i < num_outputs; ++i)
     {
-        auto const& output = mir_display_config_get_output(display_config, i);
-        auto const& num_modes = mir_output_get_num_modes(output);
+        auto output = mir_display_config_get_output(display_config, i);
+        auto num_modes = mir_output_get_num_modes(output);
         if (mir_output_is_enabled(output) &&
             mir_output_get_connection_state(output) == mir_output_connection_state_connected &&
             num_modes &&
@@ -226,7 +225,7 @@ std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv
             {
                 if ((size_t)mir_output_get_id(output) == surfaceparm.output_id)
                 {
-                    auto const& mode = mir_output_get_current_mode(output);
+                    auto mode = mir_output_get_current_mode(output);
                     surfaceparm.width = mir_output_mode_get_width(mode);
                     surfaceparm.height = mir_output_mode_get_height(mode);
                 }
@@ -238,7 +237,7 @@ std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv
     // but normally, we're fullscreen on every active output
     for_each_active_output(connection, [&](MirOutput const* output)
         {
-            auto const& mode = mir_output_get_current_mode(output);
+            auto mode = mir_output_get_current_mode(output);
 
             surfaceparm.width = mir_output_mode_get_width(mode);
             surfaceparm.height = mir_output_mode_get_height(mode);
