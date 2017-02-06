@@ -32,8 +32,8 @@ public:
     UnityDisplayDBusClient(std::string const& address);
 
     DBusAsyncReplyString request_introspection();
-    DBusAsyncReplyVoid request_turn_on();
-    DBusAsyncReplyVoid request_turn_off();
+    DBusAsyncReplyVoid request_turn_on(std::string const& filter);
+    DBusAsyncReplyVoid request_turn_off(std::string const& filter);
     DBusAsyncReply request_active_outputs_property();
     DBusAsyncReply request_all_properties();
     DBusAsyncReply request_invalid_method();

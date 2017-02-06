@@ -2,8 +2,10 @@
 <node>
   <interface name='com.canonical.Unity.Display'>
     <method name='TurnOn'>
+      <arg type="s" name="what" direction="in"/>
     </method>
     <method name='TurnOff'>
+      <arg type="s" name="what" direction="in"/>
     </method>
     <property name='ActiveOutputs' type='(ii)' access='read'/>
   </interface>

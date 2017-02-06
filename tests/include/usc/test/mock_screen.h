@@ -31,8 +31,8 @@ namespace test
 
 struct MockScreen : usc::Screen
 {
-    MOCK_METHOD0(turn_on, void());
-    MOCK_METHOD0(turn_off, void());
+    MOCK_METHOD1(turn_on, void(OutputFilter));
+    MOCK_METHOD1(turn_off, void(OutputFilter));
     MOCK_METHOD1(register_active_outputs_handler, void(ActiveOutputsHandler const&));
 };
 

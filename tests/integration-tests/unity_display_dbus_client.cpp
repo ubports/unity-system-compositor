@@ -39,17 +39,25 @@ ut::DBusAsyncReplyString ut::UnityDisplayDBusClient::request_introspection()
         DBUS_TYPE_INVALID);
 }
 
-ut::DBusAsyncReplyVoid ut::UnityDisplayDBusClient::request_turn_on()
+ut::DBusAsyncReplyVoid ut::UnityDisplayDBusClient::request_turn_on(
+    std::string const& filter)
 {
+    auto const filter_cstr = filter.c_str();
+
     return invoke_with_reply<ut::DBusAsyncReplyVoid>(
         unity_display_interface, "TurnOn",
+        DBUS_TYPE_STRING, &filter_cstr,
         DBUS_TYPE_INVALID);
 }
 
-ut::DBusAsyncReplyVoid ut::UnityDisplayDBusClient::request_turn_off()
+ut::DBusAsyncReplyVoid ut::UnityDisplayDBusClient::request_turn_off(
+    std::string const& filter)
 {
+    auto const filter_cstr = filter.c_str();
+
     return invoke_with_reply<ut::DBusAsyncReplyVoid>(
         unity_display_interface, "TurnOff",
+        DBUS_TYPE_STRING, &filter_cstr,
         DBUS_TYPE_INVALID);
 }
 

@@ -40,13 +40,15 @@ struct ActiveOutputs
 
 using ActiveOutputsHandler = std::function<void(ActiveOutputs const&)>;
 
+enum class OutputFilter { all, internal, external };
+
 class Screen
 {
 public:
     virtual ~Screen() = default;
 
-    virtual void turn_on() = 0;
-    virtual void turn_off() = 0;
+    virtual void turn_on(OutputFilter filter) = 0;
+    virtual void turn_off(OutputFilter filter) = 0;
     virtual void register_active_outputs_handler(
         ActiveOutputsHandler const& handler) = 0;
 

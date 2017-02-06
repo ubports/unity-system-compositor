@@ -45,8 +45,8 @@ private:
     ::DBusHandlerResult handle_dbus_message(
         DBusConnection* connection, DBusMessage* message, void* user_data);
 
-    void dbus_TurnOn();
-    void dbus_TurnOff();
+    void dbus_TurnOn(std::string const& filter);
+    void dbus_TurnOff(std::string const& filter);
     void dbus_emit_ActiveOutputs();
     void dbus_properties_Get(DBusMessage* reply, std::string const& property);
     void dbus_properties_GetAll(DBusMessage* reply);

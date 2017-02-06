@@ -69,7 +69,9 @@ usc::ActiveOutputs count_active_outputs(
     display_configuration.for_each_output(
         [&active_outputs](mir::graphics::DisplayConfigurationOutput const& output)
         {
-            if (output.connected && output.used)
+            if (output.connected &&
+                output.used &&
+                output.power_mode == MirPowerMode::mir_power_mode_on)
             {
                 if (is_external(output.type))
                     ++active_outputs.external;
@@ -81,6 +83,41 @@ usc::ActiveOutputs count_active_outputs(
     return active_outputs;
 }
 
+bool has_active_outputs(
+    mir::graphics::DisplayConfiguration const& display_configuration)
+{
+    auto const active_outputs = count_active_outputs(display_configuration);
+    return active_outputs.internal + active_outputs.external > 0;
+}
+
+bool all_outputs_filter(mir::graphics::UserDisplayConfigurationOutput const&)
+{
+    return true;
+}
+
+bool internal_outputs_filter(mir::graphics::UserDisplayConfigurationOutput const& output)
+{
+    return !is_external(output.type);
+}
+
+bool external_outputs_filter(mir::graphics::UserDisplayConfigurationOutput const& output)
+{
+    return is_external(output.type);
+}
+
+auto get_power_mode_filter_for_output_filter(usc::OutputFilter output_filter)
+{
+    switch (output_filter)
+    {
+        case usc::OutputFilter::all: return all_outputs_filter;
+        case usc::OutputFilter::internal: return internal_outputs_filter;
+        case usc::OutputFilter::external: return external_outputs_filter;
+        default: return all_outputs_filter;
+    }
+
+    return all_outputs_filter;
+}
+
 }
 
 usc::MirScreen::MirScreen(
@@ -88,7 +125,6 @@ usc::MirScreen::MirScreen(
     std::shared_ptr<mir::graphics::Display> const& display)
     : compositor{compositor},
       display{display},
-      current_power_mode{MirPowerMode::mir_power_mode_on},
       active_outputs_handler{[](ActiveOutputs const&){}}
 {
     try
@@ -109,14 +145,16 @@ usc::MirScreen::MirScreen(
 
 usc::MirScreen::~MirScreen() = default;
 
-void usc::MirScreen::turn_on()
+void usc::MirScreen::turn_on(OutputFilter output_filter)
 {
-    set_power_mode(MirPowerMode::mir_power_mode_on);
+    auto const filter_func = get_power_mode_filter_for_output_filter(output_filter);
+    set_power_mode(MirPowerMode::mir_power_mode_on, filter_func);
 }
 
-void usc::MirScreen::turn_off()
+void usc::MirScreen::turn_off(OutputFilter output_filter)
 {
-    set_power_mode(MirPowerMode::mir_power_mode_off);
+    auto const filter_func = get_power_mode_filter_for_output_filter(output_filter);
+    set_power_mode(MirPowerMode::mir_power_mode_off, filter_func);
 }
 
 void usc::MirScreen::register_active_outputs_handler(
@@ -175,17 +213,19 @@ void usc::MirScreen::catastrophic_configuration_error(
 {
 }
 
-void usc::MirScreen::set_power_mode(MirPowerMode mode)
+void usc::MirScreen::set_power_mode(MirPowerMode mode, SetPowerModeFilter const& filter)
 try
 {
-    if (current_power_mode == mode)
-        return;
-
     std::shared_ptr<mg::DisplayConfiguration> displayConfig = display->configuration();
 
     displayConfig->for_each_output(
         [&](const mg::UserDisplayConfigurationOutput displayConfigOutput) {
-            displayConfigOutput.power_mode = mode;
+            if (displayConfigOutput.connected &&
+                displayConfigOutput.used &&
+                filter(displayConfigOutput))
+            {
+                displayConfigOutput.power_mode = mode;
+            }
         }
     );
 
@@ -193,10 +233,8 @@ try
 
     display->configure(*displayConfig.get());
 
-    if (mode == MirPowerMode::mir_power_mode_on)
+    if (has_active_outputs(*displayConfig))
         compositor->start();
-
-    current_power_mode = mode;
 }
 catch (std::exception const&)
 {

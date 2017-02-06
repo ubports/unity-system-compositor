@@ -84,16 +84,30 @@ TEST_F(AUnityDisplayService, replies_to_introspection_request)
 
 TEST_F(AUnityDisplayService, forwards_turn_on_request)
 {
-    EXPECT_CALL(*fake_screen, turn_on());
+    using namespace testing;
 
-    client.request_turn_on();
+    InSequence s;
+    EXPECT_CALL(*fake_screen, turn_on(usc::OutputFilter::all));
+    EXPECT_CALL(*fake_screen, turn_on(usc::OutputFilter::internal));
+    EXPECT_CALL(*fake_screen, turn_on(usc::OutputFilter::external));
+
+    client.request_turn_on("all");
+    client.request_turn_on("internal");
+    client.request_turn_on("external");
 }
 
 TEST_F(AUnityDisplayService, forwards_turn_off_request)
 {
-    EXPECT_CALL(*fake_screen, turn_off());
+    using namespace testing;
 
-    client.request_turn_off();
+    InSequence s;
+    EXPECT_CALL(*fake_screen, turn_off(usc::OutputFilter::all));
+    EXPECT_CALL(*fake_screen, turn_off(usc::OutputFilter::internal));
+    EXPECT_CALL(*fake_screen, turn_off(usc::OutputFilter::external));
+
+    client.request_turn_off("all");
+    client.request_turn_off("internal");
+    client.request_turn_off("external");
 }
 
 TEST_F(AUnityDisplayService, emits_active_outputs_property_change)

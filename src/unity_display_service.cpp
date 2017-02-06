@@ -64,6 +64,16 @@ void usc_dbus_message_iter_append_active_outputs_dict_entry(
     dbus_message_iter_close_container(iter, &iter_entry);
 }
 
+usc::OutputFilter output_filter_from_string(std::string const& filter_str)
+{
+    if (filter_str == "internal")
+        return usc::OutputFilter::internal;
+    else if (filter_str == "external")
+        return usc::OutputFilter::external;
+
+    return usc::OutputFilter::all;
+}
+
 }
 
 usc::UnityDisplayService::UnityDisplayService(
@@ -118,14 +128,35 @@ DBusHandlerResult usc::UnityDisplayService::handle_dbus_message(
     }
     else if (dbus_message_is_method_call(message, dbus_display_interface, "TurnOn"))
     {
-        dbus_TurnOn();
+        char const* filter{""};
+        dbus_message_get_args(
+            message, &args_error,
+            DBUS_TYPE_STRING, &filter,
+            DBUS_TYPE_INVALID);
+
+        // For backward compatibility
+        if (args_error)
+            filter = "all";
+
+        dbus_TurnOn(filter);
 
         DBusMessageHandle reply{dbus_message_new_method_return(message)};
         dbus_connection_send(connection, reply, nullptr);
     }
     else if (dbus_message_is_method_call(message, dbus_display_interface, "TurnOff"))
     {
-        dbus_TurnOff();
+        char const* filter{""};
+
+        dbus_message_get_args(
+            message, &args_error,
+            DBUS_TYPE_STRING, &filter,
+            DBUS_TYPE_INVALID);
+
+        // For backward compatibility
+        if (args_error)
+            filter = "all";
+
+        dbus_TurnOff(filter);
 
         DBusMessageHandle reply{dbus_message_new_method_return(message)};
         dbus_connection_send(connection, reply, nullptr);
@@ -181,14 +212,14 @@ DBusHandlerResult usc::UnityDisplayService::handle_dbus_message(
     return DBUS_HANDLER_RESULT_HANDLED;
 }
 
-void usc::UnityDisplayService::dbus_TurnOn()
+void usc::UnityDisplayService::dbus_TurnOn(std::string const& filter)
 {
-    screen->turn_on();
+    screen->turn_on(output_filter_from_string(filter));
 }
 
-void usc::UnityDisplayService::dbus_TurnOff()
+void usc::UnityDisplayService::dbus_TurnOff(std::string const& filter)
 {
-    screen->turn_off();
+    screen->turn_off(output_filter_from_string(filter));
 }
 
 void usc::UnityDisplayService::dbus_emit_ActiveOutputs()
