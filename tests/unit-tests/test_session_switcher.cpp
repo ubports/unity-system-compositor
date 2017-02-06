@@ -105,6 +105,14 @@ public:
     {
         return {};
     }
+    mir::graphics::BufferID create_buffer(mir::geometry::Size, MirPixelFormat) override
+    {
+        return {};
+    }
+    mir::graphics::BufferID create_buffer(mir::geometry::Size, uint32_t, uint32_t) override
+    {
+        return {};
+    }
     void destroy_buffer(mir::graphics::BufferID) override
     {
     }
