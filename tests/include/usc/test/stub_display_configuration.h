@@ -28,12 +28,36 @@ struct StubDisplayConfiguration : mir::graphics::DisplayConfiguration
 {
     StubDisplayConfiguration()
     {
-        conf_output.power_mode = MirPowerMode::mir_power_mode_on;
+        internal_active_conf_output.power_mode = MirPowerMode::mir_power_mode_on;
+        internal_active_conf_output.type = mir::graphics::DisplayConfigurationOutputType::lvds;
+        internal_active_conf_output.used = true;
+        internal_active_conf_output.connected = true;
+
+        external_active_conf_output.power_mode = MirPowerMode::mir_power_mode_on;
+        external_active_conf_output.type = mir::graphics::DisplayConfigurationOutputType::dvid;
+        external_active_conf_output.used = true;
+        external_active_conf_output.connected = true;
+
+        inactive_conf_output.power_mode = MirPowerMode::mir_power_mode_off;
+        inactive_conf_output.used = false;
+        inactive_conf_output.connected = false;
+    }
+
+    StubDisplayConfiguration(
+        int num_internal_active_outputs,
+        int num_external_active_outputs,
+        int num_inactive_outputs)
+        : StubDisplayConfiguration{}
+    {
+          this->num_internal_active_outputs = num_internal_active_outputs;
+          this->num_external_active_outputs = num_external_active_outputs;
+          this->num_inactive_outputs = num_inactive_outputs;
     }
 
     StubDisplayConfiguration(mir::graphics::DisplayConfigurationOutput const& output)
-        : conf_output(output)
+        : StubDisplayConfiguration{}
     {
+          internal_active_conf_output = output;
     }
 
     void for_each_card(std::function<void(mir::graphics::DisplayConfigurationCard const&)>) const override
@@ -42,21 +66,45 @@ struct StubDisplayConfiguration : mir::graphics::DisplayConfiguration
 
     void for_each_output(std::function<void(mir::graphics::DisplayConfigurationOutput const&)> f) const override
     {
-        f(conf_output);
+        for (int i = 0; i < num_internal_active_outputs; ++i)
+            f(internal_active_conf_output);
+        for (int i = 0; i < num_external_active_outputs; ++i)
+            f(external_active_conf_output);
+        for (int i = 0; i < num_inactive_outputs; ++i)
+            f(inactive_conf_output);
     }
 
     void for_each_output(std::function<void(mir::graphics::UserDisplayConfigurationOutput&)> f)
     {
-        mir::graphics::UserDisplayConfigurationOutput user{conf_output};
-        f(user);
+        for (int i = 0; i < num_internal_active_outputs; ++i)
+        {
+            mir::graphics::UserDisplayConfigurationOutput user{internal_active_conf_output};
+            f(user);
+        }
+        for (int i = 0; i < num_external_active_outputs; ++i)
+        {
+            mir::graphics::UserDisplayConfigurationOutput user{external_active_conf_output};
+            f(user);
+        }
+        for (int i = 0; i < num_inactive_outputs; ++i)
+        {
+            mir::graphics::UserDisplayConfigurationOutput user{inactive_conf_output};
+            f(user);
+        }
     }
 
     std::unique_ptr<mir::graphics::DisplayConfiguration> clone() const override
     {
-        return std::make_unique<StubDisplayConfiguration>(conf_output);
+        return std::make_unique<StubDisplayConfiguration>(internal_active_conf_output);
     }
 
-    mir::graphics::DisplayConfigurationOutput conf_output;
+    int num_internal_active_outputs{1};
+    int num_external_active_outputs{0};
+    int num_inactive_outputs{0};
+
+    mir::graphics::DisplayConfigurationOutput internal_active_conf_output;
+    mir::graphics::DisplayConfigurationOutput external_active_conf_output;
+    mir::graphics::DisplayConfigurationOutput inactive_conf_output;
 };
 
 }

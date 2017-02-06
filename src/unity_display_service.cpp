@@ -32,6 +32,48 @@ char const* const dbus_display_interface = "com.canonical.Unity.Display";
 char const* const dbus_display_path = "/com/canonical/Unity/Display";
 char const* const dbus_display_service_name = "com.canonical.Unity.Display";
 
+void usc_dbus_message_iter_append_active_outputs_variant(
+    DBusMessageIter* iter, usc::ActiveOutputs const& active_outputs)
+{
+    DBusMessageIter iter_variant;
+    dbus_message_iter_open_container(iter, DBUS_TYPE_VARIANT, "(ii)", &iter_variant);
+
+    {
+        DBusMessageIter iter_struct;
+        dbus_message_iter_open_container(&iter_variant, DBUS_TYPE_STRUCT, nullptr, &iter_struct);
+
+        dbus_message_iter_append_basic(&iter_struct, DBUS_TYPE_INT32, &active_outputs.internal);
+        dbus_message_iter_append_basic(&iter_struct, DBUS_TYPE_INT32, &active_outputs.external);
+
+        dbus_message_iter_close_container(&iter_variant, &iter_struct);
+    }
+
+    dbus_message_iter_close_container(iter, &iter_variant);
+}
+
+void usc_dbus_message_iter_append_active_outputs_dict_entry(
+    DBusMessageIter* iter, usc::ActiveOutputs const& active_outputs)
+{
+    char const* key = "ActiveOutputs";
+    DBusMessageIter iter_entry;
+    dbus_message_iter_open_container(iter, DBUS_TYPE_DICT_ENTRY, nullptr, &iter_entry);
+
+    dbus_message_iter_append_basic(&iter_entry, DBUS_TYPE_STRING, &key);
+    usc_dbus_message_iter_append_active_outputs_variant(&iter_entry, active_outputs);
+
+    dbus_message_iter_close_container(iter, &iter_entry);
+}
+
+usc::OutputFilter output_filter_from_string(std::string const& filter_str)
+{
+    if (filter_str == "internal")
+        return usc::OutputFilter::internal;
+    else if (filter_str == "external")
+        return usc::OutputFilter::external;
+
+    return usc::OutputFilter::all;
+}
+
 }
 
 usc::UnityDisplayService::UnityDisplayService(
@@ -45,6 +87,22 @@ usc::UnityDisplayService::UnityDisplayService(
     loop->add_connection(connection);
     connection->request_name(dbus_display_service_name);
     connection->add_filter(handle_dbus_message_thunk, this);
+
+    screen->register_active_outputs_handler(
+        [this] (ActiveOutputs const& active_outputs_arg)
+        {
+            this->loop->enqueue(
+                [this, active_outputs_arg]
+                {
+                    active_outputs = active_outputs_arg;
+                    dbus_emit_ActiveOutputs();
+                });
+        });
+}
+
+usc::UnityDisplayService::~UnityDisplayService()
+{
+    screen->register_active_outputs_handler([](ActiveOutputs const&){});
 }
 
 ::DBusHandlerResult usc::UnityDisplayService::handle_dbus_message_thunk(
@@ -70,16 +128,69 @@ DBusHandlerResult usc::UnityDisplayService::handle_dbus_message(
     }
     else if (dbus_message_is_method_call(message, dbus_display_interface, "TurnOn"))
     {
-        dbus_TurnOn();
+        char const* filter{""};
+        dbus_message_get_args(
+            message, &args_error,
+            DBUS_TYPE_STRING, &filter,
+            DBUS_TYPE_INVALID);
+
+        // For backward compatibility
+        if (args_error)
+            filter = "all";
+
+        dbus_TurnOn(filter);
 
         DBusMessageHandle reply{dbus_message_new_method_return(message)};
         dbus_connection_send(connection, reply, nullptr);
     }
     else if (dbus_message_is_method_call(message, dbus_display_interface, "TurnOff"))
     {
-        dbus_TurnOff();
+        char const* filter{""};
+
+        dbus_message_get_args(
+            message, &args_error,
+            DBUS_TYPE_STRING, &filter,
+            DBUS_TYPE_INVALID);
+
+        // For backward compatibility
+        if (args_error)
+            filter = "all";
+
+        dbus_TurnOff(filter);
 
         DBusMessageHandle reply{dbus_message_new_method_return(message)};
+        dbus_connection_send(connection, reply, nullptr);
+    }
+    else if (dbus_message_is_method_call(message, "org.freedesktop.DBus.Properties", "Get"))
+    {
+        char const* interface{""};
+        char const* property{""};
+        dbus_message_get_args(
+            message, &args_error,
+            DBUS_TYPE_STRING, &interface,
+            DBUS_TYPE_STRING, &property,
+            DBUS_TYPE_INVALID);
+
+        DBusMessageHandle reply{dbus_message_new_method_return(message)};
+
+        if (!args_error && std::string{interface} == dbus_display_interface)
+            dbus_properties_Get(reply, property);
+
+        dbus_connection_send(connection, reply, nullptr);
+    }
+    else if (dbus_message_is_method_call(message, "org.freedesktop.DBus.Properties", "GetAll"))
+    {
+        char const* interface{""};
+        dbus_message_get_args(
+            message, &args_error,
+            DBUS_TYPE_STRING, &interface,
+            DBUS_TYPE_INVALID);
+
+        DBusMessageHandle reply{dbus_message_new_method_return(message)};
+
+        if (!args_error && std::string{interface} == dbus_display_interface)
+            dbus_properties_GetAll(reply);
+
         dbus_connection_send(connection, reply, nullptr);
     }
     else if (dbus_message_get_type(message) == DBUS_MESSAGE_TYPE_METHOD_CALL)
@@ -101,12 +212,68 @@ DBusHandlerResult usc::UnityDisplayService::handle_dbus_message(
     return DBUS_HANDLER_RESULT_HANDLED;
 }
 
-void usc::UnityDisplayService::dbus_TurnOn()
+void usc::UnityDisplayService::dbus_TurnOn(std::string const& filter)
 {
-    screen->turn_on();
+    screen->turn_on(output_filter_from_string(filter));
 }
 
-void usc::UnityDisplayService::dbus_TurnOff()
+void usc::UnityDisplayService::dbus_TurnOff(std::string const& filter)
 {
-    screen->turn_off();
+    screen->turn_off(output_filter_from_string(filter));
+}
+
+void usc::UnityDisplayService::dbus_emit_ActiveOutputs()
+{
+    DBusMessageHandle signal{
+        dbus_message_new_signal(
+            dbus_display_path,
+            "org.freedesktop.DBus.Properties",
+            "PropertiesChanged")};
+
+    DBusMessageIter iter;
+    dbus_message_iter_init_append(signal, &iter);
+
+    dbus_message_iter_append_basic(&iter, DBUS_TYPE_STRING, &dbus_display_interface);
+
+    {
+        DBusMessageIter iter_dict;
+        dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, "{sv}", &iter_dict);
+
+        usc_dbus_message_iter_append_active_outputs_dict_entry(&iter_dict, active_outputs);
+
+        dbus_message_iter_close_container(&iter, &iter_dict);
+    }
+
+    {
+        DBusMessageIter iter_array;
+        dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, "s", &iter_array);
+        dbus_message_iter_close_container(&iter, &iter_array);
+    }
+
+    dbus_connection_send(*connection, signal, nullptr);
+    dbus_connection_flush(*connection);
+}
+
+void usc::UnityDisplayService::dbus_properties_Get(DBusMessage* reply, std::string const& property)
+{
+    DBusMessageIter iter;
+    dbus_message_iter_init_append(reply, &iter);
+
+    if (property == "ActiveOutputs")
+        usc_dbus_message_iter_append_active_outputs_variant(&iter, active_outputs);
+}
+
+void usc::UnityDisplayService::dbus_properties_GetAll(DBusMessage* reply)
+{
+    DBusMessageIter iter;
+    dbus_message_iter_init_append(reply, &iter);
+
+    {
+        DBusMessageIter iter_dict;
+        dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, "{sv}", &iter_dict);
+
+        usc_dbus_message_iter_append_active_outputs_dict_entry(&iter_dict, active_outputs);
+
+        dbus_message_iter_close_container(&iter, &iter_dict);
+    }
 }

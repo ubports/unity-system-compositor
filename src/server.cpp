@@ -43,6 +43,7 @@
 #include <mir/log.h>
 #include <mir/abnormal_exit.h>
 #include <mir/main_loop.h>
+#include <mir/observer_registrar.h>
 
 #include <boost/exception/all.hpp>
 
@@ -292,9 +293,13 @@ std::shared_ptr<usc::Screen> usc::Server::the_screen()
     return screen(
         [this]
         {
-            return std::make_shared<MirScreen>(
+            auto mir_screen = std::make_shared<MirScreen>(
                 the_compositor(),
                 the_display());
+
+            the_display_configuration_observer_registrar()->register_interest(mir_screen);
+
+            return mir_screen;
         });
 }
 
