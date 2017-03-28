@@ -21,6 +21,7 @@
 
 #include <mir/graphics/display.h>
 #include <mir/graphics/virtual_output.h>
+#include <mir/version.h>
 #include <gmock/gmock.h>
 
 namespace usc
@@ -53,11 +54,15 @@ struct MockDisplay : mir::graphics::Display, mir::graphics::NativeDisplay
 
     void resume() override {};
 
+#if MIR_SERVER_VERSION < MIR_VERSION_NUMBER(0, 27, 0)
     std::shared_ptr<mir::graphics::Cursor> create_hardware_cursor(
         std::shared_ptr<mir::graphics::CursorImage> const&) override
     {
         return {};
     };
+#else
+    std::shared_ptr<mir::graphics::Cursor> create_hardware_cursor() override { return {}; }
+#endif
 
     std::unique_ptr<mir::graphics::VirtualOutput> create_virtual_output(int, int) override
     { return std::unique_ptr<mir::graphics::VirtualOutput>{}; }
