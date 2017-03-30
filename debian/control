@@ -46,7 +46,7 @@ Depends: python3-autopilot,
          unity-system-compositor (>= ${source:Version}),
          ${misc:Depends},
          ${python3:Depends},
-Description: Mir System Compositor
+Description: Mir System Compositor autopilot integration tests
  This is the system compositor using the Mir display server.
  .
  This package contains the Autopilots integration tests for the Unity System
