@@ -22,12 +22,12 @@ Build-Depends: cmake,
                python3,
                python3-setuptools,
                python3-pil:native,
-Standards-Version: 3.9.7
+Standards-Version: 3.9.8
 Homepage: https://launchpad.net/unity-system-compositor
 # if you don't have have commit access to this branch but would like to upload
 # directly to Ubuntu, don't worry: your changes will be merged back into the
 # upstream branch
-Vcs-Bzr: lp:unity-system-compositor
+Vcs-Bzr: https://bazaar.launchpad.net/+branch/unity-system-compositor/
 
 Package: unity-system-compositor
 Architecture: any
@@ -35,8 +35,8 @@ Depends: ${misc:Depends},
          ${shlibs:Depends},
          ubuntu-wallpapers,
 Suggests: repowerd,
-Description: System compositor for Ubuntu
- System compositor used by the Mir display server in Ubuntu. If the Unity
+Description: Mir System Compositor
+ This is the system compositor using the Mir display server.  If the Unity
  System Compositor can't start, LightDM will fallback to plain Xorg display
  server.
 
@@ -46,5 +46,8 @@ Depends: python3-autopilot,
          unity-system-compositor (>= ${source:Version}),
          ${misc:Depends},
          ${python3:Depends},
-Description: Test package for Unity System Compositor
- Autopilots tests for Unity System Compositor
+Description: Mir System Compositor
+ This is the system compositor using the Mir display server.
+ .
+ This package contains the Autopilots integration tests for the Unity System
+ Compositor.
