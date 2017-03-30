@@ -20,6 +20,7 @@
 #include "src/spinner.h"
 
 #include "mir/frontend/session.h"
+#include <mir/version.h>
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
@@ -105,6 +106,7 @@ public:
     {
         return {};
     }
+#if MIR_SERVER_VERSION >= MIR_VERSION_NUMBER(0, 27, 0)
     mir::graphics::BufferID create_buffer(mir::geometry::Size, MirPixelFormat) override
     {
         return {};
@@ -113,6 +115,7 @@ public:
     {
         return {};
     }
+#endif
     void destroy_buffer(mir::graphics::BufferID) override
     {
     }
