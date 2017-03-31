@@ -1,5 +1,5 @@
 /*
- * Copyright © 2015 Canonical Ltd.
+ * Copyright © 2016 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -12,31 +12,29 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * Authored by: Andreas Pokorny <andreas.pokorny@canonical.com>
  */
 
-#ifndef USC_TEST_MOCK_SCREEN_H_
-#define USC_TEST_MOCK_SCREEN_H_
+#ifndef USC_UNITY_POWER_BUTTON_EVENT_SINK_H_
+#define USC_UNITY_POWER_BUTTON_EVENT_SINK_H_
 
-#include "src/screen.h"
-
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
+#include "power_button_event_sink.h"
+#include "dbus_connection_handle.h"
 
 namespace usc
 {
-namespace test
-{
 
-struct MockScreen : usc::Screen
+class UnityPowerButtonEventSink : public PowerButtonEventSink
 {
-    MOCK_METHOD1(turn_on, void(OutputFilter));
-    MOCK_METHOD1(turn_off, void(OutputFilter));
-    MOCK_METHOD1(register_active_outputs_handler, void(ActiveOutputsHandler const&));
+public:
+    UnityPowerButtonEventSink(std::string const& dbus_address);
+
+    void notify_press() override;
+    void notify_release() override;
+
+private:
+    DBusConnectionHandle dbus_connection;
 };
 
-}
 }
 
 #endif

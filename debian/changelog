@@ -1,3 +1,123 @@
+unity-system-compositor (0.9.0-0ubuntu1) UNRELEASED; urgency=medium
+
+  * Update for compatibility with Mir 0.26
+
+ -- Cemil Azizoglu <cemil.azizoglu@canonical.com>  Tue, 17 Jan 2017 10:58:13 -0600
+
+unity-system-compositor (0.8.0+17.04.20161206-0ubuntu1) zesty; urgency=medium
+
+  * 0.8.0 release, containing compatibility fixes for mir 0.25 release
+
+ -- Brandon Schaefer <brandon.schaefer@canonical.com>  Tue, 06 Dec 2016 02:48:56 +0000
+
+unity-system-compositor (0.7.1+16.10.20160909.1-0ubuntu1) yakkety; urgency=medium
+
+  [ Michael Terry ]
+  * Use system wallpaper instead of custom built-in one.
+
+ -- Michał Sawicz <michal.sawicz@canonical.com>  Fri, 09 Sep 2016 14:39:40 +0000
+
+unity-system-compositor (0.7.1+16.10.20160824-0ubuntu1) yakkety; urgency=medium
+
+  * 0.7.1 release
+    - Use libandroid-properties-dev build-dep on arm64
+    - Use python3 for everything (autopilot tests and internal scripts)
+    - Remove obsolete ubuntu-desktop-mir binary package
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Wed, 24 Aug 2016 07:16:37 +0000
+
+unity-system-compositor (0.7.0+16.10.20160815-0ubuntu1) yakkety; urgency=medium
+
+  * 0.7.0 release, containing compatibility fixes for mir 0.24 release.
+    Only test code changes. 
+
+ -- Kevin DuBois <kevin.dubois@canonical.com>  Mon, 15 Aug 2016 18:57:15 +0000
+
+unity-system-compositor (0.6.0+16.10.20160805.1-0ubuntu1) yakkety; urgency=medium
+
+  * No-change rebuild.
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Fri, 05 Aug 2016 10:18:16 +0000
+
+unity-system-compositor (0.6.0+16.10.20160609-0ubuntu2) yakkety; urgency=medium
+
+  * No-change rebuild for boost soname change.
+
+ -- Matthias Klose <doko@ubuntu.com>  Thu, 04 Aug 2016 08:33:29 +0000
+
+unity-system-compositor (0.6.0+16.10.20160609-0ubuntu1) yakkety; urgency=medium
+
+  * 0.6.0 release
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Thu, 09 Jun 2016 09:05:15 +0000
+
+unity-system-compositor (0.6.0-0ubuntu1) xenial; urgency=medium
+
+  * Grand repowerd update.
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Wed, 01 Jun 2016 19:39:14 +0000
+
+unity-system-compositor (0.5.1+16.10.20160602.1-0ubuntu1) yakkety; urgency=medium
+
+  [ Alexandros Frantzis ]
+  * rebuild for mir 0.23
+
+ -- Kevin DuBois <kdub432@gmail.com>  Thu, 02 Jun 2016 17:53:14 +0000
+
+unity-system-compositor (0.5.1+16.04.20160428-0ubuntu2) yakkety; urgency=medium
+
+  * No-change rebuild of latest xenial trunk against current archive.
+
+ -- Łukasz 'sil2100' Zemczak <lukasz.zemczak@ubuntu.com>  Thu, 19 May 2016 21:02:28 +0200
+
+unity-system-compositor (0.5.1+16.04.20160428-0ubuntu1) xenial; urgency=medium
+
+  [ CI Train Bot ]
+  * No-change rebuild.
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Thu, 28 Apr 2016 17:30:14 +0000
+
+unity-system-compositor (0.5.1-0ubuntu1) xenial; urgency=medium
+
+  * Change proximity behavior to trigger only once for notifications
+    and snap-decisions.
+  * Allow only key down events (not repeat or up events) to turn on
+    the screen.
+  * Ignore requests to turn off the screen with reason 'notification' or
+    'snap-decision'.
+
+ -- Alexandros Frantzis <alexandros.frantzis@canonical.com>  Thu, 28 Apr 2016 19:47:53 +0300
+
+unity-system-compositor (0.5.0+16.04.20160423-0ubuntu1) xenial; urgency=medium
+
+  [ Alberto Aguirre ]
+  * Mir 0.22 compatibility 
+
+  [ CI Train Bot ]
+  * No-change rebuild.
+
+ -- Alberto Aguirre <alberto.aguirre@canonical.com>  Sat, 23 Apr 2016 03:27:29 +0000
+
+unity-system-compositor (0.4.3+16.04.20160323-0ubuntu1) xenial; urgency=medium
+
+  [ CI Train Bot ]
+  * No-change rebuild.
+
+ -- Thomas Voß <ci-train-bot@canonical.com>  Wed, 23 Mar 2016 11:06:43 +0000
+
+unity-system-compositor (0.4.3) xenial; urgency=medium
+
+  * Gracefully fallback if ubuntu's platform hw api is not available.
+
+ -- Thomas Voß <thomas.voss@canonical.com>  Tue, 22 Mar 2016 16:34:23 +0100
+
+unity-system-compositor (0.4.2+16.04.20160219.1-0ubuntu1) xenial; urgency=medium
+
+  [ Alan Griffiths, Alexandros Frantzis, Brandon Schaefer ]
+  * Picking up head for Mir 0.20
+
+ -- Alan Griffiths <ci-train-bot@canonical.com>  Fri, 19 Feb 2016 14:55:30 +0000
+
 unity-system-compositor (0.4.2+16.04.20160211.2-0ubuntu1) xenial; urgency=medium
 
   [ CI Train Bot ]

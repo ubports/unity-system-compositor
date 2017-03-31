@@ -16,8 +16,8 @@
 
 project(UnitySystemCompositor)
 set(USC_VERSION_MAJOR 0)
-set(USC_VERSION_MINOR 4)
-set(USC_VERSION_PATCH 2)
+set(USC_VERSION_MINOR 9)
+set(USC_VERSION_PATCH 0)
 set(USC_VERSION "${USC_VERSION_MAJOR}.${USC_VERSION_MINOR}.${USC_VERSION_PATCH}")
 
 cmake_minimum_required(VERSION 2.8)
@@ -39,11 +39,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall")
 
 find_package(PkgConfig)
 pkg_check_modules(ANDROIDPROPS libandroid-properties)
+pkg_check_modules(GDKPIXBUF REQUIRED gdk-pixbuf-2.0)
 pkg_check_modules(GLIB REQUIRED glib-2.0)
 pkg_check_modules(MIRCLIENT REQUIRED mirclient)
 pkg_check_modules(MIRSERVER REQUIRED mirserver)
 pkg_check_modules(DBUS REQUIRED dbus-1)
-pkg_check_modules(UBUNTU_PLATFORM_HARDWARE_API ubuntu-platform-hardware-api)
 
 find_package(Boost 1.48.0 COMPONENTS system REQUIRED)
 find_package(GLESv2 REQUIRED)

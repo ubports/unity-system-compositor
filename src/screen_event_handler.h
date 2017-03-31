@@ -17,58 +17,41 @@
 #ifndef USC_SCREEN_EVENT_HANDLER_H_
 #define USC_SCREEN_EVENT_HANDLER_H_
 
-#include "mir/input/event_filter.h"
+#include <mir/input/event_filter.h>
+#include <mir/time/types.h>
 
-#include <mutex>
 #include <memory>
-#include <atomic>
+#include <mutex>
 #include <chrono>
-
-namespace mir
-{
-namespace time
-{
-class Alarm;
-class AlarmFactory;
-}
-}
 
 namespace usc
 {
-class Screen;
+class PowerButtonEventSink;
+class UserActivityEventSink;
+class Clock;
 
 class ScreenEventHandler : public mir::input::EventFilter
 {
 public:
     ScreenEventHandler(
-        std::shared_ptr<Screen> const& screen,
-        std::shared_ptr<mir::time::AlarmFactory> const& alarm_factory,
-        std::chrono::milliseconds power_key_ignore_timeout,
-        std::chrono::milliseconds shutdown_timeout,
-        std::function<void()> const& shutdown);
-
-    ~ScreenEventHandler();
+        std::shared_ptr<PowerButtonEventSink> const& power_button_event_sink,
+        std::shared_ptr<UserActivityEventSink> const& user_activity_event_sink,
+        std::shared_ptr<Clock> const& clock);
 
     bool handle(MirEvent const& event) override;
 
 private:
-    void power_key_up();
-    void power_key_down();
-    void shutdown_alarm_notification();
-    void long_press_notification();
-    void keep_or_turn_screen_on();
+    void notify_activity_changing_power_state();
+    void notify_activity_extending_power_state();
 
-    std::mutex guard;
-    std::shared_ptr<Screen> const screen;
-    std::shared_ptr<mir::time::AlarmFactory> const alarm_factory;
-    std::chrono::milliseconds const power_key_ignore_timeout;
-    std::chrono::milliseconds const shutdown_timeout;
-    std::function<void()> const shutdown;
+    std::shared_ptr<PowerButtonEventSink> const power_button_event_sink;
+    std::shared_ptr<UserActivityEventSink> const user_activity_event_sink;
+    std::shared_ptr<Clock> const clock;
+    std::chrono::milliseconds const event_period{500};
 
-    std::atomic<bool> long_press_detected;
-    std::atomic<MirPowerMode> mode_at_press_start;
-    std::unique_ptr<mir::time::Alarm> shutdown_alarm;
-    std::unique_ptr<mir::time::Alarm> long_press_alarm;
+    std::mutex event_mutex;
+    mir::time::Timestamp last_activity_changing_power_state_event_time;
+    mir::time::Timestamp last_activity_extending_power_state_event_time;
 };
 
 }

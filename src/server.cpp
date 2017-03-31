@@ -26,13 +26,12 @@
 #include "mir_screen.h"
 #include "mir_input_configuration.h"
 #include "screen_event_handler.h"
-#include "powerd_mediator.h"
-#include "unity_screen_service.h"
+#include "unity_display_service.h"
 #include "unity_input_service.h"
+#include "unity_power_button_event_sink.h"
+#include "unity_user_activity_event_sink.h"
 #include "dbus_connection_thread.h"
 #include "dbus_event_loop.h"
-#include "hw_performance_booster.h"
-#include "null_performance_booster.h"
 #include "display_configuration_policy.h"
 #include "steady_clock.h"
 
@@ -44,6 +43,7 @@
 #include <mir/log.h>
 #include <mir/abnormal_exit.h>
 #include <mir/main_loop.h>
+#include <mir/observer_registrar.h>
 
 #include <boost/exception/all.hpp>
 
@@ -97,6 +97,14 @@ struct ServerStatusListener : public mir::ServerStatusListener
     }
 
     void started() override
+    {
+    }
+
+    void ready_for_user_input() override
+    {
+    }
+
+    void stop_receiving_input() override
     {
     }
 
@@ -155,16 +163,7 @@ usc::Server::Server(int argc, char** argv)
     add_configuration_option("spinner", "Path to spinner executable",  mir::OptionType::string);
     add_configuration_option("public-socket", "Make the socket file publicly writable",  mir::OptionType::boolean);
     add_configuration_option("enable-hardware-cursor", "Enable the hardware cursor (disabled by default)",  mir::OptionType::boolean);
-    add_configuration_option("inactivity-display-off-timeout", "The time in seconds before the screen is turned off when there are no active sessions",  mir::OptionType::integer);
-    add_configuration_option("inactivity-display-dim-timeout", "The time in seconds before the screen is dimmed when there are no active sessions",  mir::OptionType::integer);
-    add_configuration_option("shutdown-timeout", "The time in milli-seconds the power key must be held to initiate a clean system shutdown",  mir::OptionType::integer);
-    add_configuration_option("power-key-ignore-timeout", "The time in milli-seconds the power key must be held to ignore - must be less than shutdown-timeout",  mir::OptionType::integer);
-    add_configuration_option("disable-inactivity-policy", "Disables handling user inactivity and power key",  mir::OptionType::boolean);
     add_display_configuration_options_to(*this);
-    add_configuration_option("notification-display-off-timeout", "The time in seconds before the screen is turned off after a notification arrives",  mir::OptionType::integer);
-    add_configuration_option("notification-display-dim-timeout", "The time in seconds before the screen is dimmed after a notification arrives",  mir::OptionType::integer);
-    add_configuration_option("snap-decision-display-off-timeout", "The time in seconds before the screen is turned off after snap decision arrives",  mir::OptionType::integer);
-    add_configuration_option("snap-decision-display-dim-timeout", "The time in seconds before the screen is dimmed after a snap decision arrives", mir::OptionType::integer);
 
     set_command_line(argc, const_cast<char const **>(argv));
 
@@ -206,23 +205,6 @@ usc::Server::Server(int argc, char** argv)
     set_config_filename("unity-system-compositor.conf");
 
     apply_settings();
-}
-
-std::shared_ptr<usc::PerformanceBooster> usc::Server::the_performance_booster()
-{
-    // We are treating access to a functional implementation of PerformanceBooster as optional.
-    // With that, we gracefully fall back to a NullImplementation if we cannot gain access
-    // to hw-provided booster capabilities.
-    try
-    {
-        return std::make_shared<HwPerformanceBooster>();
-    }
-    catch (boost::exception const& e)
-    {
-        mir::log_warning(boost::diagnostic_information(e));
-    }
-
-    return std::make_shared<NullPerformanceBooster>();
 }
 
 std::shared_ptr<usc::Spinner> usc::Server::the_spinner()
@@ -311,23 +293,13 @@ std::shared_ptr<usc::Screen> usc::Server::the_screen()
     return screen(
         [this]
         {
-            return std::make_shared<MirScreen>(
-                the_performance_booster(),
-                the_screen_hardware(),
+            auto mir_screen = std::make_shared<MirScreen>(
                 the_compositor(),
-                the_display(),
-                the_touch_visualizer(),
-                the_main_loop(),
-                the_clock(),
-                MirScreen::Timeouts{
-                    inactivity_display_off_timeout(),
-                    inactivity_display_dim_timeout()},
-                MirScreen::Timeouts{
-                    notification_display_off_timeout(),
-                    notification_display_dim_timeout()},
-                MirScreen::Timeouts{
-                    snap_decision_display_off_timeout(),
-                    snap_decision_display_dim_timeout()});
+                the_display());
+
+            the_display_configuration_observer_registrar()->register_interest(mir_screen);
+
+            return mir_screen;
         });
 }
 
@@ -337,20 +309,18 @@ std::shared_ptr<mi::EventFilter> usc::Server::the_screen_event_handler()
         [this]
         {
             return std::make_shared<ScreenEventHandler>(
-                the_screen(),
-                the_main_loop(),
-                power_key_ignore_timeout(),
-                shutdown_timeout(),
-                [] { if (system("shutdown -P now")); }); // ignore warning
+                the_power_button_event_sink(),
+                the_user_activity_event_sink(),
+                the_clock());
         });
 }
 
-std::shared_ptr<usc::ScreenHardware> usc::Server::the_screen_hardware()
+std::shared_ptr<usc::Clock> usc::Server::the_clock()
 {
-    return screen_hardware(
+    return clock(
         [this]
         {
-            return std::make_shared<usc::PowerdMediator>(dbus_bus_address());
+            return std::make_shared<SteadyClock>();
         });
 }
 
@@ -373,15 +343,33 @@ std::shared_ptr<usc::DBusConnectionThread> usc::Server::the_dbus_connection_thre
         });
 }
 
-std::shared_ptr<usc::UnityScreenService> usc::Server::the_unity_screen_service()
+std::shared_ptr<usc::UnityDisplayService> usc::Server::the_unity_display_service()
 {
-    return unity_screen_service(
+    return unity_display_service(
         [this]
         {
-            return std::make_shared<UnityScreenService>(
+            return std::make_shared<UnityDisplayService>(
                     the_dbus_event_loop(),
                     dbus_bus_address(),
                     the_screen());
+        });
+}
+
+std::shared_ptr<usc::PowerButtonEventSink> usc::Server::the_power_button_event_sink()
+{
+    return power_button_event_sink(
+        [this]
+        {
+            return std::make_shared<UnityPowerButtonEventSink>(dbus_bus_address());
+        });
+}
+
+std::shared_ptr<usc::UserActivityEventSink> usc::Server::the_user_activity_event_sink()
+{
+    return user_activity_event_sink(
+        [this]
+        {
+            return std::make_shared<UnityUserActivityEventSink>(dbus_bus_address());
         });
 }
 
@@ -394,15 +382,6 @@ std::shared_ptr<usc::UnityInputService> usc::Server::the_unity_input_service()
                     the_dbus_event_loop(),
                     dbus_bus_address(),
                     the_input_configuration());
-        });
-}
-
-std::shared_ptr<usc::Clock> usc::Server::the_clock()
-{
-    return clock(
-        [this]
-        {
-            return std::make_shared<SteadyClock>();
         });
 }
 

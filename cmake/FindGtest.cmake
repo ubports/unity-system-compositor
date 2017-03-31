@@ -2,28 +2,39 @@ include(ExternalProject)
 include(FindPackageHandleStandardArgs)
 
 #gtest
-set(GTEST_INSTALL_DIR /usr/src/gmock/gtest/include)
+if(EXISTS /usr/src/googletest)
+  set(USING_GOOGLETEST_1_8 TRUE)
+  set(GTEST_INSTALL_DIR /usr/src/googletest/googletest/include)
+else()
+  set(GTEST_INSTALL_DIR /usr/src/gmock/gtest/include)
+endif()
+
 find_path(GTEST_INCLUDE_DIR gtest/gtest.h
             HINTS ${GTEST_INSTALL_DIR})
 
 #gmock
-find_path(GMOCK_INSTALL_DIR gmock/CMakeLists.txt
-          HINTS /usr/src)
+find_path(GMOCK_INSTALL_DIR CMakeLists.txt
+          HINTS /usr/src/googletest /usr/src/gmock)
 if(${GMOCK_INSTALL_DIR} STREQUAL "GMOCK_INSTALL_DIR-NOTFOUND")
     message(FATAL_ERROR "google-mock package not found")
 endif()
 
-set(GMOCK_INSTALL_DIR ${GMOCK_INSTALL_DIR}/gmock)
 find_path(GMOCK_INCLUDE_DIR gmock/gmock.h)
 
-set(GMOCK_PREFIX gmock)
-set(GMOCK_BINARY_DIR ${CMAKE_BINARY_DIR}/${GMOCK_PREFIX}/libs)
-set(GTEST_BINARY_DIR ${GMOCK_BINARY_DIR}/gtest)
+if (USING_GOOGLETEST_1_8)
+  set(GMOCK_BASE_BINARY_DIR ${CMAKE_BINARY_DIR}/gmock/libs)
+  set(GMOCK_BINARY_DIR ${GMOCK_BASE_BINARY_DIR}/googlemock)
+  set(GTEST_BINARY_DIR ${GMOCK_BINARY_DIR}/gtest)
+else()
+  set(GMOCK_BASE_BINARY_DIR ${CMAKE_BINARY_DIR}/gmock/libs)
+  set(GMOCK_BINARY_DIR ${GMOCK_BASE_BINARY_DIR})
+  set(GTEST_BINARY_DIR ${GMOCK_BINARY_DIR}/gtest)
+endif()
 
 set(GTEST_CMAKE_ARGS "")
-if (${CMAKE_CROSSCOMPILING})
-    set(GTEST_CMAKE_ARGS
-        -DCMAKE_TOOLCHAIN_FILE=${CMAKE_MODULE_PATH}/LinuxCrossCompile.cmake)
+
+if (USING_GOOGLETEST_1_8)
+  list(APPEND GTEST_CMAKE_ARGS -DBUILD_GTEST=ON)
 endif()
 
 ExternalProject_Add(
@@ -34,7 +45,7 @@ ExternalProject_Add(
     SOURCE_DIR ${GMOCK_INSTALL_DIR}
     #forward the compilers to the subproject so cross-arch builds work
     CMAKE_ARGS ${GTEST_CMAKE_ARGS}
-    BINARY_DIR ${GMOCK_BINARY_DIR}
+    BINARY_DIR ${GMOCK_BASE_BINARY_DIR}
 
     #we don't need to install, so skip
     INSTALL_COMMAND ""

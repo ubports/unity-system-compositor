@@ -20,15 +20,15 @@
 #include "src/dbus_connection_thread.h"
 #include "src/dbus_event_loop.h"
 #include "src/dbus_message_handle.h"
-#include "src/unity_screen_service.h"
+#include "src/unity_display_service.h"
 #include "src/unity_input_service_introspection.h"
-#include "src/unity_screen_service_introspection.h"
+#include "src/unity_display_service_introspection.h"
 
 #include "wait_condition.h"
 #include "dbus_bus.h"
 #include "dbus_client.h"
 #include "unity_input_dbus_client.h"
-#include "unity_screen_dbus_client.h"
+#include "unity_display_dbus_client.h"
 
 #include "usc/test/mock_input_configuration.h"
 #include "usc/test/mock_screen.h"
@@ -44,7 +44,7 @@ struct UnityServices : testing::Test
     std::chrono::seconds const default_timeout{3};
     ut::DBusBus bus;
 
-    ut::UnityScreenDBusClient screen_client{bus.address()};
+    ut::UnityDisplayDBusClient screen_client{bus.address()};
     ut::UnityInputDBusClient input_client{bus.address()};
     std::shared_ptr<ut::MockScreen> const mock_screen =
         std::make_shared<testing::NiceMock<ut::MockScreen>>();
@@ -52,7 +52,7 @@ struct UnityServices : testing::Test
         std::make_shared<testing::NiceMock<ut::MockInputConfiguration>>();
     std::shared_ptr<usc::DBusEventLoop> const dbus_loop=
         std::make_shared<usc::DBusEventLoop>();
-    usc::UnityScreenService screen_service{dbus_loop, bus.address(), mock_screen};
+    usc::UnityDisplayService screen_service{dbus_loop, bus.address(), mock_screen};
     usc::UnityInputService input_service{dbus_loop, bus.address(), mock_input_configuration};
     std::shared_ptr<usc::DBusConnectionThread> const dbus_thread =
         std::make_shared<usc::DBusConnectionThread>(dbus_loop);
@@ -60,10 +60,10 @@ struct UnityServices : testing::Test
 
 }
 
-TEST_F(UnityServices, offer_screen_introspection)
+TEST_F(UnityServices, offer_display_introspection)
 {
     auto reply = screen_client.request_introspection();
-    EXPECT_THAT(reply.get(), Eq(unity_screen_service_introspection));
+    EXPECT_THAT(reply.get(), Eq(unity_display_service_introspection));
 }
 
 TEST_F(UnityServices, offer_input_introspection)

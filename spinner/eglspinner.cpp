@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013-2015 Canonical Ltd.
+ * Copyright © 2013-2016 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -12,16 +12,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * Authors: Daniel van Vugt <daniel.van.vugt@canonical.com>
- *          Mirco Müller <mirco.mueller@canonical.com>
- *          Alan Griffiths <alan@octopull.co.uk>
- *          Kevin DuBois <kevin.dubois@canonical.com>
  */
 
 #include "eglapp.h"
 #include "miregl.h"
 #include <assert.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <glib.h>
 #include <string.h>
 #include <GLES2/gl2.h>
@@ -40,10 +36,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "wallpaper.h"
 #include "logo.h"
 #include "white_dot.h"
 #include "orange_dot.h"
+
+#define WALLPAPER_FILE "/usr/share/backgrounds/warty-final-ubuntu.png"
 
 enum TextureIds {
     WALLPAPER = 0,
@@ -157,6 +154,13 @@ static GLuint load_shader(const char *src, GLenum type)
 //#define DARK_AUBERGINE  0.17254902f,  0.0f,         0.117647059f
 #define BLACK           0.0f,         0.0f,         0.0f
 //#define WHITE           1.0f,         1.0f,         1.0f
+
+static struct {
+    unsigned int width = 0;
+    unsigned int height = 0;
+    unsigned int bytes_per_pixel = 3; /* 3:RGB, 4:RGBA */
+    unsigned char *pixel_data = nullptr;
+} wallpaper;
 
 template <typename Image>
 void uploadTexture (GLuint id, Image& image)
@@ -300,6 +304,19 @@ try
 
     SessionConfig session_config;
 
+    // Load wallpaper
+    GError *error = nullptr;
+    auto wallpaperPixbuf = gdk_pixbuf_new_from_file(WALLPAPER_FILE, &error);
+    if (wallpaperPixbuf) {
+        wallpaper.width = gdk_pixbuf_get_width(wallpaperPixbuf);
+        wallpaper.height = gdk_pixbuf_get_height(wallpaperPixbuf);
+        wallpaper.bytes_per_pixel = gdk_pixbuf_get_has_alpha(wallpaperPixbuf) ? 4 : 3;
+        wallpaper.pixel_data = (unsigned char*)gdk_pixbuf_read_pixels(wallpaperPixbuf);
+    } else {
+        printf("Could not load wallpaper: %s\n", error->message);
+    }
+    g_clear_error(&error);
+
     auto const surfaces = mir_eglapp_init(argc, argv);
 
     if (!surfaces.size())
@@ -430,6 +447,16 @@ try
                 mvpMatrix = glm::translate(mvpMatrix, glm::vec3(-1.0, -1.0, 0.0f));
                 mvpMatrix = glm::scale(mvpMatrix,
                                        glm::vec3(2.0f / render_width, 2.0f / render_height, 1.0f));
+
+                auto widthRatio = (1.0f * wallpaper.height * render_width) / (wallpaper.width * render_height);
+                auto heightRatio = 1.0f;
+                if (widthRatio > 1.0f) {
+                    heightRatio = 1.0f / widthRatio;
+                    widthRatio = 1.0f;
+                }
+                auto const wallpaperProjMatrix = glm::ortho(-widthRatio, widthRatio, heightRatio, -heightRatio, -1.0f, 1.0f);
+                auto wallpaperMatrix = wallpaperProjMatrix * mvpMatrix;
+
                 auto const projMatrix = glm::ortho(-1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 1.0f);
                 mvpMatrix = projMatrix * mvpMatrix;
 
@@ -444,7 +471,7 @@ try
                 glBindTexture(GL_TEXTURE_2D, texture[WALLPAPER]);
                 glUniform1i(sampler[WALLPAPER], 0);
                 glUniform2f(offset[WALLPAPER], 0.0f, 0.0f);
-                glUniformMatrix4fv(projMat[WALLPAPER], 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                glUniformMatrix4fv(projMat[WALLPAPER], 1, GL_FALSE, glm::value_ptr(wallpaperMatrix));
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
                 // draw logo

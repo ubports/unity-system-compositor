@@ -15,34 +15,26 @@
  */
 
 #include "screen_event_handler.h"
-#include "screen.h"
-#include "power_state_change_reason.h"
+#include "power_button_event_sink.h"
+#include "user_activity_event_sink.h"
+#include "clock.h"
 
-#include <mir/time/alarm_factory.h>
 #include <mir_toolkit/events/input/input_event.h>
 
 #include "linux/input.h"
 #include <cstdio>
 
 usc::ScreenEventHandler::ScreenEventHandler(
-    std::shared_ptr<Screen> const& screen,
-    std::shared_ptr<mir::time::AlarmFactory> const& alarm_factory,
-    std::chrono::milliseconds power_key_ignore_timeout,
-    std::chrono::milliseconds shutdown_timeout,
-    std::function<void()> const& shutdown)
-    : screen{screen},
-      alarm_factory{alarm_factory},
-      power_key_ignore_timeout{power_key_ignore_timeout},
-      shutdown_timeout{shutdown_timeout},
-      shutdown{shutdown},
-      long_press_detected{false},
-      mode_at_press_start{MirPowerMode::mir_power_mode_off},
-      shutdown_alarm{alarm_factory->create_alarm([this]{ shutdown_alarm_notification(); })},
-      long_press_alarm{alarm_factory->create_alarm([this]{ long_press_notification(); })}
+    std::shared_ptr<PowerButtonEventSink> const& power_button_event_sink,
+    std::shared_ptr<UserActivityEventSink> const& user_activity_event_sink,
+    std::shared_ptr<Clock> const& clock)
+    : power_button_event_sink{power_button_event_sink},
+      user_activity_event_sink{user_activity_event_sink},
+      clock{clock},
+      last_activity_changing_power_state_event_time{-event_period},
+      last_activity_extending_power_state_event_time{-event_period}
 {
 }
-
-usc::ScreenEventHandler::~ScreenEventHandler() = default;
 
 bool usc::ScreenEventHandler::handle(MirEvent const& event)
 {
@@ -59,9 +51,9 @@ bool usc::ScreenEventHandler::handle(MirEvent const& event)
         {
             auto const action = mir_keyboard_event_action(kev);
             if (action == mir_keyboard_action_down)
-                power_key_down();
+                power_button_event_sink->notify_press();
             else if (action == mir_keyboard_action_up)
-                power_key_up();
+                power_button_event_sink->notify_release();
         }
         // we might want to come up with a whole range of media player related keys
         else if (mir_keyboard_event_scan_code(kev) == KEY_VOLUMEDOWN||
@@ -69,91 +61,45 @@ bool usc::ScreenEventHandler::handle(MirEvent const& event)
         {
             // do not keep display on when interacting with media player
         }
+        else if (mir_keyboard_event_action(kev) == mir_keyboard_action_down)
+        {
+            notify_activity_changing_power_state();
+        }
         else
         {
-            keep_or_turn_screen_on();
+            notify_activity_extending_power_state();
         }
     }
     else if (input_event_type == mir_input_event_type_touch)
     {
-        std::lock_guard<std::mutex> lock{guard};
-        screen->keep_display_on_temporarily();
+        notify_activity_extending_power_state();
     }
     else if (input_event_type == mir_input_event_type_pointer)
     {
-        bool const filter_out_event = screen->get_screen_power_mode() != mir_power_mode_on;
-        keep_or_turn_screen_on();
-        return filter_out_event;
+        notify_activity_changing_power_state();
     }
 
     return false;
 }
 
-void usc::ScreenEventHandler::power_key_down()
+void usc::ScreenEventHandler::notify_activity_changing_power_state()
 {
-    std::lock_guard<std::mutex> lock{guard};
+    std::lock_guard<std::mutex> lock{event_mutex};
 
-    mode_at_press_start = screen->get_screen_power_mode();
-    if (mode_at_press_start != MirPowerMode::mir_power_mode_on)
+    if (clock->now() >= last_activity_changing_power_state_event_time + event_period)
     {
-        screen->set_screen_power_mode(
-            MirPowerMode::mir_power_mode_on, PowerStateChangeReason::power_key);
-    }
-
-    screen->enable_inactivity_timers(false);
-    long_press_detected = false;
-    long_press_alarm->reschedule_in(power_key_ignore_timeout);
-    shutdown_alarm->reschedule_in(shutdown_timeout);
-}
-
-void usc::ScreenEventHandler::power_key_up()
-{
-    std::lock_guard<std::mutex> lock{guard};
-    shutdown_alarm->cancel();
-    long_press_alarm->cancel();
-
-    if (!long_press_detected)
-    {
-        if (mode_at_press_start == MirPowerMode::mir_power_mode_on)
-        {
-            screen->set_screen_power_mode(
-                MirPowerMode::mir_power_mode_off, PowerStateChangeReason::power_key);
-        }
-        else
-        {
-            screen->enable_inactivity_timers(true);
-        }
+        user_activity_event_sink->notify_activity_changing_power_state();
+        last_activity_changing_power_state_event_time = clock->now();
     }
 }
 
-void usc::ScreenEventHandler::shutdown_alarm_notification()
+void usc::ScreenEventHandler::notify_activity_extending_power_state()
 {
-    screen->set_screen_power_mode(
-        MirPowerMode::mir_power_mode_off, PowerStateChangeReason::power_key);
-    shutdown();
-}
+    std::lock_guard<std::mutex> lock{event_mutex};
 
-void usc::ScreenEventHandler::long_press_notification()
-{
-    // We know the screen is already on after power_key_down(), but we turn the
-    // screen on here to ensure that it is also at full brightness for the
-    // presumed system power dialog that will appear.
-    screen->set_screen_power_mode(
-        MirPowerMode::mir_power_mode_on, PowerStateChangeReason::power_key);
-    long_press_detected = true;
-}
-
-void usc::ScreenEventHandler::keep_or_turn_screen_on()
-{
-    std::lock_guard<std::mutex> lock{guard};
-
-    if (screen->get_screen_power_mode() == mir_power_mode_off)
+    if (clock->now() >= last_activity_extending_power_state_event_time + event_period)
     {
-        screen->set_screen_power_mode(
-            MirPowerMode::mir_power_mode_on, PowerStateChangeReason::unknown);
-    }
-    else
-    {
-        screen->keep_display_on_temporarily();
+        user_activity_event_sink->notify_activity_extending_power_state();
+        last_activity_extending_power_state_event_time = clock->now();
     }
 }

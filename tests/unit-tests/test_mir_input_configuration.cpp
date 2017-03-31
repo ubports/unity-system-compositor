@@ -22,6 +22,14 @@
 #include "mir/input/device_capability.h"
 #include "mir/input/input_device_observer.h"
 #include "mir/input/device.h"
+#include "mir/input/mir_keyboard_config.h"
+#include "mir/input/mir_pointer_config.h"
+#include "mir/input/mir_touchpad_config.h"
+#include <mir/version.h>
+
+#if MIR_SERVER_VERSION >= MIR_VERSION_NUMBER(0, 27, 0)
+#include <mir/input/mir_touchscreen_config.h>
+#endif
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
@@ -38,16 +46,23 @@ struct MockDevice : mi::Device
     MOCK_CONST_METHOD0(capabilities, mi::DeviceCapabilities());
     MOCK_CONST_METHOD0(name, std::string());
     MOCK_CONST_METHOD0(unique_id, std::string());
-    MOCK_CONST_METHOD0(pointer_configuration, mir::optional_value<mi::PointerConfiguration>());
-    MOCK_METHOD1(apply_pointer_configuration, void(mi::PointerConfiguration const&));
-    MOCK_CONST_METHOD0(touchpad_configuration, mir::optional_value<mi::TouchpadConfiguration> ());
-    MOCK_METHOD1(apply_touchpad_configuration, void(mi::TouchpadConfiguration const&));
+    MOCK_CONST_METHOD0(pointer_configuration, mir::optional_value<MirPointerConfig>());
+    MOCK_METHOD1(apply_pointer_configuration, void(MirPointerConfig const&));
+    MOCK_CONST_METHOD0(touchpad_configuration, mir::optional_value<MirTouchpadConfig>());
+    MOCK_METHOD1(apply_touchpad_configuration, void(MirTouchpadConfig const&));
+    MOCK_CONST_METHOD0(keyboard_configuration, mir::optional_value<MirKeyboardConfig>());
+    MOCK_METHOD1(apply_keyboard_configuration, void(MirKeyboardConfig const&));
 
     MockDevice(mi::DeviceCapabilities caps)
         : caps(caps)
     {
         ON_CALL(*this, capabilities()).WillByDefault(Return(this->caps));
     }
+
+#if MIR_SERVER_VERSION >= MIR_VERSION_NUMBER(0, 27, 0)
+    mir::optional_value<MirTouchscreenConfig> touchscreen_configuration() const { return {}; }
+    void apply_touchscreen_configuration(MirTouchscreenConfig const&) {}
+#endif
 
     mi::DeviceCapabilities caps;
 };
@@ -56,6 +71,8 @@ struct MockInputDeviceHub : mi::InputDeviceHub
 {
     MOCK_METHOD1(add_observer,void(std::shared_ptr<mi::InputDeviceObserver> const&));
     MOCK_METHOD1(remove_observer,void(std::weak_ptr<mi::InputDeviceObserver> const&));
+    MOCK_METHOD1(for_each_input_device, void(std::function<void(mi::Device const&)> const&));
+    MOCK_METHOD1(for_each_mutable_input_device, void(std::function<void(mi::Device&)> const&));
 };
 
 struct MirInputConfiguration : ::testing::Test
