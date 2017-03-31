@@ -1,0 +1,45 @@
+.TH unity-system-compositor-spinner 1 "March 2017" unity-system-compositor-spinner "User Commands"
+
+.SH NAME
+unity-system-compositor-spinner \- animate the Ubuntu logo at boot
+
+.SH SYNOPSIS
+.B unity-system-compositor-spinner
+[
+.I <options>
+]
+
+.SH DESCRIPTION
+
+Animates the spinning Ubuntu logo.  Provides a soothing and relaxing visual
+experience during the boot sequence of a Ubuntu device between initial kernel
+loading and the presentation of a greeter screen.
+
+.SH OPTIONS
+.TP
+.BI -b " opacity"
+Set the background opacity (0.0 \- 1.0).
+.TP
+.B -h
+Output a usage message and exit.
+.TP
+.BI -o " id"
+Force placement on output monitor
+.IR id .
+.TP
+.B -n
+Don't sync to vblank.
+.TP
+.BI -m " socket"
+Set Mir server socket.
+.TP
+.BI "-s " WIDTH x HEIGHT
+Force surface size to 
+.I WIDTH
+x
+.I HEIGHT.
+.TP
+.B -q
+Quiet mode (no messages output).
+No surfaces are created.
+
