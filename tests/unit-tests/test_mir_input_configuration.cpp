@@ -25,6 +25,11 @@
 #include "mir/input/mir_keyboard_config.h"
 #include "mir/input/mir_pointer_config.h"
 #include "mir/input/mir_touchpad_config.h"
+#include <mir/version.h>
+
+#if MIR_SERVER_VERSION >= MIR_VERSION_NUMBER(0, 27, 0)
+#include <mir/input/mir_touchscreen_config.h>
+#endif
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
@@ -53,6 +58,11 @@ struct MockDevice : mi::Device
     {
         ON_CALL(*this, capabilities()).WillByDefault(Return(this->caps));
     }
+
+#if MIR_SERVER_VERSION >= MIR_VERSION_NUMBER(0, 27, 0)
+    mir::optional_value<MirTouchscreenConfig> touchscreen_configuration() const { return {}; }
+    void apply_touchscreen_configuration(MirTouchscreenConfig const&) {}
+#endif
 
     mi::DeviceCapabilities caps;
 };
