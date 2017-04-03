@@ -1,3 +1,6 @@
+#!/usr/bin/python3
+
+import os
 from apport.hookutils import *
 
 def attach_graphic_card_pci_info(report, ui=None):
@@ -26,10 +29,18 @@ def attach_graphic_card_pci_info(report, ui=None):
 
 def add_info(report, ui=None):
     attach_file_if_exists(report, '/var/log/boot.log', 'BootLog')
-    attach_root_command_outputs(report, { 'LightDMLog': 'cat /var/log/lightdm/lightdm.log',
-                                          'LightDMLogOld': 'cat /var/log/lightdm/lightdm.log.old',
-                                          'UnitySystemCompositorLog': 'cat /var/log/lightdm/unity-system-compositor.log',
-                                          'UnitySystemCompositorLogOld': 'cat /var/log/lightdm/unity-system-compositor.log.old' })
+
+    display_manager_files = {}
+    if os.path.lexists('/var/log/lightdm'):
+        display_manager_files['LightDMLog'] = \
+                'test -f /var/log/lightdm/lightdm.log && cat /var/log/lightdm/lightdm.log'
+        display_manager_files['LightDMLogOld'] = \
+                'test -f /var/log/lightdm/lightdm.log.1.gz && zcat /var/log/lightdm/lightdm.log.1.gz'
+        display_manager_files['USCLog'] = \
+                'test -f /var/log/lightdm/unity-system-compositor.log && cat /var/log/lightdm/unity-system-compositor.log'
+        display_manager_files['USCLogOld'] = \
+                'test -f /var/log/lightdm/unity-system-compositor.log.1.gz && zcat /var/log/lightdm/unity-system-compositor.log.1.gz'
+    attach_root_command_outputs(report, display_manager_files)
 
     report['version.libdrm'] = package_versions('libdrm2')
     report['version.lightdm'] = package_versions('lightdm')
@@ -45,7 +56,6 @@ if __name__ == '__main__':
     if not add_info(report, None):
         print("Unreportable")
         sys.exit(1)
-    keys = report.keys()
-    keys.sort()
+    keys = sorted(report.keys())
     for key in keys:
         print("[%s]\n%s\n" %(key, report[key]))
