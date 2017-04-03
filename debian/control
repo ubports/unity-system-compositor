@@ -51,3 +51,15 @@ Description: Mir System Compositor autopilot integration tests
  .
  This package contains the Autopilots integration tests for the Unity System
  Compositor.
+
+Package: unity-system-compositor-tests
+Architecture: any
+Depends: unity-system-compositor (>= ${source:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends},
+Description: Mir System Compositor unit tests
+ This is the system compositor using the Mir display server.
+ .
+ General tests for Unity System Compositor targeted at autopkgtest runs when a
+ dependency has changed.
+

@@ -57,3 +57,6 @@ add_test(usc_integration_tests ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/usc_integration
 
 add_dependencies(usc_integration_tests GMock)
 add_dependencies(usc_integration_tests usc_test_helper_wait_for_signal)
+
+install(TARGETS usc_integration_tests usc_test_helper_wait_for_signal
+        RUNTIME DESTINATION bin)
