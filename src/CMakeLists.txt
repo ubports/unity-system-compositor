@@ -72,6 +72,7 @@ include_directories(
   ${CMAKE_CURRENT_BINARY_DIR}
   ${Boost_INCLUDE_DIRS}
   ${GLESv2_INCLUDE_DIRS}
+  ${MIRAL_INCLUDE_DIRS}
   ${MIRSERVER_INCLUDE_DIRS}
   ${MIRCLIENT_INCLUDE_DIRS}
   ${DBUS_INCLUDE_DIRS}
@@ -83,6 +84,7 @@ add_definitions(
 link_directories(${MIRSERVER_LIBRARY_DIRS})
 
 target_link_libraries(usc
+  ${MIRAL_STATIC_LDFLAGS}
   ${MIRSERVER_STATIC_LDFLAGS}  # Meaning usc is STATIC, _not_ libmirserver.
   pthread
   ${Boost_LIBRARIES}
