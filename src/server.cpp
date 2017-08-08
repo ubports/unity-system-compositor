@@ -32,8 +32,9 @@
 #include "unity_user_activity_event_sink.h"
 #include "dbus_connection_thread.h"
 #include "dbus_event_loop.h"
-#include "display_configuration_policy.h"
 #include "steady_clock.h"
+
+#include <miral/display_configuration_option.h>
 
 #include <mir/cookie/authority.h>
 #include <mir/input/cursor_listener.h>
@@ -163,7 +164,7 @@ usc::Server::Server(int argc, char** argv)
     add_configuration_option("spinner", "Path to spinner executable",  mir::OptionType::string);
     add_configuration_option("public-socket", "Make the socket file publicly writable",  mir::OptionType::boolean);
     add_configuration_option("enable-hardware-cursor", "Enable the hardware cursor (disabled by default)",  mir::OptionType::boolean);
-    add_display_configuration_options_to(*this);
+    miral::display_configuration_options(*this);
 
     set_command_line(argc, const_cast<char const **>(argv));
 
