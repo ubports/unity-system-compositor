@@ -82,7 +82,7 @@ usc::SystemCompositor::SystemCompositor(
 
 void usc::SystemCompositor::run()
 {
-    if (server->show_version())
+    if (server->get_options()->is_set("version"))
     {
         std::cerr << "unity-system-compositor " << USC_VERSION << std::endl;
         return;
@@ -98,7 +98,9 @@ void usc::SystemCompositor::run()
             std::cerr << "GL_RENDERER = " << renderer << std::endl;
             std::cerr << "GL_VERSION = " << version << std::endl;
 
-            if (!check_blacklist(server->blacklist(), vendor, renderer, version))
+            auto blacklist = server->get_options()->get("blacklist", "");
+
+            if (!check_blacklist(blacklist, vendor, renderer, version))
             {
                 BOOST_THROW_EXCEPTION(
                     mir::AbnormalExit("Video driver is blacklisted, exiting"));
@@ -109,8 +111,12 @@ void usc::SystemCompositor::run()
             // Make socket world-writable, since users need to talk to us.  No worries
             // about race condition, since we are adding permissions, not restricting
             // them.
-            if (server->public_socket() && chmod(server->get_socket_file().c_str(), 0777) == -1)
-                std::cerr << "Unable to chmod socket file " << server->get_socket_file() << ": " << strerror(errno) << std::endl;
+            auto public_socket = !server->get_options()->is_set("no-file") &&
+                                 server->get_options()->get("public-socket", true);
+
+            auto socket_file = server->get_options()->get("file", "/tmp/mir_socket");
+            if (public_socket && chmod(socket_file.c_str(), 0777) == -1)
+                std::cerr << "Unable to chmod socket file " << socket_file << ": " << strerror(errno) << std::endl;
 
             dm_connection->start();
             screen = server->the_screen();
