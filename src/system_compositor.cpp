@@ -82,12 +82,6 @@ usc::SystemCompositor::SystemCompositor(
 
 void usc::SystemCompositor::run()
 {
-    if (server->get_options()->is_set("version"))
-    {
-        std::cerr << "unity-system-compositor " << USC_VERSION << std::endl;
-        return;
-    }
-
     server->add_init_callback([&]
         {
             auto vendor = (char *) glGetString(GL_VENDOR);

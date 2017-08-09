@@ -28,6 +28,12 @@ try
 {
     auto const config = std::make_shared<usc::Server>(argc, argv);
 
+    if (config->get_options()->is_set("version"))
+    {
+        std::cerr << "unity-system-compositor " << USC_VERSION << std::endl;
+        return 0;
+    }
+
     usc::SystemCompositor system_compositor{config};
     system_compositor.run();
 
