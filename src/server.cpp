@@ -176,7 +176,7 @@ usc::Server::Server(int argc, char** argv)
             // This is a workaround for u8 desktop preview in 14.04 for the lack of client cursor API.
             // We need to disable the cursor for XMir but leave it on for the desktop preview.
             // Luckily as it stands they run inside seperate instances of USC. ~racarr
-            if (enable_hardware_cursor())
+            if (get_options()->get("enable-hardware-cursor", false))
                 return default_;
             else
                 return std::make_shared<NullCursorListener>();
@@ -262,18 +262,18 @@ std::shared_ptr<usc::DMConnection> usc::Server::the_dm_connection()
     return dm_connection(
         [this]() -> std::shared_ptr<usc::DMConnection>
         {
-            if (the_options()->is_set(dm_from_fd) && the_options()->is_set(dm_to_fd))
+            if (get_options()->is_set(dm_from_fd) && get_options()->is_set(dm_to_fd))
             {
                 return std::make_shared<AsioDMConnection>(
-                    the_options()->get(dm_from_fd, -1),
-                    the_options()->get(dm_to_fd, -1),
+                    get_options()->get(dm_from_fd, -1),
+                    get_options()->get(dm_to_fd, -1),
                     the_dm_message_handler());
             }
-            else if (the_options()->is_set(dm_stub))
+            else if (get_options()->is_set(dm_stub))
             {
                 return std::make_shared<NullDMMessageHandler>(
                     the_dm_message_handler(),
-                    the_options()->get<std::string>(dm_stub_active));
+                    get_options()->get<std::string>(dm_stub_active));
             }
 
             BOOST_THROW_EXCEPTION(mir::AbnormalExit("to and from FDs are required for display manager"));

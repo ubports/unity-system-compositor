@@ -55,6 +55,7 @@ public:
     explicit Server(int argc, char** argv);
 
     using mir::Server::add_init_callback;
+    using mir::Server::get_options;
     using mir::Server::run;
     using mir::Server::the_main_loop;
     using mir::Server::the_composite_event_filter;
@@ -78,41 +79,37 @@ public:
 
     bool show_version()
     {
-        return the_options()->is_set("version");
+        return get_options()->is_set("version");
     }
 
     std::string blacklist()
     {
-        auto x = the_options()->get("blacklist", "");
+        auto x = get_options()->get("blacklist", "");
         return x;
     }
 
     bool public_socket()
     {
-        return !the_options()->is_set("no-file") && the_options()->get("public-socket", true);
+        return !get_options()->is_set("no-file") && get_options()->get("public-socket", true);
     }
 
     std::string get_socket_file()
     {
         // the_socket_file is private, so we have to re-implement it here
-        return the_options()->get("file", "/tmp/mir_socket");
+        return get_options()->get("file", "/tmp/mir_socket");
     }
 
 private:
-    inline auto the_options()
-    -> decltype(mir::Server::get_options())
-    { return mir::Server::get_options(); }
-
     bool enable_hardware_cursor()
     {
-        return the_options()->get("enable-hardware-cursor", false);
+        return get_options()->get("enable-hardware-cursor", false);
     }
 
     std::string spinner_executable()
     {
         // TODO: once our default spinner is ready for use everywhere, replace
         // default value with DEFAULT_SPINNER instead of the empty string.
-        auto x = the_options()->get("spinner", "");
+        auto x = get_options()->get("spinner", "");
         return x;
     }
 
