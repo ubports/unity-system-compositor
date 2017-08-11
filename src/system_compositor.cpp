@@ -19,11 +19,14 @@
 
 #include "system_compositor.h"
 #include "server.h"
-#include "dm_connection.h"
+#include "session_switcher.h"
+#include "asio_dm_connection.h"
 
 #include <mir/input/composite_event_filter.h>
 #include <mir/input/input_device_hub.h>
 #include <mir/abnormal_exit.h>
+
+#include <boost/exception/all.hpp>
 
 #include <cerrno>
 #include <iostream>
@@ -71,11 +74,32 @@ bool check_blacklist(
     return true;
 }
 
+struct NullDMMessageHandler : usc::DMConnection
+{
+    explicit NullDMMessageHandler(
+        std::shared_ptr<usc::DMMessageHandler> const& dm_message_handler,
+        std::string const& client_name) :
+        dm_message_handler{dm_message_handler},
+        client_name{client_name}
+    {}
+
+    ~NullDMMessageHandler() = default;
+
+    void start() override
+    {
+        dm_message_handler->set_active_session(client_name);
+    };
+
+    std::shared_ptr<usc::DMMessageHandler> const dm_message_handler;
+    std::string const client_name;
+};
 }
 
 usc::SystemCompositor::SystemCompositor(
-    std::shared_ptr<Server> const& server)
-    : server{server}
+    std::shared_ptr<Server> const& server,
+    std::function<std::shared_ptr<SessionSwitcher>()> the_session_switcher)
+    : server{server},
+      the_session_switcher{the_session_switcher}
 {
 }
 
@@ -99,7 +123,24 @@ void usc::SystemCompositor::run()
                     mir::AbnormalExit("Video driver is blacklisted, exiting"));
             }
 
-            dm_connection = server->the_dm_connection();
+            if (server->get_options()->is_set("from-dm-fd") &&
+                server->get_options()->is_set("to-dm-fd"))
+            {
+                dm_connection = std::make_shared<usc::AsioDMConnection>(
+                    server->get_options()->get("from-dm-fd", -1),
+                    server->get_options()->get("to-dm-fd", -1),
+                    the_session_switcher());
+            }
+            else if (server->get_options()->is_set("debug-without-dm"))
+            {
+                dm_connection = std::make_shared<NullDMMessageHandler>(
+                    the_session_switcher(),
+                    server->get_options()->get<std::string>("debug-active-session-name"));
+            }
+            else
+            {
+                BOOST_THROW_EXCEPTION(mir::AbnormalExit("to and from FDs are required for display manager"));
+            }
 
             // Make socket world-writable, since users need to talk to us.  No worries
             // about race condition, since we are adding permissions, not restricting

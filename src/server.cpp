@@ -46,8 +46,6 @@
 #include <mir/main_loop.h>
 #include <mir/observer_registrar.h>
 
-#include <boost/exception/all.hpp>
-
 #include <iostream>
 
 namespace msh = mir::shell;
@@ -215,57 +213,6 @@ usc::Server::Server(int argc, char** argv,
     set_config_filename("unity-system-compositor.conf");
 
     apply_settings();
-}
-
-std::shared_ptr<usc::DMMessageHandler> usc::Server::the_dm_message_handler()
-{
-    return session_switcher;
-}
-
-namespace
-{
-struct NullDMMessageHandler : usc::DMConnection
-{
-    explicit NullDMMessageHandler(
-        std::shared_ptr<usc::DMMessageHandler> const& dm_message_handler,
-        std::string const& client_name) :
-        dm_message_handler{dm_message_handler},
-        client_name{client_name}
-    {}
-
-    ~NullDMMessageHandler() = default;
-
-    void start() override
-    {
-        dm_message_handler->set_active_session(client_name);
-    };
-
-    std::shared_ptr<usc::DMMessageHandler> const dm_message_handler;
-    std::string const client_name;
-};
-}
-
-std::shared_ptr<usc::DMConnection> usc::Server::the_dm_connection()
-{
-    return dm_connection(
-        [this]() -> std::shared_ptr<usc::DMConnection>
-        {
-            if (get_options()->is_set(dm_from_fd) && get_options()->is_set(dm_to_fd))
-            {
-                return std::make_shared<AsioDMConnection>(
-                    get_options()->get(dm_from_fd, -1),
-                    get_options()->get(dm_to_fd, -1),
-                    the_dm_message_handler());
-            }
-            else if (get_options()->is_set(dm_stub))
-            {
-                return std::make_shared<NullDMMessageHandler>(
-                    the_dm_message_handler(),
-                    get_options()->get<std::string>(dm_stub_active));
-            }
-
-            BOOST_THROW_EXCEPTION(mir::AbnormalExit("to and from FDs are required for display manager"));
-        });
 }
 
 std::shared_ptr<usc::InputConfiguration> usc::Server::the_input_configuration()

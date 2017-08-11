@@ -37,7 +37,9 @@ try
         return 0;
     }
 
-    usc::SystemCompositor system_compositor{config};
+    auto the_session_switcher = [&session_switcher]() { return session_switcher; };
+
+    usc::SystemCompositor system_compositor{config, the_session_switcher};
     system_compositor.run();
 
     return 0;
