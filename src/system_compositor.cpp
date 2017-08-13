@@ -75,8 +75,7 @@ bool check_blacklist(
 
 usc::SystemCompositor::SystemCompositor(
     std::shared_ptr<Server> const& server)
-    : server{server},
-      spinner{server->the_spinner()}
+    : server{server}
 {
 }
 

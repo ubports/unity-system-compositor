@@ -151,7 +151,8 @@ const char* const dm_stub = "debug-without-dm";
 const char* const dm_stub_active = "debug-active-session-name";
 }
 
-usc::Server::Server(int argc, char** argv)
+usc::Server::Server(int argc, char** argv,
+    std::shared_ptr<usc::SessionSwitcher>& session_switcher_)
 {
     add_configuration_option(dm_from_fd, "File descriptor of read end of pipe from display manager [int]",
         mir::OptionType::integer);
@@ -188,14 +189,22 @@ usc::Server::Server(int argc, char** argv)
             return std::make_shared<ServerStatusListener>(the_focus_controller());
         });
 
-    override_the_window_manager_builder([this](msh::FocusController* focus_controller)
-       {
-         return std::make_shared<WindowManager>(
-             focus_controller,
-             the_shell_display_layout(),
-             the_session_coordinator(),
-             the_session_switcher());
-       });
+    override_the_window_manager_builder(
+        [this,&session_switcher_](msh::FocusController* focus_controller)
+        {
+            auto spinner = std::make_shared<usc::ExternalSpinner>(
+                               get_options()->get("spinner", ""),
+                               get_options()->get("file", "/tmp/mir_socket"));
+
+            session_switcher = std::make_shared<usc::SessionSwitcher>(spinner);
+            session_switcher_ = session_switcher;
+
+            return std::make_shared<WindowManager>(
+                focus_controller,
+                the_shell_display_layout(),
+                the_session_coordinator(),
+                session_switcher);
+        });
 
     override_the_cookie_authority([this]()
     -> std::shared_ptr<mir::cookie::Authority>
@@ -208,30 +217,9 @@ usc::Server::Server(int argc, char** argv)
     apply_settings();
 }
 
-std::shared_ptr<usc::Spinner> usc::Server::the_spinner()
-{
-    return spinner(
-        [this]
-        {
-            return std::make_shared<ExternalSpinner>(
-                spinner_executable(),
-                get_socket_file());
-        });
-}
-
-std::shared_ptr<usc::SessionSwitcher> usc::Server::the_session_switcher()
-{
-    return session_switcher(
-        [this]
-        {
-            return std::make_shared<SessionSwitcher>(
-                the_spinner());
-        });
-}
-
 std::shared_ptr<usc::DMMessageHandler> usc::Server::the_dm_message_handler()
 {
-    return the_session_switcher();
+    return session_switcher;
 }
 
 namespace

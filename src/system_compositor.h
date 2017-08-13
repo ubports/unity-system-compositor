@@ -51,7 +51,6 @@ public:
 private:
     std::shared_ptr<Server> const server;
     std::shared_ptr<DMConnection> dm_connection;
-    std::shared_ptr<Spinner> const spinner;
     std::shared_ptr<Screen> screen;
     std::shared_ptr<mir::input::EventFilter> screen_event_handler;
     std::shared_ptr<UnityDisplayService> unity_display_service;

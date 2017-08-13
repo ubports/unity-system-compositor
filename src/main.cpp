@@ -23,10 +23,13 @@
 #include <mir/report_exception.h>
 #include <iostream>
 
+namespace usc { class SessionSwitcher; }
+
 int main(int argc, char *argv[])
 try
 {
-    auto const config = std::make_shared<usc::Server>(argc, argv);
+    std::shared_ptr<usc::SessionSwitcher> session_switcher;
+    auto const config = std::make_shared<usc::Server>(argc, argv, session_switcher);
 
     if (config->get_options()->is_set("version"))
     {

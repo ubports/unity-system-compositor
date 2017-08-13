@@ -35,7 +35,6 @@ class EventFilter;
 
 namespace usc
 {
-class Spinner;
 class SessionSwitcher;
 class DMMessageHandler;
 class DMConnection;
@@ -52,7 +51,8 @@ class Clock;
 class Server : private mir::Server
 {
 public:
-    explicit Server(int argc, char** argv);
+    explicit Server(int argc, char** argv,
+        std::shared_ptr<SessionSwitcher>& session_switcher_);
 
     using mir::Server::add_init_callback;
     using mir::Server::get_options;
@@ -63,7 +63,6 @@ public:
     using mir::Server::the_compositor;
     using mir::Server::the_touch_visualizer;
 
-    virtual std::shared_ptr<Spinner> the_spinner();
     virtual std::shared_ptr<DMMessageHandler> the_dm_message_handler();
     virtual std::shared_ptr<DMConnection> the_dm_connection();
     virtual std::shared_ptr<Screen> the_screen();
@@ -113,12 +112,11 @@ private:
         return x;
     }
 
-    virtual std::shared_ptr<SessionSwitcher> the_session_switcher();
     std::string dbus_bus_address();
 
-    mir::CachedPtr<Spinner> spinner;
+    std::shared_ptr<SessionSwitcher> session_switcher;
+
     mir::CachedPtr<DMConnection> dm_connection;
-    mir::CachedPtr<SessionSwitcher> session_switcher;
     mir::CachedPtr<Screen> screen;
     mir::CachedPtr<InputConfiguration> input_configuration;
     mir::CachedPtr<mir::input::EventFilter> screen_event_handler;
