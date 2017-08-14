@@ -80,6 +80,17 @@ bool check_blacklist(
     return true;
 }
 
+std::string dbus_bus_address()
+{
+    static char const* const default_bus_address{"unix:path=/var/run/dbus/system_bus_socket"};
+
+    char const* bus = getenv("DBUS_SYSTEM_BUS_ADDRESS");
+    if (!bus)
+        bus = default_bus_address;
+
+    return std::string{bus};
+}
+
 struct NullDMMessageHandler : usc::DMConnection
 {
     explicit NullDMMessageHandler(

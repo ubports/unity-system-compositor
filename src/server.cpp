@@ -250,14 +250,3 @@ std::shared_ptr<usc::DBusConnectionThread> usc::Server::the_dbus_connection_thre
             return std::make_shared<DBusConnectionThread>(the_dbus_event_loop());
         });
 }
-
-std::string usc::dbus_bus_address()
-{
-    static char const* const default_bus_address{"unix:path=/var/run/dbus/system_bus_socket"};
-
-    char const* bus = getenv("DBUS_SYSTEM_BUS_ADDRESS");
-    if (!bus)
-        bus = default_bus_address;
-
-    return std::string{bus};
-}

@@ -31,8 +31,6 @@ class InputConfiguration;
 class DBusConnectionThread;
 class DBusEventLoop;
 
-std::string dbus_bus_address();
-
 class Server : private mir::Server
 {
 public:
