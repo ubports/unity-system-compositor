@@ -150,7 +150,7 @@ const char* const dm_stub_active = "debug-active-session-name";
 }
 
 usc::Server::Server(int argc, char** argv,
-    std::shared_ptr<usc::SessionSwitcher>& session_switcher_)
+    std::shared_ptr<usc::SessionSwitcher>& session_switcher)
 {
     add_configuration_option(dm_from_fd, "File descriptor of read end of pipe from display manager [int]",
         mir::OptionType::integer);
@@ -188,14 +188,13 @@ usc::Server::Server(int argc, char** argv,
         });
 
     override_the_window_manager_builder(
-        [this,&session_switcher_](msh::FocusController* focus_controller)
+        [this,&session_switcher](msh::FocusController* focus_controller)
         {
             auto spinner = std::make_shared<usc::ExternalSpinner>(
                                get_options()->get("spinner", ""),
                                get_options()->get("file", "/tmp/mir_socket"));
 
             session_switcher = std::make_shared<usc::SessionSwitcher>(spinner);
-            session_switcher_ = session_switcher;
 
             return std::make_shared<WindowManager>(
                 focus_controller,

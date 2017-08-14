@@ -50,7 +50,7 @@ class Server : private mir::Server
 {
 public:
     explicit Server(int argc, char** argv,
-        std::shared_ptr<SessionSwitcher>& session_switcher_);
+        std::shared_ptr<SessionSwitcher>& session_switcher);
 
     using mir::Server::add_init_callback;
     using mir::Server::get_options;
@@ -109,8 +109,6 @@ private:
     }
 
     std::string dbus_bus_address();
-
-    std::shared_ptr<SessionSwitcher> session_switcher;
 
     mir::CachedPtr<Screen> screen;
     mir::CachedPtr<InputConfiguration> input_configuration;
