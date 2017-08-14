@@ -46,6 +46,8 @@ class DBusConnectionThread;
 class DBusEventLoop;
 class Clock;
 
+std::string dbus_bus_address();
+
 class Server : private mir::Server
 {
 public:
@@ -73,8 +75,6 @@ public:
     virtual std::shared_ptr<Clock> the_clock();
 
 private:
-    std::string dbus_bus_address();
-
     mir::CachedPtr<Screen> screen;
     mir::CachedPtr<InputConfiguration> input_configuration;
     mir::CachedPtr<mir::input::EventFilter> screen_event_handler;

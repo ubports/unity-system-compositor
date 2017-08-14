@@ -320,7 +320,7 @@ std::shared_ptr<usc::UnityInputService> usc::Server::the_unity_input_service()
         });
 }
 
-std::string usc::Server::dbus_bus_address()
+std::string usc::dbus_bus_address()
 {
     static char const* const default_bus_address{"unix:path=/var/run/dbus/system_bus_socket"};
 
