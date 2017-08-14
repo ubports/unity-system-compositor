@@ -25,7 +25,6 @@
 #include "window_manager.h"
 #include "mir_screen.h"
 #include "mir_input_configuration.h"
-#include "dbus_connection_thread.h"
 #include "dbus_event_loop.h"
 
 #include <miral/display_configuration_option.h>
@@ -240,13 +239,4 @@ std::shared_ptr<usc::DBusEventLoop> usc::Server::the_dbus_event_loop()
             return std::make_shared<DBusEventLoop>();
         });
 
-}
-
-std::shared_ptr<usc::DBusConnectionThread> usc::Server::the_dbus_connection_thread()
-{
-    return dbus_thread(
-        [this]
-        {
-            return std::make_shared<DBusConnectionThread>(the_dbus_event_loop());
-        });
 }

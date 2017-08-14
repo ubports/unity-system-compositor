@@ -23,6 +23,7 @@
 #include "session_switcher.h"
 #include "steady_clock.h"
 #include "asio_dm_connection.h"
+#include "dbus_connection_thread.h"
 #include "unity_display_service.h"
 #include "unity_input_service.h"
 #include "unity_power_button_event_sink.h"
@@ -199,7 +200,8 @@ void usc::SystemCompositor::run()
                                       dbus_bus_address(),
                                       server->the_input_configuration());
 
-            dbus_service_thread = server->the_dbus_connection_thread();
+            dbus_service_thread = std::make_shared<DBusConnectionThread>(
+                                      server->the_dbus_event_loop());
         });
 
     server->run();

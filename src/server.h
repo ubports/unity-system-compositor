@@ -28,7 +28,6 @@ namespace usc
 class SessionSwitcher;
 class Screen;
 class InputConfiguration;
-class DBusConnectionThread;
 class DBusEventLoop;
 
 class Server : private mir::Server
@@ -49,12 +48,10 @@ public:
     virtual std::shared_ptr<Screen> the_screen();
     virtual std::shared_ptr<InputConfiguration> the_input_configuration();
     virtual std::shared_ptr<DBusEventLoop> the_dbus_event_loop();
-    virtual std::shared_ptr<DBusConnectionThread> the_dbus_connection_thread();
 
 private:
     mir::CachedPtr<Screen> screen;
     mir::CachedPtr<InputConfiguration> input_configuration;
-    mir::CachedPtr<DBusConnectionThread> dbus_thread;
     mir::CachedPtr<DBusEventLoop> dbus_loop;
 };
 
