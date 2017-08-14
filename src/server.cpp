@@ -25,14 +25,10 @@
 #include "window_manager.h"
 #include "mir_screen.h"
 #include "mir_input_configuration.h"
-#include "screen_event_handler.h"
 #include "unity_display_service.h"
 #include "unity_input_service.h"
-#include "unity_power_button_event_sink.h"
-#include "unity_user_activity_event_sink.h"
 #include "dbus_connection_thread.h"
 #include "dbus_event_loop.h"
-#include "steady_clock.h"
 
 #include <miral/display_configuration_option.h>
 
@@ -238,27 +234,6 @@ std::shared_ptr<usc::Screen> usc::Server::the_screen()
         });
 }
 
-std::shared_ptr<mi::EventFilter> usc::Server::the_screen_event_handler()
-{
-    return screen_event_handler(
-        [this]
-        {
-            return std::make_shared<ScreenEventHandler>(
-                the_power_button_event_sink(),
-                the_user_activity_event_sink(),
-                the_clock());
-        });
-}
-
-std::shared_ptr<usc::Clock> usc::Server::the_clock()
-{
-    return clock(
-        [this]
-        {
-            return std::make_shared<SteadyClock>();
-        });
-}
-
 std::shared_ptr<usc::DBusEventLoop> usc::Server::the_dbus_event_loop()
 {
     return dbus_loop(
@@ -287,24 +262,6 @@ std::shared_ptr<usc::UnityDisplayService> usc::Server::the_unity_display_service
                     the_dbus_event_loop(),
                     dbus_bus_address(),
                     the_screen());
-        });
-}
-
-std::shared_ptr<usc::PowerButtonEventSink> usc::Server::the_power_button_event_sink()
-{
-    return power_button_event_sink(
-        [this]
-        {
-            return std::make_shared<UnityPowerButtonEventSink>(dbus_bus_address());
-        });
-}
-
-std::shared_ptr<usc::UserActivityEventSink> usc::Server::the_user_activity_event_sink()
-{
-    return user_activity_event_sink(
-        [this]
-        {
-            return std::make_shared<UnityUserActivityEventSink>(dbus_bus_address());
         });
 }
 

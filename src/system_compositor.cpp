@@ -18,9 +18,13 @@
  */
 
 #include "system_compositor.h"
+#include "screen_event_handler.h"
 #include "server.h"
 #include "session_switcher.h"
+#include "steady_clock.h"
 #include "asio_dm_connection.h"
+#include "unity_power_button_event_sink.h"
+#include "unity_user_activity_event_sink.h"
 
 #include <mir/input/composite_event_filter.h>
 #include <mir/input/input_device_hub.h>
@@ -155,7 +159,21 @@ void usc::SystemCompositor::run()
             dm_connection->start();
             screen = server->the_screen();
             unity_display_service = server->the_unity_display_service();
-            screen_event_handler = server->the_screen_event_handler();
+
+            auto the_power_button_event_sink =
+                std::make_shared<usc::UnityPowerButtonEventSink>(
+                    dbus_bus_address());
+
+            auto the_user_activity_event_sink =
+                std::make_shared<usc::UnityUserActivityEventSink>(
+                    dbus_bus_address());
+
+            auto the_clock = std::make_shared<SteadyClock>();
+
+            screen_event_handler = std::make_shared<usc::ScreenEventHandler>(
+                                       the_power_button_event_sink,
+                                       the_user_activity_event_sink,
+                                       the_clock);
 
             auto composite_filter = server->the_composite_event_filter();
             composite_filter->append(screen_event_handler);
