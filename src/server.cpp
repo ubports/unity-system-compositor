@@ -25,7 +25,6 @@
 #include "window_manager.h"
 #include "mir_screen.h"
 #include "mir_input_configuration.h"
-#include "dbus_event_loop.h"
 
 #include <miral/display_configuration_option.h>
 
@@ -229,14 +228,4 @@ std::shared_ptr<usc::Screen> usc::Server::the_screen()
 
             return mir_screen;
         });
-}
-
-std::shared_ptr<usc::DBusEventLoop> usc::Server::the_dbus_event_loop()
-{
-    return dbus_loop(
-        [this]
-        {
-            return std::make_shared<DBusEventLoop>();
-        });
-
 }
