@@ -19,7 +19,6 @@
 
 #include "system_compositor.h"
 #include "screen_event_handler.h"
-#include "server.h"
 #include "session_switcher.h"
 #include "steady_clock.h"
 #include "asio_dm_connection.h"
@@ -34,8 +33,10 @@
 
 #include <mir/input/composite_event_filter.h>
 #include <mir/input/input_device_hub.h>
+#include <mir/options/option.h>
 #include <mir/abnormal_exit.h>
 #include <mir/observer_registrar.h>
+#include <mir/server.h>
 
 #include <boost/exception/all.hpp>
 
@@ -118,16 +119,14 @@ struct NullDMMessageHandler : usc::DMConnection
 }
 
 usc::SystemCompositor::SystemCompositor(
-    std::shared_ptr<Server> const& server,
     std::function<std::shared_ptr<SessionSwitcher>()> the_session_switcher)
-    : server{server},
-      the_session_switcher{the_session_switcher}
+    : the_session_switcher{the_session_switcher}
 {
 }
 
-void usc::SystemCompositor::run()
+void usc::SystemCompositor::operator()(mir::Server& server)
 {
-    server->add_init_callback([&]
+    server.add_init_callback([&]
         {
             auto vendor = (char *) glGetString(GL_VENDOR);
             auto renderer = (char *) glGetString (GL_RENDERER);
@@ -137,7 +136,7 @@ void usc::SystemCompositor::run()
             std::cerr << "GL_RENDERER = " << renderer << std::endl;
             std::cerr << "GL_VERSION = " << version << std::endl;
 
-            auto blacklist = server->get_options()->get("blacklist", "");
+            auto blacklist = server.get_options()->get("blacklist", "");
 
             if (!check_blacklist(blacklist, vendor, renderer, version))
             {
@@ -145,19 +144,19 @@ void usc::SystemCompositor::run()
                     mir::AbnormalExit("Video driver is blacklisted, exiting"));
             }
 
-            if (server->get_options()->is_set("from-dm-fd") &&
-                server->get_options()->is_set("to-dm-fd"))
+            if (server.get_options()->is_set("from-dm-fd") &&
+                server.get_options()->is_set("to-dm-fd"))
             {
                 dm_connection = std::make_shared<usc::AsioDMConnection>(
-                    server->get_options()->get("from-dm-fd", -1),
-                    server->get_options()->get("to-dm-fd", -1),
+                    server.get_options()->get("from-dm-fd", -1),
+                    server.get_options()->get("to-dm-fd", -1),
                     the_session_switcher());
             }
-            else if (server->get_options()->is_set("debug-without-dm"))
+            else if (server.get_options()->is_set("debug-without-dm"))
             {
                 dm_connection = std::make_shared<NullDMMessageHandler>(
                     the_session_switcher(),
-                    server->get_options()->get<std::string>("debug-active-session-name"));
+                    server.get_options()->get<std::string>("debug-active-session-name"));
             }
             else
             {
@@ -167,20 +166,20 @@ void usc::SystemCompositor::run()
             // Make socket world-writable, since users need to talk to us.  No worries
             // about race condition, since we are adding permissions, not restricting
             // them.
-            auto public_socket = !server->get_options()->is_set("no-file") &&
-                                 server->get_options()->get("public-socket", true);
+            auto public_socket = !server.get_options()->is_set("no-file") &&
+                                 server.get_options()->get("public-socket", true);
 
-            auto socket_file = server->get_options()->get("file", "/tmp/mir_socket");
+            auto socket_file = server.get_options()->get("file", "/tmp/mir_socket");
             if (public_socket && chmod(socket_file.c_str(), 0777) == -1)
                 std::cerr << "Unable to chmod socket file " << socket_file << ": " << strerror(errno) << std::endl;
 
             dm_connection->start();
 
             auto the_screen = std::make_shared<MirScreen>(
-                                  server->the_compositor(),
-                                  server->the_display());
+                                  server.the_compositor(),
+                                  server.the_display());
 
-            server->the_display_configuration_observer_registrar()->register_interest(the_screen);
+            server.the_display_configuration_observer_registrar()->register_interest(the_screen);
 
             screen = the_screen;
 
@@ -206,12 +205,12 @@ void usc::SystemCompositor::run()
                                        the_user_activity_event_sink,
                                        the_clock);
 
-            auto composite_filter = server->the_composite_event_filter();
+            auto composite_filter = server.the_composite_event_filter();
             composite_filter->append(screen_event_handler);
 
             auto the_input_configuration =
                 std::make_shared<MirInputConfiguration>(
-                    server->the_input_device_hub());
+                    server.the_input_device_hub());
 
             unity_input_service = std::make_shared<UnityInputService>(
                                       the_dbus_event_loop,
@@ -221,6 +220,4 @@ void usc::SystemCompositor::run()
             dbus_service_thread = std::make_shared<DBusConnectionThread>(
                                       the_dbus_event_loop);
         });
-
-    server->run();
 }

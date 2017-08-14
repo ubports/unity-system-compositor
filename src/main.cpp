@@ -39,8 +39,10 @@ try
 
     auto the_session_switcher = [&session_switcher]() { return session_switcher; };
 
-    usc::SystemCompositor system_compositor{config, the_session_switcher};
-    system_compositor.run();
+    usc::SystemCompositor system_compositor{the_session_switcher};
+    system_compositor(*config);
+
+    config->run();
 
     return 0;
 }

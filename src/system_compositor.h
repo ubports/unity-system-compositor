@@ -25,6 +25,8 @@
 
 namespace mir
 {
+class Server;
+
 namespace input
 {
 class EventFilter;
@@ -34,7 +36,6 @@ class EventFilter;
 namespace usc
 {
 
-class Server;
 class DMConnection;
 class DMMessageHandler;
 class Spinner;
@@ -48,12 +49,11 @@ class DBusConnectionThread;
 class SystemCompositor
 {
 public:
-    explicit SystemCompositor(std::shared_ptr<Server> const& server,
+    explicit SystemCompositor(
         std::function<std::shared_ptr<SessionSwitcher>()> the_session_switcher);
-    void run();
+    void operator()(mir::Server& server);
 
 private:
-    std::shared_ptr<Server> const server;
     std::function<std::shared_ptr<SessionSwitcher>()> the_session_switcher;
     std::shared_ptr<DMConnection> dm_connection;
     std::shared_ptr<Screen> screen;
