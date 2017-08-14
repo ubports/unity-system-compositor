@@ -25,6 +25,7 @@
 #include "asio_dm_connection.h"
 #include "dbus_connection_thread.h"
 #include "dbus_event_loop.h"
+#include "mir_screen.h"
 #include "unity_display_service.h"
 #include "unity_input_service.h"
 #include "unity_power_button_event_sink.h"
@@ -33,6 +34,7 @@
 #include <mir/input/composite_event_filter.h>
 #include <mir/input/input_device_hub.h>
 #include <mir/abnormal_exit.h>
+#include <mir/observer_registrar.h>
 
 #include <boost/exception/all.hpp>
 
@@ -172,7 +174,14 @@ void usc::SystemCompositor::run()
                 std::cerr << "Unable to chmod socket file " << socket_file << ": " << strerror(errno) << std::endl;
 
             dm_connection->start();
-            screen = server->the_screen();
+
+            auto the_screen = std::make_shared<MirScreen>(
+                                  server->the_compositor(),
+                                  server->the_display());
+
+            server->the_display_configuration_observer_registrar()->register_interest(the_screen);
+
+            screen = the_screen;
 
             auto the_dbus_event_loop = std::make_shared<DBusEventLoop>();
 

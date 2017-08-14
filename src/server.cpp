@@ -23,7 +23,6 @@
 #include "asio_dm_connection.h"
 #include "session_switcher.h"
 #include "window_manager.h"
-#include "mir_screen.h"
 #include "mir_input_configuration.h"
 
 #include <miral/display_configuration_option.h>
@@ -36,7 +35,6 @@
 #include <mir/log.h>
 #include <mir/abnormal_exit.h>
 #include <mir/main_loop.h>
-#include <mir/observer_registrar.h>
 
 #include <iostream>
 
@@ -212,20 +210,5 @@ std::shared_ptr<usc::InputConfiguration> usc::Server::the_input_configuration()
         [this]
         {
             return std::make_shared<MirInputConfiguration>(the_input_device_hub());
-        });
-}
-
-std::shared_ptr<usc::Screen> usc::Server::the_screen()
-{
-    return screen(
-        [this]
-        {
-            auto mir_screen = std::make_shared<MirScreen>(
-                the_compositor(),
-                the_display());
-
-            the_display_configuration_observer_registrar()->register_interest(mir_screen);
-
-            return mir_screen;
         });
 }

@@ -26,7 +26,6 @@
 namespace usc
 {
 class SessionSwitcher;
-class Screen;
 class InputConfiguration;
 
 class Server : public mir::Server
@@ -35,11 +34,9 @@ public:
     explicit Server(int argc, char** argv,
         std::shared_ptr<SessionSwitcher>& session_switcher);
 
-    virtual std::shared_ptr<Screen> the_screen();
     virtual std::shared_ptr<InputConfiguration> the_input_configuration();
 
 private:
-    mir::CachedPtr<Screen> screen;
     mir::CachedPtr<InputConfiguration> input_configuration;
 };
 
