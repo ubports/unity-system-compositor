@@ -29,20 +29,11 @@ class SessionSwitcher;
 class Screen;
 class InputConfiguration;
 
-class Server : private mir::Server
+class Server : public mir::Server
 {
 public:
     explicit Server(int argc, char** argv,
         std::shared_ptr<SessionSwitcher>& session_switcher);
-
-    using mir::Server::add_init_callback;
-    using mir::Server::get_options;
-    using mir::Server::run;
-    using mir::Server::the_main_loop;
-    using mir::Server::the_composite_event_filter;
-    using mir::Server::the_display;
-    using mir::Server::the_compositor;
-    using mir::Server::the_touch_visualizer;
 
     virtual std::shared_ptr<Screen> the_screen();
     virtual std::shared_ptr<InputConfiguration> the_input_configuration();
