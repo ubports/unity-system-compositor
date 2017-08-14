@@ -20,24 +20,17 @@
 #define USC_SERVER_H_
 
 #include <mir/server.h>
-#include <mir/cached_ptr.h>
 #include <mir/options/option.h>
 
 namespace usc
 {
 class SessionSwitcher;
-class InputConfiguration;
 
 class Server : public mir::Server
 {
 public:
     explicit Server(int argc, char** argv,
         std::shared_ptr<SessionSwitcher>& session_switcher);
-
-    virtual std::shared_ptr<InputConfiguration> the_input_configuration();
-
-private:
-    mir::CachedPtr<InputConfiguration> input_configuration;
 };
 
 }

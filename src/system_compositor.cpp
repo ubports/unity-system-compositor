@@ -25,6 +25,7 @@
 #include "asio_dm_connection.h"
 #include "dbus_connection_thread.h"
 #include "dbus_event_loop.h"
+#include "mir_input_configuration.h"
 #include "mir_screen.h"
 #include "unity_display_service.h"
 #include "unity_input_service.h"
@@ -208,10 +209,14 @@ void usc::SystemCompositor::run()
             auto composite_filter = server->the_composite_event_filter();
             composite_filter->append(screen_event_handler);
 
+            auto the_input_configuration =
+                std::make_shared<MirInputConfiguration>(
+                    server->the_input_device_hub());
+
             unity_input_service = std::make_shared<UnityInputService>(
                                       the_dbus_event_loop,
                                       dbus_bus_address(),
-                                      server->the_input_configuration());
+                                      the_input_configuration);
 
             dbus_service_thread = std::make_shared<DBusConnectionThread>(
                                       the_dbus_event_loop);

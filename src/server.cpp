@@ -23,7 +23,6 @@
 #include "asio_dm_connection.h"
 #include "session_switcher.h"
 #include "window_manager.h"
-#include "mir_input_configuration.h"
 
 #include <miral/display_configuration_option.h>
 
@@ -202,13 +201,4 @@ usc::Server::Server(int argc, char** argv,
     set_config_filename("unity-system-compositor.conf");
 
     apply_settings();
-}
-
-std::shared_ptr<usc::InputConfiguration> usc::Server::the_input_configuration()
-{
-    return input_configuration(
-        [this]
-        {
-            return std::make_shared<MirInputConfiguration>(the_input_device_hub());
-        });
 }
