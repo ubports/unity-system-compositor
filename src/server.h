@@ -72,42 +72,7 @@ public:
     virtual std::shared_ptr<DBusConnectionThread> the_dbus_connection_thread();
     virtual std::shared_ptr<Clock> the_clock();
 
-    bool show_version()
-    {
-        return get_options()->is_set("version");
-    }
-
-    std::string blacklist()
-    {
-        auto x = get_options()->get("blacklist", "");
-        return x;
-    }
-
-    bool public_socket()
-    {
-        return !get_options()->is_set("no-file") && get_options()->get("public-socket", true);
-    }
-
-    std::string get_socket_file()
-    {
-        // the_socket_file is private, so we have to re-implement it here
-        return get_options()->get("file", "/tmp/mir_socket");
-    }
-
 private:
-    bool enable_hardware_cursor()
-    {
-        return get_options()->get("enable-hardware-cursor", false);
-    }
-
-    std::string spinner_executable()
-    {
-        // TODO: once our default spinner is ready for use everywhere, replace
-        // default value with DEFAULT_SPINNER instead of the empty string.
-        auto x = get_options()->get("spinner", "");
-        return x;
-    }
-
     std::string dbus_bus_address();
 
     mir::CachedPtr<Screen> screen;
