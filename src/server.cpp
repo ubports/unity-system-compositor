@@ -25,7 +25,6 @@
 #include "window_manager.h"
 #include "mir_screen.h"
 #include "mir_input_configuration.h"
-#include "unity_input_service.h"
 #include "dbus_connection_thread.h"
 #include "dbus_event_loop.h"
 
@@ -249,18 +248,6 @@ std::shared_ptr<usc::DBusConnectionThread> usc::Server::the_dbus_connection_thre
         [this]
         {
             return std::make_shared<DBusConnectionThread>(the_dbus_event_loop());
-        });
-}
-
-std::shared_ptr<usc::UnityInputService> usc::Server::the_unity_input_service()
-{
-    return unity_input_service(
-        [this]
-        {
-            return std::make_shared<UnityInputService>(
-                    the_dbus_event_loop(),
-                    dbus_bus_address(),
-                    the_input_configuration());
         });
 }
 

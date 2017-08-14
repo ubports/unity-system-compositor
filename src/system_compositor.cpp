@@ -24,6 +24,7 @@
 #include "steady_clock.h"
 #include "asio_dm_connection.h"
 #include "unity_display_service.h"
+#include "unity_input_service.h"
 #include "unity_power_button_event_sink.h"
 #include "unity_user_activity_event_sink.h"
 
@@ -182,7 +183,11 @@ void usc::SystemCompositor::run()
             auto composite_filter = server->the_composite_event_filter();
             composite_filter->append(screen_event_handler);
 
-            unity_input_service = server->the_unity_input_service();
+            unity_input_service = std::make_shared<UnityInputService>(
+                                      server->the_dbus_event_loop(),
+                                      dbus_bus_address(),
+                                      server->the_input_configuration());
+
             dbus_service_thread = server->the_dbus_connection_thread();
         });
 
