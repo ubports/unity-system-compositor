@@ -23,6 +23,7 @@
 #include "session_switcher.h"
 #include "steady_clock.h"
 #include "asio_dm_connection.h"
+#include "unity_display_service.h"
 #include "unity_power_button_event_sink.h"
 #include "unity_user_activity_event_sink.h"
 
@@ -158,7 +159,10 @@ void usc::SystemCompositor::run()
 
             dm_connection->start();
             screen = server->the_screen();
-            unity_display_service = server->the_unity_display_service();
+            unity_display_service = std::make_shared<UnityDisplayService>(
+                                        server->the_dbus_event_loop(),
+                                        dbus_bus_address(),
+                                        screen);
 
             auto the_power_button_event_sink =
                 std::make_shared<usc::UnityPowerButtonEventSink>(
