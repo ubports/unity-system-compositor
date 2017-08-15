@@ -27,9 +27,6 @@
 
 #include <assert.h>
 
-#include "server.h"
-
-namespace mi = mir::input;
 namespace mg = mir::graphics;
 
 namespace
