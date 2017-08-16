@@ -22,6 +22,7 @@
 #include "system_compositor.h"
 #include "window_manager.h"
 
+#include <miral/command_line_option.h>
 #include <miral/display_configuration_option.h>
 
 #include <mir/cookie/authority.h>
@@ -134,6 +135,20 @@ try
 {
     auto const config = std::make_shared<mir::Server>();
 
+    auto version_flag = miral::pre_init(miral::CommandLineOption(
+        [](bool is_set)
+        {
+            if (is_set)
+            {
+                std::cerr << "unity-system-compositor " << USC_VERSION << std::endl;
+                exit(EXIT_SUCCESS);
+            }
+        },
+        "version",
+        "Show version of Unity System Compositor"));
+
+    version_flag(*config);
+
     config->add_configuration_option(dm_from_fd, "File descriptor of read end of pipe from display manager [int]",
         mir::OptionType::integer);
     config->add_configuration_option(dm_to_fd, "File descriptor of write end of pipe to display manager [int]",
@@ -141,7 +156,6 @@ try
     config->add_configuration_option(dm_stub, "Run without a display manager (only useful when debugging)", mir::OptionType::null);
     config->add_configuration_option(dm_stub_active, "Expected connection when run without a display manager (only useful when debugging)", "nested-mir@:/run/user/1000/mir_socket");
     config->add_configuration_option("blacklist", "Video blacklist regex to use",  mir::OptionType::string);
-    config->add_configuration_option("version", "Show version of Unity System Compositor",  mir::OptionType::null);
     config->add_configuration_option("spinner", "Path to spinner executable",  mir::OptionType::string);
     config->add_configuration_option("public-socket", "Make the socket file publicly writable",  mir::OptionType::boolean);
     config->add_configuration_option("enable-hardware-cursor", "Enable the hardware cursor (disabled by default)",  mir::OptionType::boolean);
@@ -196,12 +210,6 @@ try
     config->set_config_filename("unity-system-compositor.conf");
 
     config->apply_settings();
-
-    if (config->get_options()->is_set("version"))
-    {
-        std::cerr << "unity-system-compositor " << USC_VERSION << std::endl;
-        return 0;
-    }
 
     auto the_session_switcher = [&session_switcher]() { return session_switcher; };
 
