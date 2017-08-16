@@ -23,7 +23,6 @@ set(USC_SRCS
   mir_screen.cpp
   mir_input_configuration.cpp
   screen_event_handler.cpp
-  server.cpp
   session_switcher.cpp
   steady_clock.cpp
   system_compositor.cpp
