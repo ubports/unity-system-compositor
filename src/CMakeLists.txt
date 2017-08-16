@@ -28,6 +28,7 @@ set(USC_SRCS
   system_compositor.cpp
   thread_name.cpp
   dbus_connection_thread.cpp
+  validate_video_driver.cpp
   unity_input_service.cpp
   unity_input_service_introspection.h
   unity_display_service.cpp

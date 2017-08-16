@@ -49,43 +49,6 @@
 namespace
 {
 
-bool check_blacklist(
-    std::string const& blacklist,
-    const char *vendor,
-    const char *renderer,
-    const char *version)
-{
-    if (blacklist.empty())
-        return true;
-
-    std::cerr << "Using blacklist \"" << blacklist << "\"" << std::endl;
-
-    regex_t re;
-    auto result = regcomp (&re, blacklist.c_str(), REG_EXTENDED);
-    if (result == 0)
-    {
-        char driver_string[1024];
-        snprintf (driver_string, 1024, "%s\n%s\n%s",
-                  vendor ? vendor : "",
-                  renderer ? renderer : "",
-                  version ? version : "");
-
-        auto result = regexec (&re, driver_string, 0, nullptr, 0);
-        regfree (&re);
-
-        if (result == 0)
-            return false;
-    }
-    else
-    {
-        char error_string[1024];
-        regerror (result, &re, error_string, 1024);
-        std::cerr << "Failed to compile blacklist regex: " << error_string << std::endl;
-    }
-
-    return true;
-}
-
 std::string dbus_bus_address()
 {
     static char const* const default_bus_address{"unix:path=/var/run/dbus/system_bus_socket"};
@@ -128,22 +91,6 @@ void usc::SystemCompositor::operator()(mir::Server& server)
 {
     server.add_init_callback([&]
         {
-            auto vendor = (char *) glGetString(GL_VENDOR);
-            auto renderer = (char *) glGetString (GL_RENDERER);
-            auto version = (char *) glGetString (GL_VERSION);
-
-            std::cerr << "GL_VENDOR = " << vendor << std::endl;
-            std::cerr << "GL_RENDERER = " << renderer << std::endl;
-            std::cerr << "GL_VERSION = " << version << std::endl;
-
-            auto blacklist = server.get_options()->get("blacklist", "");
-
-            if (!check_blacklist(blacklist, vendor, renderer, version))
-            {
-                BOOST_THROW_EXCEPTION(
-                    mir::AbnormalExit("Video driver is blacklisted, exiting"));
-            }
-
             if (server.get_options()->is_set("from-dm-fd") &&
                 server.get_options()->is_set("to-dm-fd"))
             {

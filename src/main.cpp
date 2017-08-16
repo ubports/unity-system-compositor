@@ -20,6 +20,7 @@
 #include "external_spinner.h"
 #include "session_switcher.h"
 #include "system_compositor.h"
+#include "validate_video_driver.h"
 #include "window_manager.h"
 
 #include <miral/command_line_option.h>
@@ -149,13 +150,18 @@ try
 
     version_flag(*config);
 
+    miral::CommandLineOption blacklist_flag{
+        &usc::validate_video_driver,
+        "blacklist", "Video driver blacklist regex to use", ""
+    };
+    blacklist_flag(*config);
+
     config->add_configuration_option(dm_from_fd, "File descriptor of read end of pipe from display manager [int]",
         mir::OptionType::integer);
     config->add_configuration_option(dm_to_fd, "File descriptor of write end of pipe to display manager [int]",
         mir::OptionType::integer);
     config->add_configuration_option(dm_stub, "Run without a display manager (only useful when debugging)", mir::OptionType::null);
     config->add_configuration_option(dm_stub_active, "Expected connection when run without a display manager (only useful when debugging)", "nested-mir@:/run/user/1000/mir_socket");
-    config->add_configuration_option("blacklist", "Video blacklist regex to use",  mir::OptionType::string);
     config->add_configuration_option("spinner", "Path to spinner executable",  mir::OptionType::string);
     config->add_configuration_option("public-socket", "Make the socket file publicly writable",  mir::OptionType::boolean);
     config->add_configuration_option("enable-hardware-cursor", "Enable the hardware cursor (disabled by default)",  mir::OptionType::boolean);
