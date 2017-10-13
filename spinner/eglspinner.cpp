@@ -36,7 +36,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "logo.h"
+#include "robot.h"
 #include "white_dot.h"
 #include "orange_dot.h"
 
@@ -44,7 +44,7 @@
 
 enum TextureIds {
     WALLPAPER = 0,
-    LOGO,
+    ROBOT,
     WHITE_DOT,
     ORANGE_DOT,
     MAX_TEXTURES
@@ -68,7 +68,7 @@ public:
         catch (...)
         {
         }
-        
+
         return default_value;
     }
 
@@ -109,7 +109,7 @@ private:
     {
         auto const separator = kv.find("=");
         auto const key = kv.substr(0, separator);
-        auto const value = separator != std::string::npos ? 
+        auto const value = separator != std::string::npos ?
                            kv.substr(separator + 1, std::string::npos) :
                            std::string{};
 
@@ -338,7 +338,7 @@ try
     };
 
     prog[WALLPAPER] = createShaderProgram(vShaderSrcPlain, fShaderSrcPlain);
-    prog[LOGO] = createShaderProgram(vShaderSrcPlain, fShaderSrcPlain);
+    prog[ROBOT] = createShaderProgram(vShaderSrcPlain, fShaderSrcPlain);
     prog[WHITE_DOT] = createShaderProgram(vShaderSrcPlain, fShaderSrcPlain);
 
     // setup proper GL-blending
@@ -353,11 +353,11 @@ try
     offset[WALLPAPER]       = glGetUniformLocation(prog[WALLPAPER], "uOffset");
     projMat[WALLPAPER]      = glGetUniformLocation(prog[WALLPAPER], "uProjMat");
 
-    vpos[LOGO]         = glGetAttribLocation(prog[LOGO],  "aPosition");
-    aTexCoords[LOGO]   = glGetAttribLocation(prog[LOGO],  "aTexCoords");
-    sampler[LOGO]      = glGetUniformLocation(prog[LOGO], "uSampler");
-    offset[LOGO]       = glGetUniformLocation(prog[LOGO], "uOffset");
-    projMat[LOGO]      = glGetUniformLocation(prog[LOGO], "uProjMat");
+    vpos[ROBOT]         = glGetAttribLocation(prog[ROBOT],  "aPosition");
+    aTexCoords[ROBOT]   = glGetAttribLocation(prog[ROBOT],  "aTexCoords");
+    sampler[ROBOT]      = glGetUniformLocation(prog[ROBOT], "uSampler");
+    offset[ROBOT]       = glGetUniformLocation(prog[ROBOT], "uOffset");
+    projMat[ROBOT]      = glGetUniformLocation(prog[ROBOT], "uProjMat");
 
     vpos[WHITE_DOT]         = glGetAttribLocation(prog[WHITE_DOT],  "aPosition");
     aTexCoords[WHITE_DOT]   = glGetAttribLocation(prog[WHITE_DOT],  "aTexCoords");
@@ -369,7 +369,7 @@ try
     // note that the embedded image data has pre-multiplied alpha
     glGenTextures(MAX_TEXTURES, texture);
     uploadTexture(texture[WALLPAPER], wallpaper);
-    uploadTexture(texture[LOGO], logo);
+    uploadTexture(texture[ROBOT], robot);
     uploadTexture(texture[WHITE_DOT], white_dot);
     uploadTexture(texture[ORANGE_DOT], orange_dot);
 
@@ -377,9 +377,9 @@ try
     glVertexAttribPointer(aTexCoords[WALLPAPER], 2, GL_FLOAT, GL_FALSE, 0, texCoords);
     glEnableVertexAttribArray(vpos[WALLPAPER]);
     glEnableVertexAttribArray(aTexCoords[WALLPAPER]);
-    glVertexAttribPointer(aTexCoords[LOGO], 2, GL_FLOAT, GL_FALSE, 0, texCoords);
-    glEnableVertexAttribArray(vpos[LOGO]);
-    glEnableVertexAttribArray(aTexCoords[LOGO]);
+    glVertexAttribPointer(aTexCoords[ROBOT], 2, GL_FLOAT, GL_FALSE, 0, texCoords);
+    glEnableVertexAttribArray(vpos[ROBOT]);
+    glEnableVertexAttribArray(aTexCoords[ROBOT]);
     glVertexAttribPointer(aTexCoords[WHITE_DOT], 2, GL_FLOAT, GL_FALSE, 0, texCoords);
     glEnableVertexAttribArray(vpos[WHITE_DOT]);
     glEnableVertexAttribArray(aTexCoords[WHITE_DOT]);
@@ -391,13 +391,13 @@ try
     auto const pixels_per_gu = session_config.get_int("GRID_UNIT_PX", 13);
     auto const gu2px =
         [pixels_per_gu] (float gu)
-        { 
+        {
             return pixels_per_gu * gu;
         };
     auto const native_orientation = session_config.get_string("NATIVE_ORIENTATION", "");
 
     std::cout << "Spinner using pixels per grid unit: " <<  pixels_per_gu << std::endl;
-    std::cout << "Spinner using native orientation: '" << native_orientation << "'" << std::endl; 
+    std::cout << "Spinner using native orientation: '" << native_orientation << "'" << std::endl;
 
     while (mir_eglapp_running())
     {
@@ -408,13 +408,13 @@ try
                     (width < height && native_orientation == "landscape") ||
                     (width > height && native_orientation == "portrait");
 
-                GLfloat logoWidth = gu2px (14.5f);
-                GLfloat logoHeight = gu2px (3.0f);
-                GLfloat logoXOffset = gu2px (1.0f);
-                GLfloat dotSize = gu2px (0.5f);
+                GLfloat robotWidth = gu2px (14.5f);
+                GLfloat robotHeight = gu2px (5.0f);
+                GLfloat robotXOffset = gu2px (0.5f);
+                GLfloat dotSize = gu2px (0.4f);
                 GLfloat dotXGap = gu2px (2.5f);
-                GLfloat dotYGap = gu2px (2.0f);
-                
+                GLfloat dotYGap = gu2px (2.5f);
+
                 auto render_width = width;
                 auto render_height = height;
                 if (needs_rotation)
@@ -427,11 +427,11 @@ try
                     0.0f,            (GLfloat) render_height
                 };
 
-                const GLfloat logo[] = {
-                    logoWidth, 0.0f,
-                    logoWidth, logoHeight,
+                const GLfloat robot[] = {
+                    robotWidth, 0.0f,
+                    robotWidth, robotHeight,
                     0.0f,      0.0f,
-                    0.0f,      logoHeight
+                    0.0f,      robotHeight
                 };
 
                 const GLfloat dot[] = {
@@ -474,13 +474,13 @@ try
                 glUniformMatrix4fv(projMat[WALLPAPER], 1, GL_FALSE, glm::value_ptr(wallpaperMatrix));
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-                // draw logo
-                glVertexAttribPointer(vpos[LOGO], 2, GL_FLOAT, GL_FALSE, 0, logo);
-                glUseProgram(prog[LOGO]);
-                glBindTexture(GL_TEXTURE_2D, texture[LOGO]);
-                glUniform1i(sampler[LOGO], 0);
-                glUniform2f(offset[LOGO], render_width/2.0f - logoWidth / 2.0f + logoXOffset, render_height / 2.0f - logoHeight * 0.75f);
-                glUniformMatrix4fv(projMat[LOGO], 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                // draw robot
+                glVertexAttribPointer(vpos[ROBOT], 2, GL_FLOAT, GL_FALSE, 0, robot);
+                glUseProgram(prog[ROBOT]);
+                glBindTexture(GL_TEXTURE_2D, texture[ROBOT]);
+                glUniform1i(sampler[ROBOT], 0);
+                glUniform2f(offset[ROBOT], render_width/2.0f - robotWidth / 2.0f + robotXOffset, render_height / 2.0f - robotHeight * 0.75f);
+                glUniformMatrix4fv(projMat[ROBOT], 1, GL_FALSE, glm::value_ptr(mvpMatrix));
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
                 // draw white/orange dots
@@ -490,8 +490,8 @@ try
                 glUniformMatrix4fv(projMat[WHITE_DOT], 1, GL_FALSE, glm::value_ptr(mvpMatrix));
                 for (int i = -2; i < 3; i++) {
                     glBindTexture(GL_TEXTURE_2D, texture[anim.dot_mask >> (i + 2) ? ORANGE_DOT : WHITE_DOT]);
-                    glUniform2f(offset[WHITE_DOT], render_width/2.0f + i * dotXGap, render_height / 2.0f + logoHeight / 2.0f + dotYGap - logoHeight * 0.25f);
-                    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);                    
+                    glUniform2f(offset[WHITE_DOT], render_width/2.0f + i * dotXGap, render_height / 2.0f + robotHeight / 2.0f + dotYGap - robotHeight * 0.25f);
+                    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
                 }
             });
 

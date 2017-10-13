@@ -23,9 +23,9 @@ function(png2header png header varname)
 endfunction()
 
 png2header(
-  ${CMAKE_CURRENT_SOURCE_DIR}/logo.png
-  ${CMAKE_CURRENT_BINARY_DIR}/logo.h
-  logo
+  ${CMAKE_CURRENT_SOURCE_DIR}/robot.png
+  ${CMAKE_CURRENT_BINARY_DIR}/robot.h
+  robot
 )
 
 png2header(
@@ -61,7 +61,7 @@ add_executable(unity-system-compositor-spinner
   eglspinner.cpp
   miregl.h
   miregl.cpp
-  ${CMAKE_CURRENT_BINARY_DIR}/logo.h
+  ${CMAKE_CURRENT_BINARY_DIR}/robot.h
   ${CMAKE_CURRENT_BINARY_DIR}/white_dot.h
   ${CMAKE_CURRENT_BINARY_DIR}/orange_dot.h
 )
