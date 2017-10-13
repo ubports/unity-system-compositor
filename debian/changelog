@@ -1,3 +1,9 @@
+unity-system-compositor (0.7.2+ubports) xenial; urgency=medium
+
+  * Imported to UBports
+
+ -- UBports auto importer <infra@ubports.com>  Fri, 13 Oct 2017 21:51:11 +0200
+
 unity-system-compositor (0.7.1+16.10.20160916-0ubuntu1) yakkety; urgency=medium
 
   [ Michael Terry ]
