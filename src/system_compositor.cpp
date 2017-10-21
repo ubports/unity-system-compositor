@@ -21,7 +21,7 @@
 #include "screen_event_handler.h"
 #include "session_switcher.h"
 #include "steady_clock.h"
-#include "asio_dm_connection.h"
+#include "create_dm_connection.h"
 #include "dbus_connection_thread.h"
 #include "dbus_event_loop.h"
 #include "mir_input_configuration.h"
@@ -34,7 +34,6 @@
 #include <mir/input/composite_event_filter.h>
 #include <mir/input/input_device_hub.h>
 #include <mir/options/option.h>
-#include <mir/abnormal_exit.h>
 #include <mir/observer_registrar.h>
 #include <mir/server.h>
 
@@ -59,26 +58,6 @@ std::string dbus_bus_address()
 
     return std::string{bus};
 }
-
-struct NullDMMessageHandler : usc::DMConnection
-{
-    explicit NullDMMessageHandler(
-        std::shared_ptr<usc::DMMessageHandler> const& dm_message_handler,
-        std::string const& client_name) :
-        dm_message_handler{dm_message_handler},
-        client_name{client_name}
-    {}
-
-    ~NullDMMessageHandler() = default;
-
-    void start() override
-    {
-        dm_message_handler->set_active_session(client_name);
-    };
-
-    std::shared_ptr<usc::DMMessageHandler> const dm_message_handler;
-    std::string const client_name;
-};
 }
 
 usc::SystemCompositor::SystemCompositor(
@@ -91,24 +70,22 @@ void usc::SystemCompositor::operator()(mir::Server& server)
 {
     server.add_init_callback([&]
         {
-            if (server.get_options()->is_set("from-dm-fd") &&
-                server.get_options()->is_set("to-dm-fd"))
-            {
-                dm_connection = std::make_shared<usc::AsioDMConnection>(
-                    server.get_options()->get("from-dm-fd", -1),
-                    server.get_options()->get("to-dm-fd", -1),
-                    the_session_switcher());
-            }
-            else if (server.get_options()->is_set("debug-without-dm"))
-            {
-                dm_connection = std::make_shared<NullDMMessageHandler>(
-                    the_session_switcher(),
-                    server.get_options()->get<std::string>("debug-active-session-name"));
-            }
-            else
-            {
-                BOOST_THROW_EXCEPTION(mir::AbnormalExit("to and from FDs are required for display manager"));
-            }
+            mir::optional_value<int> from_dm_fd;
+            mir::optional_value<int> to_dm_fd;
+
+            if (server.get_options()->is_set("from-dm-fd"))
+                from_dm_fd = server.get_options()->get("from-dm-fd", -1);
+
+            if (server.get_options()->is_set("to-dm-fd"))
+                to_dm_fd = server.get_options()->get("to-dm-fd", -1);
+
+            dm_connection = create_dm_connection(
+                                from_dm_fd,
+                                to_dm_fd,
+                                server.get_options()->get<std::string>(
+                                    "debug-active-session-name"),
+                                server.get_options()->is_set("debug-without-dm"),
+                                the_session_switcher());
 
             // Make socket world-writable, since users need to talk to us.  No worries
             // about race condition, since we are adding permissions, not restricting

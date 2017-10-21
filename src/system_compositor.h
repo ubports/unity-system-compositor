@@ -37,7 +37,6 @@ namespace usc
 {
 
 class DMConnection;
-class DMMessageHandler;
 class Spinner;
 class ScreenEventHandler;
 class Screen;
