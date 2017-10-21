@@ -17,6 +17,7 @@
  *              Alexandros Frantzis <alexandros.frantzis@canonical.com>
  */
 
+#include "create_dm_connection.h"
 #include "external_spinner.h"
 #include "extract_socket_config.h"
 #include "session_switcher.h"
@@ -36,8 +37,13 @@
 #include <mir/server.h>
 #include <mir/server_status_listener.h>
 #include <iostream>
+#include <sys/stat.h>
 
-namespace usc { class SessionSwitcher; }
+namespace usc
+{
+    class DMConnection;
+    class SessionSwitcher;
+}
 
 // FIXME For reasons that are not currently clear lightdm sometimes passes "--vt" on android
 void ignore_unknown_arguments(int argc, char const* const* argv)
@@ -127,11 +133,6 @@ struct StubCookieAuthority : public mir::cookie::Authority
     }
 };
 
-const char* const dm_from_fd = "from-dm-fd";
-const char* const dm_to_fd = "to-dm-fd";
-const char* const dm_stub = "debug-without-dm";
-const char* const dm_stub_active = "debug-active-session-name";
-
 int main(int argc, char *argv[])
 try
 {
@@ -181,12 +182,6 @@ try
         true));
     public_socket_flag(*config);
 
-    config->add_configuration_option(dm_from_fd, "File descriptor of read end of pipe from display manager [int]",
-        mir::OptionType::integer);
-    config->add_configuration_option(dm_to_fd, "File descriptor of write end of pipe to display manager [int]",
-        mir::OptionType::integer);
-    config->add_configuration_option(dm_stub, "Run without a display manager (only useful when debugging)", mir::OptionType::null);
-    config->add_configuration_option(dm_stub_active, "Expected connection when run without a display manager (only useful when debugging)", "nested-mir@:/run/user/1000/mir_socket");
     config->add_configuration_option("spinner", "Path to spinner executable",  mir::OptionType::string);
     config->add_configuration_option("enable-hardware-cursor", "Enable the hardware cursor (disabled by default)",  mir::OptionType::boolean);
     miral::display_configuration_options(*config);
@@ -239,11 +234,68 @@ try
 
     config->set_config_filename("unity-system-compositor.conf");
 
+    // settings for the display manager connection
+    mir::optional_value<int> from_dm_fd;
+    mir::optional_value<int> to_dm_fd;
+    std::string debug_active_session_name;
+
+    auto from_dm_fd_flag = miral::pre_init(miral::CommandLineOption(
+        [&](mir::optional_value<int> const& from_dm_file_descriptor)
+        {
+            from_dm_fd = from_dm_file_descriptor;
+        },
+        "from-dm-fd",
+        "File descriptor of read end of pipe from display manager [int]"));
+    from_dm_fd_flag(*config);
+
+    auto to_dm_fd_flag = miral::pre_init(miral::CommandLineOption(
+        [&](mir::optional_value<int> const& to_dm_file_descriptor)
+        {
+            to_dm_fd = to_dm_file_descriptor;
+        },
+        "to-dm-fd",
+        "File descriptor of write end of pipe to display manager [int]"));
+    to_dm_fd_flag(*config);
+
+    auto display_stub_flag = miral::pre_init(miral::CommandLineOption(
+        [&](std::string const& display_stub_name)
+        {
+            debug_active_session_name = display_stub_name;
+        },
+        "debug-active-session-name",
+        "Expected connection when run without a display manager (only useful when debugging)",
+        "nested-mir@:/run/user/1000/mir_socket"));
+    display_stub_flag(*config);
+
+    // the display manager connection
+    std::shared_ptr<usc::DMConnection> dm_connection;
+
+    miral::CommandLineOption debug_without_dm_flag{
+        [&](bool debug_without_dm)
+        {
+            dm_connection = create_dm_connection(
+                                from_dm_fd,
+                                to_dm_fd,
+                                debug_active_session_name,
+                                debug_without_dm,
+                                session_switcher);
+
+            // Make socket world-writable, since users need to talk to us.  No worries
+            // about race condition, since we are adding permissions, not restricting
+            // them.
+            if (public_socket && chmod(socket_file.c_str(), 0777) == -1)
+                std::cerr << "Unable to chmod socket file " << socket_file << ": " << strerror(errno) << std::endl;
+
+            dm_connection->start();
+        },
+        "debug-without-dm",
+        "Run without a display manager (only useful when debugging)"
+    };
+    debug_without_dm_flag(*config);
+
     config->apply_settings();
 
-    auto the_session_switcher = [&session_switcher]() { return session_switcher; };
-
-    usc::SystemCompositor system_compositor{the_session_switcher};
+    usc::SystemCompositor system_compositor{};
     system_compositor(*config);
 
     config->run();

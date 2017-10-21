@@ -21,7 +21,6 @@
 #include "screen_event_handler.h"
 #include "session_switcher.h"
 #include "steady_clock.h"
-#include "create_dm_connection.h"
 #include "dbus_connection_thread.h"
 #include "dbus_event_loop.h"
 #include "mir_input_configuration.h"
@@ -41,7 +40,6 @@
 
 #include <cerrno>
 #include <iostream>
-#include <sys/stat.h>
 #include <regex.h>
 #include <GLES2/gl2.h>
 
@@ -60,45 +58,10 @@ std::string dbus_bus_address()
 }
 }
 
-usc::SystemCompositor::SystemCompositor(
-    std::function<std::shared_ptr<SessionSwitcher>()> the_session_switcher)
-    : the_session_switcher{the_session_switcher}
-{
-}
-
 void usc::SystemCompositor::operator()(mir::Server& server)
 {
     server.add_init_callback([&]
         {
-            mir::optional_value<int> from_dm_fd;
-            mir::optional_value<int> to_dm_fd;
-
-            if (server.get_options()->is_set("from-dm-fd"))
-                from_dm_fd = server.get_options()->get("from-dm-fd", -1);
-
-            if (server.get_options()->is_set("to-dm-fd"))
-                to_dm_fd = server.get_options()->get("to-dm-fd", -1);
-
-            dm_connection = create_dm_connection(
-                                from_dm_fd,
-                                to_dm_fd,
-                                server.get_options()->get<std::string>(
-                                    "debug-active-session-name"),
-                                server.get_options()->is_set("debug-without-dm"),
-                                the_session_switcher());
-
-            // Make socket world-writable, since users need to talk to us.  No worries
-            // about race condition, since we are adding permissions, not restricting
-            // them.
-            auto public_socket = !server.get_options()->is_set("no-file") &&
-                                 server.get_options()->get("public-socket", true);
-
-            auto socket_file = server.get_options()->get("file", "/tmp/mir_socket");
-            if (public_socket && chmod(socket_file.c_str(), 0777) == -1)
-                std::cerr << "Unable to chmod socket file " << socket_file << ": " << strerror(errno) << std::endl;
-
-            dm_connection->start();
-
             auto the_screen = std::make_shared<MirScreen>(
                                   server.the_compositor(),
                                   server.the_display());
