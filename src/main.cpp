@@ -18,6 +18,7 @@
  */
 
 #include "external_spinner.h"
+#include "extract_socket_config.h"
 #include "session_switcher.h"
 #include "system_compositor.h"
 #include "validate_video_driver.h"
@@ -156,6 +157,19 @@ try
     };
     blacklist_flag(*config);
 
+    // socket file settings
+    std::string socket_file;
+    bool no_socket_file;
+
+    usc::ExtractSocketConfig extract_socket_config{
+        [&](std::string file_flag, bool no_file_flag)
+        {
+            socket_file = file_flag;
+            no_socket_file = no_file_flag;
+        }
+    };
+    extract_socket_config(*config);
+
     config->add_configuration_option(dm_from_fd, "File descriptor of read end of pipe from display manager [int]",
         mir::OptionType::integer);
     config->add_configuration_option(dm_to_fd, "File descriptor of write end of pipe to display manager [int]",
@@ -196,7 +210,7 @@ try
         {
             auto spinner = std::make_shared<usc::ExternalSpinner>(
                                config->get_options()->get("spinner", ""),
-                               config->get_options()->get("file", "/tmp/mir_socket"));
+                               socket_file);
 
             session_switcher = std::make_shared<usc::SessionSwitcher>(spinner);
 

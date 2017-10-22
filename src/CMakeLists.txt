@@ -20,6 +20,7 @@ set(USC_SRCS
   dbus_event_loop.cpp
   dbus_message_handle.cpp
   external_spinner.cpp  
+  extract_socket_config.cpp
   mir_screen.cpp
   mir_input_configuration.cpp
   screen_event_handler.cpp
