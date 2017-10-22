@@ -160,6 +160,7 @@ try
     // socket file settings
     std::string socket_file;
     bool no_socket_file;
+    bool public_socket;
 
     usc::ExtractSocketConfig extract_socket_config{
         [&](std::string file_flag, bool no_file_flag)
@@ -170,6 +171,16 @@ try
     };
     extract_socket_config(*config);
 
+    auto public_socket_flag = miral::pre_init(miral::CommandLineOption(
+        [&](bool is_set)
+        {
+            public_socket = is_set && !no_socket_file;
+        },
+        "public-socket",
+        "Make the socket file publicly writable",
+        true));
+    public_socket_flag(*config);
+
     config->add_configuration_option(dm_from_fd, "File descriptor of read end of pipe from display manager [int]",
         mir::OptionType::integer);
     config->add_configuration_option(dm_to_fd, "File descriptor of write end of pipe to display manager [int]",
@@ -177,7 +188,6 @@ try
     config->add_configuration_option(dm_stub, "Run without a display manager (only useful when debugging)", mir::OptionType::null);
     config->add_configuration_option(dm_stub_active, "Expected connection when run without a display manager (only useful when debugging)", "nested-mir@:/run/user/1000/mir_socket");
     config->add_configuration_option("spinner", "Path to spinner executable",  mir::OptionType::string);
-    config->add_configuration_option("public-socket", "Make the socket file publicly writable",  mir::OptionType::boolean);
     config->add_configuration_option("enable-hardware-cursor", "Enable the hardware cursor (disabled by default)",  mir::OptionType::boolean);
     miral::display_configuration_options(*config);
 
