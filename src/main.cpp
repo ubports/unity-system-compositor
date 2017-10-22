@@ -194,7 +194,18 @@ try
         ""));
     spinner_flag(*config);
 
-    config->add_configuration_option("enable-hardware-cursor", "Enable the hardware cursor (disabled by default)",  mir::OptionType::boolean);
+    // hardware-cursor settings
+    bool enable_hardware_cursor;
+    auto enable_hardware_cursor_flag = miral::pre_init(miral::CommandLineOption(
+        [&](bool is_set)
+        {
+            enable_hardware_cursor = is_set;
+        },
+        "enable-hardware-cursor",
+        "Enable the hardware cursor (disabled by default)",
+        false));
+    enable_hardware_cursor_flag(*config);
+
     miral::display_configuration_options(*config);
 
     config->set_command_line(argc, const_cast<char const **>(argv));
@@ -207,7 +218,7 @@ try
             // This is a workaround for u8 desktop preview in 14.04 for the lack of client cursor API.
             // We need to disable the cursor for XMir but leave it on for the desktop preview.
             // Luckily as it stands they run inside seperate instances of USC. ~racarr
-            if (config->get_options()->get("enable-hardware-cursor", false))
+            if (enable_hardware_cursor)
                 return default_;
             else
                 return std::make_shared<NullCursorListener>();
