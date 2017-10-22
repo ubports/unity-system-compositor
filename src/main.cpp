@@ -182,7 +182,18 @@ try
         true));
     public_socket_flag(*config);
 
-    config->add_configuration_option("spinner", "Path to spinner executable",  mir::OptionType::string);
+    // spinner settings
+    std::string spinner_path;
+    auto spinner_flag = miral::pre_init(miral::CommandLineOption(
+        [&](std::string const& spinner_executable_path)
+        {
+            spinner_path = spinner_executable_path;
+        },
+        "spinner",
+        "Path to spinner executable",
+        ""));
+    spinner_flag(*config);
+
     config->add_configuration_option("enable-hardware-cursor", "Enable the hardware cursor (disabled by default)",  mir::OptionType::boolean);
     miral::display_configuration_options(*config);
 
@@ -214,7 +225,7 @@ try
         [&](mir::shell::FocusController* focus_controller)
         {
             auto spinner = std::make_shared<usc::ExternalSpinner>(
-                               config->get_options()->get("spinner", ""),
+                               spinner_path,
                                socket_file);
 
             session_switcher = std::make_shared<usc::SessionSwitcher>(spinner);
