@@ -182,12 +182,16 @@ try
         true));
     public_socket_flag(*config);
 
-    // spinner settings
-    std::string spinner_path;
+    // spinner+session switcher settings
+    std::shared_ptr<usc::SessionSwitcher> session_switcher;
     auto spinner_flag = miral::pre_init(miral::CommandLineOption(
-        [&](std::string const& spinner_executable_path)
+        [&](std::string const& spinner_path)
         {
-            spinner_path = spinner_executable_path;
+            auto spinner = std::make_shared<usc::ExternalSpinner>(
+                               spinner_path,
+                               socket_file);
+
+            session_switcher = std::make_shared<usc::SessionSwitcher>(spinner);
         },
         "spinner",
         "Path to spinner executable",
@@ -230,17 +234,9 @@ try
             return std::make_shared<ServerStatusListener>(config->the_focus_controller());
         });
 
-    std::shared_ptr<usc::SessionSwitcher> session_switcher;
-
     config->override_the_window_manager_builder(
         [&](mir::shell::FocusController* focus_controller)
         {
-            auto spinner = std::make_shared<usc::ExternalSpinner>(
-                               spinner_path,
-                               socket_file);
-
-            session_switcher = std::make_shared<usc::SessionSwitcher>(spinner);
-
             return std::make_shared<usc::WindowManager>(
                 focus_controller,
                 config->the_shell_display_layout(),
