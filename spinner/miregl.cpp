@@ -25,7 +25,7 @@ class MirEglApp
 public:
     MirEglApp(MirConnection* const connection, MirPixelFormat pixel_format);
 
-    EGLSurface create_surface(MirSurface* surface);
+    EGLSurface create_surface(MirWindow* surface);
 
     void release_current();
 
@@ -60,32 +60,32 @@ std::shared_ptr<MirEglApp> make_mir_eglapp(
 
 namespace
 {
-MirSurface* create_surface(MirConnection* const connection, MirSurfaceParameters const& surfaceparm)
+MirWindow* create_surface(MirConnection* const connection, MirWindowParameters const& surfaceparm)
 {
-    auto const spec = mir_connection_create_spec_for_normal_surface(
+    auto const spec = mir_create_normal_window_spec(
         connection,
         surfaceparm.width,
-        surfaceparm.height,
-        surfaceparm.pixel_format);
+        surfaceparm.height);
+    mir_window_spec_set_pixel_format(spec, surfaceparm.pixel_format);
 
-    mir_surface_spec_set_name(spec, surfaceparm.name);
-    mir_surface_spec_set_buffer_usage(spec, surfaceparm.buffer_usage);
-    mir_surface_spec_set_fullscreen_on_output(spec, surfaceparm.output_id);
+    mir_window_spec_set_name(spec, surfaceparm.name);
+    mir_window_spec_set_buffer_usage(spec, surfaceparm.buffer_usage);
+    mir_window_spec_set_fullscreen_on_output(spec, surfaceparm.output_id);
 
-    auto const surface = mir_surface_create_sync(spec);
-    mir_surface_spec_release(spec);
+    auto const surface = mir_create_window_sync(spec);
+    mir_window_spec_release(spec);
 
-    if (!mir_surface_is_valid(surface))
-        throw std::runtime_error(std::string("Can't create a surface ") + mir_surface_get_error_message(surface));
+    if (!mir_window_is_valid(surface))
+        throw std::runtime_error(std::string("Can't create a surface ") + mir_window_get_error_message(surface));
 
     if (surfaceparm.output_id != mir_display_output_id_invalid)
-        mir_surface_set_state(surface, mir_surface_state_fullscreen);
+        mir_window_set_state(surface, mir_window_state_fullscreen);
 
     return surface;
 }
 }
 
-MirEglSurface::MirEglSurface(std::shared_ptr<MirEglApp> const& mir_egl_app, MirSurfaceParameters const& surfaceparm, int swapinterval) :
+MirEglSurface::MirEglSurface(std::shared_ptr<MirEglApp> const& mir_egl_app, MirWindowParameters const& surfaceparm, int swapinterval) :
     mir_egl_app{mir_egl_app},
     surface{create_surface(mir_egl_app->connection, surfaceparm)},
     eglsurface{mir_egl_app->create_surface(surface)},
@@ -98,7 +98,7 @@ MirEglSurface::MirEglSurface(std::shared_ptr<MirEglApp> const& mir_egl_app, MirS
 MirEglSurface::~MirEglSurface()
 {
     mir_egl_app->destroy_surface(eglsurface);
-    mir_surface_release_sync(surface);
+    mir_window_release_sync(surface);
 }
 
 void MirEglSurface::egl_make_current()
@@ -181,12 +181,12 @@ MirEglApp::MirEglApp(MirConnection* const connection, MirPixelFormat pixel_forma
     make_current(dummy_surface);
 }
 
-EGLSurface MirEglApp::create_surface(MirSurface* surface)
+EGLSurface MirEglApp::create_surface(MirWindow* surface)
 {
     auto const eglsurface = eglCreateWindowSurface(
         egldisplay,
         eglconfig,
-        (EGLNativeWindowType) mir_buffer_stream_get_egl_native_window(mir_surface_get_buffer_stream(surface)), NULL);
+        (EGLNativeWindowType) mir_buffer_stream_get_egl_native_window(mir_window_get_buffer_stream(surface)), NULL);
 
     if (eglsurface == EGL_NO_SURFACE)
         throw std::runtime_error("eglCreateWindowSurface failed");

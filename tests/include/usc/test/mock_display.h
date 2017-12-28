@@ -21,13 +21,14 @@
 
 #include <mir/graphics/display.h>
 #include <mir/graphics/virtual_output.h>
+#include <mir/version.h>
 #include <gmock/gmock.h>
 
 namespace usc
 {
 namespace test
 {
-struct MockDisplay : mir::graphics::Display
+struct MockDisplay : mir::graphics::Display, mir::graphics::NativeDisplay
 {
     void for_each_display_sync_group(std::function<void(mir::graphics::DisplaySyncGroup&)> const& f) override
     {
@@ -53,17 +54,34 @@ struct MockDisplay : mir::graphics::Display
 
     void resume() override {};
 
+#if MIR_SERVER_VERSION < MIR_VERSION_NUMBER(0, 27, 0)
     std::shared_ptr<mir::graphics::Cursor> create_hardware_cursor(
         std::shared_ptr<mir::graphics::CursorImage> const&) override
     {
         return {};
     };
-
-    std::unique_ptr<mir::graphics::GLContext> create_gl_context() override
-    { return std::unique_ptr<mir::graphics::GLContext>{};};
+#else
+    std::shared_ptr<mir::graphics::Cursor> create_hardware_cursor() override { return {}; }
+#endif
 
     std::unique_ptr<mir::graphics::VirtualOutput> create_virtual_output(int, int) override
     { return std::unique_ptr<mir::graphics::VirtualOutput>{}; }
+
+    mir::graphics::NativeDisplay* native_display() override
+    {
+        return this;
+    }
+
+    bool apply_if_configuration_preserves_display_buffers(mir::graphics::DisplayConfiguration const& conf) override
+    {
+        return false;
+    }
+
+    mir::graphics::Frame last_frame_on(unsigned output_id) const override
+    {
+        return {};
+    }
+
 };
 }
 }

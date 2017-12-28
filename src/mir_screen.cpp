@@ -42,6 +42,82 @@ void log_exception_in(char const* const func)
     mir::report_exception(buffer);
     mir::log(::mir::logging::Severity::warning, "usc::MirScreen", warning_format, func, buffer.str().c_str());
 }
+
+bool is_external(mir::graphics::DisplayConfigurationOutputType type)
+{
+    using mir::graphics::DisplayConfigurationOutputType;
+
+    return type == DisplayConfigurationOutputType::vga ||
+           type == DisplayConfigurationOutputType::dvii ||
+           type == DisplayConfigurationOutputType::dvid ||
+           type == DisplayConfigurationOutputType::dvia ||
+           type == DisplayConfigurationOutputType::composite ||
+           type == DisplayConfigurationOutputType::svideo ||
+           type == DisplayConfigurationOutputType::component ||
+           type == DisplayConfigurationOutputType::ninepindin ||
+           type == DisplayConfigurationOutputType::displayport ||
+           type == DisplayConfigurationOutputType::hdmia ||
+           type == DisplayConfigurationOutputType::hdmib ||
+           type == DisplayConfigurationOutputType::tv;
+}
+
+usc::ActiveOutputs count_active_outputs(
+    mir::graphics::DisplayConfiguration const& display_configuration)
+{
+    usc::ActiveOutputs active_outputs{};
+
+    display_configuration.for_each_output(
+        [&active_outputs](mir::graphics::DisplayConfigurationOutput const& output)
+        {
+            if (output.connected &&
+                output.used &&
+                output.power_mode == MirPowerMode::mir_power_mode_on)
+            {
+                if (is_external(output.type))
+                    ++active_outputs.external;
+                else
+                    ++active_outputs.internal;
+            }
+        });
+
+    return active_outputs;
+}
+
+bool has_active_outputs(
+    mir::graphics::DisplayConfiguration const& display_configuration)
+{
+    auto const active_outputs = count_active_outputs(display_configuration);
+    return active_outputs.internal + active_outputs.external > 0;
+}
+
+bool all_outputs_filter(mir::graphics::UserDisplayConfigurationOutput const&)
+{
+    return true;
+}
+
+bool internal_outputs_filter(mir::graphics::UserDisplayConfigurationOutput const& output)
+{
+    return !is_external(output.type);
+}
+
+bool external_outputs_filter(mir::graphics::UserDisplayConfigurationOutput const& output)
+{
+    return is_external(output.type);
+}
+
+auto get_power_mode_filter_for_output_filter(usc::OutputFilter output_filter)
+{
+    switch (output_filter)
+    {
+        case usc::OutputFilter::all: return all_outputs_filter;
+        case usc::OutputFilter::internal: return internal_outputs_filter;
+        case usc::OutputFilter::external: return external_outputs_filter;
+        default: return all_outputs_filter;
+    }
+
+    return all_outputs_filter;
+}
+
 }
 
 usc::MirScreen::MirScreen(
@@ -49,7 +125,7 @@ usc::MirScreen::MirScreen(
     std::shared_ptr<mir::graphics::Display> const& display)
     : compositor{compositor},
       display{display},
-      current_power_mode{MirPowerMode::mir_power_mode_on}
+      active_outputs_handler{[](ActiveOutputs const&){}}
 {
     try
     {
@@ -69,27 +145,87 @@ usc::MirScreen::MirScreen(
 
 usc::MirScreen::~MirScreen() = default;
 
-void usc::MirScreen::turn_on()
+void usc::MirScreen::turn_on(OutputFilter output_filter)
 {
-    set_power_mode(MirPowerMode::mir_power_mode_on);
+    auto const filter_func = get_power_mode_filter_for_output_filter(output_filter);
+    set_power_mode(MirPowerMode::mir_power_mode_on, filter_func);
 }
 
-void usc::MirScreen::turn_off()
+void usc::MirScreen::turn_off(OutputFilter output_filter)
 {
-    set_power_mode(MirPowerMode::mir_power_mode_off);
+    auto const filter_func = get_power_mode_filter_for_output_filter(output_filter);
+    set_power_mode(MirPowerMode::mir_power_mode_off, filter_func);
 }
 
-void usc::MirScreen::set_power_mode(MirPowerMode mode)
+void usc::MirScreen::register_active_outputs_handler(
+    ActiveOutputsHandler const& handler)
+{
+    // It's not ideal to call the handler under lock, but we need this to
+    // guarantee that after this function returns no invocation of the old
+    // handler will be in progress. Alternatively, we would need to implement
+    // an event loop.
+    std::lock_guard<std::mutex> lock{active_outputs_mutex};
+    active_outputs_handler = handler;
+    active_outputs_handler(active_outputs);
+}
+
+void usc::MirScreen::initial_configuration(
+    std::shared_ptr<mir::graphics::DisplayConfiguration const> const& display_configuration)
+{
+    std::lock_guard<std::mutex> lock{active_outputs_mutex};
+    active_outputs = count_active_outputs(*display_configuration);
+    active_outputs_handler(active_outputs);
+}
+
+void usc::MirScreen::configuration_applied(
+    std::shared_ptr<mir::graphics::DisplayConfiguration const> const& display_configuration)
+{
+    std::lock_guard<std::mutex> lock{active_outputs_mutex};
+    active_outputs = count_active_outputs(*display_configuration);
+    active_outputs_handler(active_outputs);
+}
+
+void usc::MirScreen::base_configuration_updated(
+    std::shared_ptr<mir::graphics::DisplayConfiguration const> const&)
+{
+}
+
+void usc::MirScreen::session_configuration_applied(
+    std::shared_ptr<mir::frontend::Session> const&,
+    std::shared_ptr<mir::graphics::DisplayConfiguration> const&)
+{
+}
+
+void usc::MirScreen::session_configuration_removed(
+    std::shared_ptr<mir::frontend::Session> const&)
+{
+}
+
+void usc::MirScreen::configuration_failed(
+    std::shared_ptr<mir::graphics::DisplayConfiguration const> const&,
+    std::exception const&)
+{
+}
+
+void usc::MirScreen::catastrophic_configuration_error(
+    std::shared_ptr<mir::graphics::DisplayConfiguration const> const&,
+    std::exception const&)
+{
+}
+
+void usc::MirScreen::set_power_mode(MirPowerMode mode, SetPowerModeFilter const& filter)
 try
 {
-    if (current_power_mode == mode)
-        return;
-
     std::shared_ptr<mg::DisplayConfiguration> displayConfig = display->configuration();
 
     displayConfig->for_each_output(
         [&](const mg::UserDisplayConfigurationOutput displayConfigOutput) {
-            displayConfigOutput.power_mode = mode;
+            if (displayConfigOutput.connected &&
+                displayConfigOutput.used &&
+                filter(displayConfigOutput))
+            {
+                displayConfigOutput.power_mode = mode;
+            }
         }
     );
 
@@ -97,10 +233,8 @@ try
 
     display->configure(*displayConfig.get());
 
-    if (mode == MirPowerMode::mir_power_mode_on)
+    if (has_active_outputs(*displayConfig))
         compositor->start();
-
-    current_power_mode = mode;
 }
 catch (std::exception const&)
 {

@@ -20,6 +20,7 @@
 #include "src/spinner.h"
 
 #include "mir/frontend/session.h"
+#include <mir/version.h>
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
@@ -105,7 +106,20 @@ public:
     {
         return {};
     }
+#if MIR_SERVER_VERSION >= MIR_VERSION_NUMBER(0, 27, 0)
+    mir::graphics::BufferID create_buffer(mir::geometry::Size, MirPixelFormat) override
+    {
+        return {};
+    }
+    mir::graphics::BufferID create_buffer(mir::geometry::Size, uint32_t, uint32_t) override
+    {
+        return {};
+    }
+#endif
     void destroy_buffer(mir::graphics::BufferID) override
+    {
+    }
+    void send_error(mir::ClientVisibleError const&) override
     {
     }
     std::shared_ptr<mir::graphics::Buffer> get_buffer(mir::graphics::BufferID) override
@@ -114,6 +128,7 @@ public:
     }
     std::string name() const override { return name_; }
     void send_display_config(mir::graphics::DisplayConfiguration const&) override {}
+    void send_input_config(MirInputConfig const&) override {}
 
 private:
     std::string const name_;

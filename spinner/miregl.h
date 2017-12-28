@@ -37,7 +37,7 @@ class MirEglSurface
 public:
     MirEglSurface(
         std::shared_ptr<MirEglApp> const& mir_egl_app,
-        MirSurfaceParameters const& surfaceparm,
+        MirWindowParameters const& surfaceparm,
         int swapinterval);
 
     ~MirEglSurface();
@@ -58,7 +58,7 @@ private:
     unsigned int height() const;
 
     std::shared_ptr<MirEglApp> const mir_egl_app;
-    MirSurface* const surface;
+    MirWindow* const surface;
     EGLSurface const eglsurface;
     int width_;
     int height_;

@@ -1,0 +1,170 @@
+'\" t
+.TH unity-system-compositor 1 "March 2017" "unity-system-compositor" "User Commands"
+
+.SH NAME
+unity-system-compositor \- a systemwide compositing display manager built on Mir
+
+.SH SYNOPSIS
+.B unity-system-compositor [
+.B options
+.B ]
+
+.SH DESCRIPTION
+.B unity-system-compositor
+is the compositing display manager run on a single seat to provide a graphical
+environment in the Unity desktop envirionment.
+
+.SH OPTIONS
+.PP
+The following options are supported.
+.TP
+.BI --host-socket " path"
+Specifies the host socket path.
+.TP
+.BI "-f, --file" " path"
+Specifies the client socket path. The default is
+.IR $XDG_RUNTIME_DIR /mir_socket
+or /tmp/mir_socket.
+.TP
+.B --no-file                             
+Do not provide a socket filename for client connections.
+.TP
+.B --arw-file
+Makes socket filename globally readable and writable (equivalent to chmod a=rw).
+.TP
+.B -p, --prompt-file
+Provides a "..._trusted" filename for prompt helper connections.
+.TP
+.BI --platform-graphics-lib " path"
+Specifies the library to use for platform graphics support (default: autodetect).
+.TP
+.BI --platform-input-lib " filepath"
+Specifies the library to use for platform input support (default: input-stub.so).
+.TP
+.BI --platform-path " directory"
+Specifies the directory to look for platform libraries
+(default: /usr/lib/x86_64-linux-gnu/mir/server-platform).
+.TP
+.BI "-i, --enable-input" " bool"
+Enables input.
+.TP
+.BI --compositor-report " {log|lttng|off}"
+Specifies the compositor report log setting.
+.TP
+.BI --connector-report " {log|lttng|off}"
+Specifies the connector report log setting.
+.TP
+.BI --display-report " {log|lttng|off}"
+Specifies the display report log setting.
+.TP
+.BI --input-report " {log|lttng|off}"
+Specifies the input report log setting.
+.TP
+.BI --legacy-input-report " {log|off}"
+Specifies the legacy Input report log setting.
+.TP
+.BI --seat-report " {log|off}"
+Specifies the seat report log setting.
+.TP
+.BI --session-mediator-report " {log|lttng|off}"
+Specifies the session Mediator report log setting.
+.TP
+.BI --msg-processor-report " {log|lttng|off}"
+Specifies the message processor report log setting.
+.TP
+.BI --scene-report " {log|lttng|off}"
+Specifies the scene report log setting.
+.TP
+.BI --shared-library-prober-report " {log|lttng|off}"
+Specifies the shared library prober report log setting.
+.TP
+.BI --shell-report " {log|off}"
+Specifies the shell report log setting.
+.TP
+.BI --composite-delay " milliseconds"
+Tells the compositor how long to wait for new frames from clients before compositing.
+Higher values result in lower latency but risk causing frame skipping.
+A negative value indicates the value should be decided automatically.
+Default: decide automatically.
+.TP
+.BI --name " string"
+The name Mir uses when registering with the host as a nested server.
+.TP
+.BI --nested-passthrough " arg"
+Attempt to pass a client's graphics content directly to the host to avoid a
+composition pass as a nested server.
+.TP
+.B --enable-touchspots
+Enables the visualization of touchspots (e.g. for screencasting).
+.TP
+.BI --enable-key-repeat " arg"
+Enables server\-generated key repeat.
+.TP
+.B --on-fatal-error-except
+Throws an exception on "fatal error" conditions (e.g.  drivers behaving in unexpected ways)
+instead of a dumping core.
+.TP
+.B --debug
+Enables extra development debugging.  This is only interesting for people doing Mir server or client development.
+.TP
+.BI --x11-displays " WIDTHxHEIGHT"
+[mir-on-X specific] Sets the size of the "display" window.
+.TP
+.BI --from-dm-fd " fd"
+Passes the file descriptor for the read end of the pipe from display manager.
+.TP
+.BI --to-dm-fd " fd"
+Passes the file descriptor for the write end of the pipe to display manager.
+.TP
+.B --debug-without-dm
+Run without a display manager (only useful when debugging).
+.TP
+.BI --debug-active-session-name " arg"
+Expected connection when run without a display manager (only useful when
+debugging).
+.TP
+.BI --blacklist " arg"
+Indicates the video blacklist regex to use.
+.TP
+.B --version
+Outputs the version information and exits.
+.TP
+.BI --spinner " filepath"
+Sets the path of the spinner executable.
+.TP
+.BI --public-socket " bool"
+Makes the socket file publicly writable.
+.TP
+.BI --enable-hardware-cursor " arg"
+Enables the hardware cursor (disabled by default).
+.TP
+.BI --display-config " {clone|sidebyside|single}"
+Sets the display configuration.
+.TP
+.B -h, --help
+Outputs the usage message and exits.
+
+.SH ENVIRONMENT
+.PP
+The following environment variable can control the diagnostics reported.
+See the equivalent
+.IR xxx \-report
+option above.
+.PP
+.B Table 1: Component Report Environment Variables
+.TS
+tab(;);
+l ; l .
+Environment Variable ; Values
+=
+MIR_SERVER_CONNECTION_REPORT            ; log,lttng
+MIR_SERVER_COMPOSITOR_REPORT            ; log,lttng
+MIR_SERVER_DISPLAY_REPORT               ; log,lttng
+MIR_SERVER_INPUT_REPORT                 ; log,lttng
+MIR_SERVER_LEGACY_INPUT_REPORT          ; log
+MIR_SERVER_SEAT_REPORT                  ; log
+MIR_SERVER_MSG_PROCESSOR_REPORT         ; log,lttng
+MIR_SERVER_SESSION_MEDIATOR_REPORT      ; log,lttng
+MIR_SERVER_SCENE_REPORT                 ; log,lttng
+MIR_SERVER_SHARED_LIBRARY_PROBER_REPORT ; log,lttng
+.TE
