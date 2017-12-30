@@ -102,6 +102,7 @@ public:
     mir::frontend::BufferStreamId create_buffer_stream(mir::graphics::BufferProperties const& /*props*/) override { return {}; }
     std::shared_ptr<mir::frontend::BufferStream> get_buffer_stream(mir::frontend::BufferStreamId /*stream*/) const override { return nullptr; }
     void destroy_buffer_stream(mir::frontend::BufferStreamId /*stream*/) override {}
+    #if MIR_SERVER_VERSION < MIR_VERSION_NUMBER(0, 28, 0)
     mir::graphics::BufferID create_buffer(mir::graphics::BufferProperties const&) override
     {
         return {};
@@ -119,12 +120,13 @@ public:
     void destroy_buffer(mir::graphics::BufferID) override
     {
     }
-    void send_error(mir::ClientVisibleError const&) override
-    {
-    }
     std::shared_ptr<mir::graphics::Buffer> get_buffer(mir::graphics::BufferID) override
     {
         return nullptr;
+    }
+    #endif
+    void send_error(mir::ClientVisibleError const&) override
+    {
     }
     std::string name() const override { return name_; }
     void send_display_config(mir::graphics::DisplayConfiguration const&) override {}
