@@ -1,4 +1,4 @@
-unity-system-compositor (0.9.2+ubports) xenial; urgency=medium
+unity-system-compositor (0.9.2+ubports) bionic; urgency=medium
 
   * Update spinner with new Ubuntu Touch
 
