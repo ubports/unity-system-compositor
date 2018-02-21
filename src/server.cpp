@@ -196,7 +196,7 @@ usc::Server::Server(int argc, char** argv)
     override_the_logger([this]()
     -> std::shared_ptr<mir::logging::Logger>
      {
-        return std::shared_ptr<mir::logging::Logger>{};
+        return std::make_unique<mir::logging::Logger>{};
      });
 
     set_config_filename("unity-system-compositor.conf");
