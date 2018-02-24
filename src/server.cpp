@@ -155,6 +155,8 @@ usc::Server::Server(int argc, char** argv)
     add_configuration_option("public-socket", "Make the socket file publicly writable",  mir::OptionType::boolean);
     add_configuration_option("enable-hardware-cursor", "Enable the hardware cursor (disabled by default)",  mir::OptionType::boolean);
     add_display_configuration_options_to(*this);
+    add_log_host_lifecycle_option_to(*this);
+    add_glog_options_to(*this);
 
     set_command_line(argc, const_cast<char const **>(argv));
 
