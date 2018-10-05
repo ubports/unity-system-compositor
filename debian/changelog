@@ -1,3 +1,9 @@
+unity-system-compositor (0.7.3+ubports0) xenial; urgency=medium
+
+  * Replace dependency on ubuntu-wallpapers with ubports-wallpapers
+
+ -- Dalton Durst <dalton@ubports.com>  Fri, 05 Oct 2018 13:33:35 -0500
+
 unity-system-compositor (0.7.2+ubports) xenial; urgency=medium
 
   * Update spinner with new Ubuntu Touch
