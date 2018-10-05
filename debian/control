@@ -31,9 +31,9 @@ Vcs-Bzr: https://bazaar.launchpad.net/+branch/unity-system-compositor/
 
 Package: unity-system-compositor
 Architecture: any
-Depends: ubuntu-wallpapers,
-         ${misc:Depends},
+Depends: ${misc:Depends},
          ${shlibs:Depends},
+         ubports-wallpapers,
 Suggests: repowerd,
 Description: Mir System Compositor
  This is the system compositor using the Mir display server.  If the Unity
