@@ -33,7 +33,7 @@ Package: unity-system-compositor
 Architecture: any
 Depends: ${misc:Depends},
          ${shlibs:Depends},
-         ubuntu-wallpapers,
+         ubports-wallpapers,
 Suggests: repowerd,
 Description: System compositor for Ubuntu
  System compositor used by the Mir display server in Ubuntu. If the Unity
