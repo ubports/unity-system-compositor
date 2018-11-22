@@ -36,6 +36,7 @@ set(CMAKE_AUTOMOC ON)
 # Use C++11 and warnings
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -Wall")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto -ffat-lto-objects -fPIC -fno-strict-aliasing")
 
 find_package(PkgConfig)
 pkg_check_modules(ANDROIDPROPS libandroid-properties)
