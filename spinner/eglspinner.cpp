@@ -448,7 +448,7 @@ try
                 mvpMatrix = glm::scale(mvpMatrix,
                                        glm::vec3(2.0f / render_width, 2.0f / render_height, 1.0f));
 
-                auto widthRatio = (1.0f * wallpaper.height * render_width) / (wallpaper.width * render_height);
+                auto widthRatio = 1 / ((1.0f * wallpaper.height * render_width) / (wallpaper.width * render_height));
                 auto heightRatio = 1.0f;
                 if (widthRatio > 1.0f) {
                     heightRatio = 1.0f / widthRatio;
