@@ -4,6 +4,7 @@ Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 Build-Depends: cmake,
                cmake-data,
+               cmake-extras,
                dbus,
                debhelper (>= 9),
                dh-python,

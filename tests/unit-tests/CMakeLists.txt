@@ -35,8 +35,7 @@ target_link_libraries(
 
    usc
    ${GTEST_BOTH_LIBRARIES}
-   ${GMOCK_LIBRARY}
-   ${GMOCK_MAIN_LIBRARY}
+   ${GMOCK_LIBRARIES}
 )
 
 add_test(usc_unit_tests ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/usc_unit_tests)
