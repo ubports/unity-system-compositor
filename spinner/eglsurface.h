@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013 Canonical Ltd.
+ * Copyright © 2019 UBports Foundation.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -12,20 +12,17 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * Author: Daniel van Vugt <daniel.van.vugt@canonical.com>
  */
 
-#ifndef __EGLAPP_H__
-#define __EGLAPP_H__
+#pragma once
+
+#include <EGL/egl.h>
 
 #include <memory>
-#include <vector>
+#include <functional>
 
-class MirEglSurface;
-
-extern float mir_eglapp_background_opacity;
-
-std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv[]);
-
-#endif
+class EglSurface
+{
+public:
+    virtual void paint(std::function<void(unsigned int, unsigned int)> const& functor) = 0;
+};

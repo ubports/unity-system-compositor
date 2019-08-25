@@ -14,8 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eglapp.h"
-#include "miregl.h"
+#include "eglsurface.h"
+#include "mir/eglapp.h"
+#include "wayland/eglapp.h"
 #include <assert.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <glib.h>
@@ -50,6 +51,12 @@ enum TextureIds {
     MAX_TEXTURES
 };
 
+enum Backend {
+    WAYLAND,
+    MIR,
+    UNKOWN = -1
+};
+
 class SessionConfig
 {
 public:
@@ -75,6 +82,17 @@ public:
     std::string get_string(std::string const& key, std::string const& default_value)
     {
         return conf_map.find(key) != conf_map.end() ? conf_map[key] : default_value;
+    }
+
+    bool is_android() {
+        bool ret = false;
+    #ifdef HAVE_PROPS
+        char const* default_value = "nodevice";
+        char value[PROP_VALUE_MAX];
+        property_get(device_property_key, value, default_value);
+        ret = strcmp(value, default_value) != 0;
+    #endif
+        return ret;
     }
 
 private:
@@ -317,7 +335,41 @@ try
     }
     g_clear_error(&error);
 
-    auto const surfaces = mir_eglapp_init(argc, argv);
+    std::vector<std::shared_ptr<EglSurface>> surfaces;
+    char* backendEnv = getenv("COMPOSITOR_BACKEND");
+    Backend backend = UNKOWN;
+
+    if (backendEnv == nullptr) {
+        if (session_config.is_android()) {
+            printf("Running on an Android device, using Mir output.\n");
+            backend = MIR;
+        } else {
+            printf("Not running on an Android device, using Wayland output.\n");
+            backend = WAYLAND;
+        }
+    } else {
+        printf("Using COMPOSITOR_BACKEND varable to set backend\n");
+        if (strcmp(backendEnv, "wayland") == 0) {
+            backend = WAYLAND;
+        }
+        if (strcmp(backendEnv, "mir") == 0) {
+            backend = MIR;
+        }
+    }
+
+    switch(backend) {
+        case MIR:
+            printf("Using mir backend\n");
+            surfaces = mir_eglapp_init(argc, argv);
+            break;
+        case WAYLAND:
+            printf("Using wayland backend\n");
+            surfaces = wayland_eglapp_init(argc, argv);
+            break;
+        default:
+            printf("Uknown backend %s\n", backendEnv);
+            return EXIT_FAILURE;
+    }
 
     if (!surfaces.size())
     {

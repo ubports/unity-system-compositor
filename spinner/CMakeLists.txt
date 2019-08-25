@@ -56,11 +56,18 @@ endif()
 link_directories(${MIRCLIENT_LIBRARY_DIRS})
 
 add_executable(unity-system-compositor-spinner
-  eglapp.cpp
-  eglapp.h
+  mir/eglapp.cpp
+  mir/eglapp.h
+  mir/miregl.h
+  mir/miregl.cpp
+
+  wayland/eglapp.cpp
+  wayland/eglapp.h
+  wayland/waylandegl.h
+  wayland/waylandegl.cpp
+
   eglspinner.cpp
-  miregl.h
-  miregl.cpp
+
   ${CMAKE_CURRENT_BINARY_DIR}/robot.h
   ${CMAKE_CURRENT_BINARY_DIR}/white_dot.h
   ${CMAKE_CURRENT_BINARY_DIR}/orange_dot.h
@@ -73,5 +80,6 @@ target_link_libraries(unity-system-compositor-spinner
   ${ANDROIDPROPS_LDFLAGS}
   ${GLESv2_LIBRARIES}
   ${MIRCLIENT_LDFLAGS}
+  ${WAYLAND_EGL_LDFLAGS} ${WAYLAND_EGL_LIBRARIES}
 )
 install(TARGETS unity-system-compositor-spinner RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
