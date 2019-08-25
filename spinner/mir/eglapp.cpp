@@ -74,7 +74,7 @@ MirPixelFormat select_pixel_format(MirConnection* connection)
 }
 }
 
-std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv[])
+std::vector<std::shared_ptr<EglSurface>> mir_eglapp_init(int argc, char *argv[])
 {
     MirWindowParameters surfaceparm =
         {
@@ -209,7 +209,7 @@ std::vector<std::shared_ptr<MirEglSurface>> mir_eglapp_init(int argc, char *argv
 
     auto const mir_egl_app = make_mir_eglapp(connection, pixel_format);
 
-    std::vector<std::shared_ptr<MirEglSurface>> result;
+    std::vector<std::shared_ptr<EglSurface>> result;
 
     // If a size has been specified just do that
     if (surfaceparm.width && surfaceparm.height)

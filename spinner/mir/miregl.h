@@ -17,6 +17,8 @@
 #ifndef UNITYSYSTEMCOMPOSITOR_MIREGL_H
 #define UNITYSYSTEMCOMPOSITOR_MIREGL_H
 
+#include "../eglsurface.h"
+
 #include <mir_toolkit/common.h>
 #include <mir_toolkit/client_types.h>
 #include "mir_toolkit/mir_client_library.h"
@@ -24,6 +26,7 @@
 #include <EGL/egl.h>
 
 #include <memory>
+#include <functional>
 
 class MirEglApp;
 class MirEglSurface;
@@ -32,7 +35,7 @@ std::shared_ptr<MirEglApp> make_mir_eglapp(
     MirConnection* const connection,
     MirPixelFormat const& pixel_format);
 
-class MirEglSurface
+class MirEglSurface : public EglSurface
 {
 public:
     MirEglSurface(
@@ -42,8 +45,7 @@ public:
 
     ~MirEglSurface();
 
-    template<typename Painter>
-    void paint(Painter const& functor)
+    void paint(std::function<void(unsigned int, unsigned int)> const& functor) override
     {
         egl_make_current();
         functor(width(), height());
