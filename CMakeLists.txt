@@ -44,6 +44,7 @@ pkg_check_modules(GDKPIXBUF REQUIRED gdk-pixbuf-2.0)
 pkg_check_modules(GLIB REQUIRED glib-2.0)
 pkg_check_modules(MIRCLIENT REQUIRED mirclient)
 pkg_check_modules(MIRSERVER REQUIRED mirserver)
+pkg_check_modules(WAYLAND_EGL wayland-egl)
 pkg_check_modules(DBUS REQUIRED dbus-1)
 
 find_package(Boost 1.48.0 COMPONENTS system REQUIRED)
