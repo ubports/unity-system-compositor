@@ -216,13 +216,13 @@ void usc::MirScreen::base_configuration_updated(
 }
 
 void usc::MirScreen::session_configuration_applied(
-    std::shared_ptr<mir::frontend::Session> const&,
+    std::shared_ptr<mir::scene::Session> const&,
     std::shared_ptr<mir::graphics::DisplayConfiguration> const&)
 {
 }
 
 void usc::MirScreen::session_configuration_removed(
-    std::shared_ptr<mir::frontend::Session> const&)
+    std::shared_ptr<mir::scene::Session> const&)
 {
 }
 
@@ -235,6 +235,12 @@ void usc::MirScreen::configuration_failed(
 void usc::MirScreen::catastrophic_configuration_error(
     std::shared_ptr<mir::graphics::DisplayConfiguration const> const&,
     std::exception const&)
+{
+}
+
+void usc::MirScreen::configuration_updated_for_session(
+    std::shared_ptr<mir::scene::Session> const&,
+    std::shared_ptr<mir::graphics::DisplayConfiguration const> const&)
 {
 }
 

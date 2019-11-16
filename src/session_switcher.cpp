@@ -22,7 +22,7 @@
 #include "spinner.h"
 #include "screen.h"
 
-#include <mir/frontend/session.h>
+#include <mir/scene/session.h>
 
 usc::SessionSwitcher::SessionSwitcher(std::shared_ptr<Spinner> const& spinner)
     : spinner_process{spinner},
@@ -64,7 +64,7 @@ void usc::SessionSwitcher::add(std::shared_ptr<Session> const& session, pid_t pi
     update_displayed_sessions();
 }
 
-void usc::SessionSwitcher::remove(std::shared_ptr<mir::frontend::Session> const& session)
+void usc::SessionSwitcher::remove(std::shared_ptr<mir::scene::Session> const& session)
 {
     std::lock_guard<std::mutex> lock{mutex};
 
@@ -105,7 +105,7 @@ void usc::SessionSwitcher::set_next_session(std::string const& name)
     update_displayed_sessions();
 }
 
-void usc::SessionSwitcher::mark_ready(mir::frontend::Session const* session)
+void usc::SessionSwitcher::mark_ready(mir::scene::Session const* session)
 {
     std::lock_guard<std::mutex> lock{mutex};
 

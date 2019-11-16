@@ -22,7 +22,7 @@
 #include "src/spinner.h"
 #include "usc/test/mock_screen.h"
 
-#include "mir/frontend/session.h"
+#include "mir/scene/session.h"
 #include <mir/version.h>
 
 #include <gtest/gtest.h>
@@ -93,47 +93,53 @@ private:
     }
 };
 
-class StubMirSession : public mir::frontend::Session
+class StubMirSession : public mir::scene::Session
 {
 public:
     StubMirSession(std::string const& name)
         : name_{name}
     {}
 
-    std::shared_ptr<mir::frontend::Surface> get_surface(mir::frontend::SurfaceId surface) const override { return nullptr; }
+    std::shared_ptr<mir::compositor::BufferStream> create_buffer_stream(mir::graphics::BufferProperties const& /*props*/) override { return {}; }
+    void destroy_buffer_stream(std::shared_ptr<mir::frontend::BufferStream> const& /*stream*/) override {}
 
-    mir::frontend::BufferStreamId create_buffer_stream(mir::graphics::BufferProperties const& /*props*/) override { return {}; }
-    std::shared_ptr<mir::frontend::BufferStream> get_buffer_stream(mir::frontend::BufferStreamId /*stream*/) const override { return nullptr; }
-    void destroy_buffer_stream(mir::frontend::BufferStreamId /*stream*/) override {}
-    #if MIR_SERVER_VERSION < MIR_VERSION_NUMBER(0, 28, 0)
-    mir::graphics::BufferID create_buffer(mir::graphics::BufferProperties const&) override
-    {
-        return {};
-    }
-#if MIR_SERVER_VERSION >= MIR_VERSION_NUMBER(0, 27, 0)
-    mir::graphics::BufferID create_buffer(mir::geometry::Size, MirPixelFormat) override
-    {
-        return {};
-    }
-    mir::graphics::BufferID create_buffer(mir::geometry::Size, uint32_t, uint32_t) override
-    {
-        return {};
-    }
-#endif
-    void destroy_buffer(mir::graphics::BufferID) override
-    {
-    }
-    std::shared_ptr<mir::graphics::Buffer> get_buffer(mir::graphics::BufferID) override
-    {
-        return nullptr;
-    }
-    #endif
-    void send_error(mir::ClientVisibleError const&) override
-    {
-    }
+    void send_error(mir::ClientVisibleError const&) override {}
     std::string name() const override { return name_; }
-    void send_display_config(mir::graphics::DisplayConfiguration const&) override {}
     void send_input_config(MirInputConfig const&) override {}
+
+    pid_t process_id() const override { return -1; };
+
+    void take_snapshot(mir::scene::SnapshotCallback const&) override {};
+
+    std::shared_ptr<mir::scene::Surface> default_surface() const override { return nullptr; };
+
+    void set_lifecycle_state(MirLifecycleState state) override {};
+
+    void hide() override {};
+
+    void show() override {};
+
+    void start_prompt_session() override {};
+
+    void stop_prompt_session() override {};
+
+    void suspend_prompt_session() override {};
+
+    void resume_prompt_session() override {};
+
+    std::shared_ptr<mir::scene::Surface> create_surface(
+        std::shared_ptr<Session> const&,
+        mir::scene::SurfaceCreationParameters const&,
+        std::shared_ptr<mir::scene::SurfaceObserver> const&) override { return nullptr; };
+
+    void destroy_surface(std::shared_ptr<mir::scene::Surface> const&) override { };
+
+    std::shared_ptr<mir::scene::Surface> surface_after(
+        std::shared_ptr<mir::scene::Surface> const&) const override { return nullptr; };
+
+    void configure_streams(
+        mir::scene::Surface& surface,
+        std::vector<mir::shell::StreamSpecification> const& config) override { };
 
 private:
     std::string const name_;
@@ -174,12 +180,12 @@ public:
         fake_scene.raise(this);
     }
 
-    bool corresponds_to(mir::frontend::Session const* s) override
+    bool corresponds_to(mir::scene::Session const* s) override
     {
         return s == mir_stub_session.get();
     }
 
-    std::shared_ptr<mir::frontend::Session> corresponding_session()
+    std::shared_ptr<mir::scene::Session> corresponding_session()
     {
         return mir_stub_session;
     }

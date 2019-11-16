@@ -74,7 +74,7 @@ public:
         focus_controller.set_focus_to(scene_session, surface);
     }
 
-    bool corresponds_to(mir::frontend::Session const* s) override
+    bool corresponds_to(mir::scene::Session const* s) override
     {
         return scene_session.get() == s;
     }
