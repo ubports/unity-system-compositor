@@ -24,7 +24,7 @@
 #include <memory>
 #include <string>
 
-namespace mir { namespace frontend { class Session; }};
+namespace mir { namespace scene { class Session; }};
 
 namespace usc
 {
@@ -37,7 +37,7 @@ public:
     virtual void show() = 0;
     virtual void hide() = 0;
     virtual void raise_and_focus() = 0;
-    virtual bool corresponds_to(mir::frontend::Session const*) = 0;
+    virtual bool corresponds_to(mir::scene::Session const*) = 0;
 
 protected:
     Session() = default;
@@ -49,8 +49,8 @@ class SessionMonitor
 {
 public:
     virtual void add(std::shared_ptr<Session> const& session, pid_t pid) = 0;
-    virtual void remove(std::shared_ptr<mir::frontend::Session> const& session) = 0;
-    virtual void mark_ready(mir::frontend::Session const* session) = 0;
+    virtual void remove(std::shared_ptr<mir::scene::Session> const& session) = 0;
+    virtual void mark_ready(mir::scene::Session const* session) = 0;
 
 protected:
     SessionMonitor() = default;
