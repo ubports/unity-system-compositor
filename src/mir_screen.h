@@ -58,16 +58,19 @@ public:
     void base_configuration_updated(
         std::shared_ptr<mir::graphics::DisplayConfiguration const> const&) override;
     void session_configuration_applied(
-        std::shared_ptr<mir::frontend::Session> const&,
+        std::shared_ptr<mir::scene::Session> const&,
         std::shared_ptr<mir::graphics::DisplayConfiguration> const&) override;
     void session_configuration_removed(
-        std::shared_ptr<mir::frontend::Session> const&) override;
+        std::shared_ptr<mir::scene::Session> const&) override;
     void configuration_failed(
         std::shared_ptr<mir::graphics::DisplayConfiguration const> const&,
         std::exception const&) override;
     void catastrophic_configuration_error(
         std::shared_ptr<mir::graphics::DisplayConfiguration const> const&,
         std::exception const&) override;
+    void configuration_updated_for_session(
+        std::shared_ptr<mir::scene::Session> const&,
+        std::shared_ptr<mir::graphics::DisplayConfiguration const> const&) override;
 
 private:
     using SetPowerModeFilter = bool(*)(mir::graphics::UserDisplayConfigurationOutput const&);
