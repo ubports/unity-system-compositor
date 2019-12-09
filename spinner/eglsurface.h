@@ -17,8 +17,6 @@
 #ifndef UNITYSYSTEMCOMPOSITOR_EGLSURFACE_H
 #define UNITYSYSTEMCOMPOSITOR_EGLSURFACE_H
 
-#include <EGL/egl.h>
-
 #include <memory>
 #include <functional>
 

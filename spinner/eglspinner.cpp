@@ -22,9 +22,9 @@
 #include <glib.h>
 #include <string.h>
 #include <GLES2/gl2.h>
-#if HAVE_PROPS
-#include <hybris/properties/properties.h>
-#endif
+#include <deviceinfo.h>
+#include <EGL/egl.h>
+
 #include <signal.h>
 
 #include <fstream>
@@ -55,90 +55,6 @@ enum Backend {
     WAYLAND,
     MIR,
     UNKOWN = -1
-};
-
-class SessionConfig
-{
-public:
-    SessionConfig()
-    {
-        parse_session_conf_file();
-    }
-
-    int get_int(std::string const& key, int default_value)
-    {
-        try
-        {
-            if (conf_map.find(key) != conf_map.end())
-                return std::stoi(conf_map[key]);
-        }
-        catch (...)
-        {
-        }
-
-        return default_value;
-    }
-
-    std::string get_string(std::string const& key, std::string const& default_value)
-    {
-        return conf_map.find(key) != conf_map.end() ? conf_map[key] : default_value;
-    }
-
-    bool is_android() {
-        bool ret = false;
-    #ifdef HAVE_PROPS
-        char const* default_value = "nodevice";
-        char value[PROP_VALUE_MAX];
-        property_get(device_property_key, value, default_value);
-        ret = strcmp(value, default_value) != 0;
-    #endif
-        return ret;
-    }
-
-private:
-    void parse_session_conf_file()
-    {
-        std::ifstream fs{default_file};
-
-    #ifdef HAVE_PROPS
-        if (!fs.is_open())
-        {
-            fs.clear();
-            char const* default_value = "";
-            char value[PROP_VALUE_MAX];
-            property_get(device_property_key, value, default_value);
-            fs.open(file_base + value + file_extension);
-        }
-    #endif
-
-        std::string line;
-        while (std::getline(fs, line))
-            conf_map.insert(parse_key_value_pair(line));
-    }
-
-    std::string trim(std::string const& s)
-    {
-       auto const wsfront = std::find_if_not(s.begin(), s.end(), [](int c) { return std::isspace(c); });
-       auto const wsback = std::find_if_not(s.rbegin(), s.rend(), [](int c) { return std::isspace(c); }).base();
-       return (wsback <= wsfront ? std::string() : std::string(wsfront, wsback));
-    }
-
-    std::pair<std::string,std::string> parse_key_value_pair(std::string kv)
-    {
-        auto const separator = kv.find("=");
-        auto const key = kv.substr(0, separator);
-        auto const value = separator != std::string::npos ?
-                           kv.substr(separator + 1, std::string::npos) :
-                           std::string{};
-
-        return {trim(key), trim(value)};
-    }
-
-    std::string const default_file{"/etc/ubuntu-touch-session.d/android.conf"};
-    std::string const file_base{"/etc/ubuntu-touch-session.d/"};
-    std::string const file_extension{".conf"};
-    char const* device_property_key = "ro.product.device";
-    std::map<std::string,std::string> conf_map;
 };
 
 static GLuint load_shader(const char *src, GLenum type)
@@ -320,7 +236,7 @@ try
     GLint offset[MAX_TEXTURES];
     GLint projMat[MAX_TEXTURES];
 
-    SessionConfig session_config;
+    auto deviceinfo = std::make_shared<DeviceInfo>();
 
     // Load wallpaper
     GError *error = nullptr;
@@ -340,7 +256,7 @@ try
     Backend backend = UNKOWN;
 
     if (backendEnv == nullptr) {
-        if (session_config.is_android()) {
+        if (deviceinfo->driverType() == DeviceInfo::DriverType::Halium) {
             printf("Is android device, defaults to mir\n");
             backend = MIR;
         } else {
@@ -440,13 +356,13 @@ try
     AnimationValues anim = {0.0, 0.0, 0};
     GTimer* timer = g_timer_new();
 
-    auto const pixels_per_gu = session_config.get_int("GRID_UNIT_PX", 13);
+    auto const pixels_per_gu = deviceinfo->gridUnit();
     auto const gu2px =
         [pixels_per_gu] (float gu)
         {
             return pixels_per_gu * gu;
         };
-    auto const native_orientation = session_config.get_string("NATIVE_ORIENTATION", "");
+    auto const native_orientation = deviceinfo->primaryOrientation();
 
     std::cout << "Spinner using pixels per grid unit: " <<  pixels_per_gu << std::endl;
     std::cout << "Spinner using native orientation: '" << native_orientation << "'" << std::endl;

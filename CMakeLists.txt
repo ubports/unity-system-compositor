@@ -39,7 +39,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto -ffat-lto-objects -fPIC -fno-strict-aliasing")
 
 find_package(PkgConfig)
-pkg_check_modules(ANDROIDPROPS libandroid-properties)
+pkg_check_modules(DEVICEINFO REQUIRED deviceinfo)
 pkg_check_modules(GDKPIXBUF REQUIRED gdk-pixbuf-2.0)
 pkg_check_modules(GLIB REQUIRED glib-2.0)
 pkg_check_modules(MIRCLIENT REQUIRED mirclient)
