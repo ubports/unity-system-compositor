@@ -8,9 +8,9 @@
 
 namespace
 {
-char const* const unity_gesture_name = "com.canonical.Unity.Gesture";
-char const* const unity_gesture_path = "/com/canonical/Unity/Gesture";
-char const* const unity_gesture_iface = "com.canonical.Unity.Gesture";
+char const* const unity_gesture_name = "com.canonical.Unity.Gestures";
+char const* const unity_gesture_path = "/com/canonical/Unity/Gestures";
+char const* const unity_gesture_iface = "com.canonical.Unity.Gestures";
 }
 
 usc::UnityGestureEventSink::UnityGestureEventSink(
@@ -22,11 +22,15 @@ usc::UnityGestureEventSink::UnityGestureEventSink(
 
 void usc::UnityGestureEventSink::notify_gesture(std::string const& name)
 {
+    const char * gesture = name.c_str();
+
     DBusMessageHandle signal{
         dbus_message_new_signal(
             unity_gesture_path,
             unity_gesture_iface,
-            name.c_str())};
+            "Gesture"),
+        DBUS_TYPE_STRING, gesture,
+        DBUS_TYPE_INVALID};
 
     dbus_connection_send(dbus_connection, signal, nullptr);
     dbus_connection_flush(dbus_connection);

@@ -3,7 +3,7 @@ Section: x11
 Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 Build-Depends: cmake,
-               cmake-data,
+               cmake-data:all,
                dbus,
                debhelper (>= 9),
                dh-python,
@@ -19,7 +19,7 @@ Build-Depends: cmake,
                libmirclient-dev (>= 0.26.0),
                libmirserver-dev (>= 0.26.0),
                pkg-config,
-               python3,
+               python3:native,
                python3-pil:native,
                python3-setuptools,
 Standards-Version: 3.9.8
