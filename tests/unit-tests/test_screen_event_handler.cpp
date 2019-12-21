@@ -17,6 +17,7 @@
  */
 
 #include "src/screen_event_handler.h"
+#include "src/gesture_event_sink.h"
 #include "src/power_button_event_sink.h"
 #include "src/user_activity_event_sink.h"
 
@@ -35,6 +36,11 @@ using namespace std::chrono_literals;
 
 namespace
 {
+
+struct MockGestureEventSink : usc::GestureEventSink
+{
+    MOCK_METHOD1(notify_gesture, void(std::string const&));
+};
 
 struct MockPowerButtonEventSink : usc::PowerButtonEventSink
 {
@@ -149,9 +155,11 @@ struct AScreenEventHandler : testing::Test
         {}, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 
     AdvanceableTimer timer;
+    NiceMock<MockGestureEventSink> mock_gesture_event_sink;
     NiceMock<MockPowerButtonEventSink> mock_power_button_event_sink;
     NiceMock<MockUserActivityEventSink> mock_user_activity_event_sink;
     usc::ScreenEventHandler screen_event_handler{
+        usc::test::fake_shared(mock_gesture_event_sink),
         usc::test::fake_shared(mock_power_button_event_sink),
         usc::test::fake_shared(mock_user_activity_event_sink),
         usc::test::fake_shared(timer)};

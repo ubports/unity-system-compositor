@@ -15,6 +15,7 @@
  */
 
 #include "screen_event_handler.h"
+#include "gesture_event_sink.h"
 #include "power_button_event_sink.h"
 #include "user_activity_event_sink.h"
 #include "clock.h"
@@ -25,6 +26,7 @@
 #include <cstdio>
 
 usc::ScreenEventHandler::ScreenEventHandler(
+    std::shared_ptr<GestureEventSink> const& gesture_event_sink,
     std::shared_ptr<PowerButtonEventSink> const& power_button_event_sink,
     std::shared_ptr<UserActivityEventSink> const& user_activity_event_sink,
     std::shared_ptr<Clock> const& clock)
@@ -47,7 +49,9 @@ bool usc::ScreenEventHandler::handle(MirEvent const& event)
     if (input_event_type == mir_input_event_type_key)
     {
         auto const kev = mir_input_event_get_keyboard_event(input_event);
-        if (mir_keyboard_event_scan_code(kev) == KEY_POWER)
+	int key_code = mir_keyboard_event_scan_code(kev);
+printf("  kev code: %d\n", key_code);
+        if (key_code == KEY_POWER)
         {
             auto const action = mir_keyboard_event_action(kev);
             if (action == mir_keyboard_action_down)
@@ -56,10 +60,22 @@ bool usc::ScreenEventHandler::handle(MirEvent const& event)
                 power_button_event_sink->notify_release();
         }
         // we might want to come up with a whole range of media player related keys
-        else if (mir_keyboard_event_scan_code(kev) == KEY_VOLUMEDOWN||
-                 mir_keyboard_event_scan_code(kev) == KEY_VOLUMEUP)
+        // KEY_NEXTSONG..KEY_ATTENDANT_TOGGLE can come from gestures of touchpanel
+        else if (   key_code == KEY_VOLUMEDOWN
+                 || key_code == KEY_VOLUMEUP
+                 || key_code == KEY_NEXTSONG
+                 || key_code == KEY_PREVIOUSSONG
+                 || key_code == KEY_PLAYPAUSE
+                 || key_code == KEY_CAMERA
+                 || key_code == KEY_ATTENDANT_TOGGLE)
         {
             // do not keep display on when interacting with media player
+            switch(key_code) {
+            case KEY_NEXTSONG: gesture_event_sink->notify_gesture("next-song"); break;
+            case KEY_PREVIOUSSONG: gesture_event_sink->notify_gesture("previous-song"); break;
+            case KEY_PLAYPAUSE: gesture_event_sink->notify_gesture("play-pause"); break;
+            case KEY_ATTENDANT_TOGGLE: gesture_event_sink->notify_gesture("toggle-flash"); break;
+            }
         }
         else if (mir_keyboard_event_action(kev) == mir_keyboard_action_down)
         {

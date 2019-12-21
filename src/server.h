@@ -41,6 +41,7 @@ class DMMessageHandler;
 class DMConnection;
 class Screen;
 class UnityDisplayService;
+class GestureEventSink;
 class PowerButtonEventSink;
 class UserActivityEventSink;
 class InputConfiguration;
@@ -70,6 +71,7 @@ public:
     virtual std::shared_ptr<mir::input::EventFilter> the_screen_event_handler();
     virtual std::shared_ptr<UnityDisplayService> the_unity_display_service();
     virtual std::shared_ptr<UnityInputService> the_unity_input_service();
+    virtual std::shared_ptr<GestureEventSink> the_gesture_event_sink();
     virtual std::shared_ptr<PowerButtonEventSink> the_power_button_event_sink();
     virtual std::shared_ptr<UserActivityEventSink> the_user_activity_event_sink();
     virtual std::shared_ptr<DBusEventLoop> the_dbus_event_loop();
@@ -128,6 +130,7 @@ private:
     mir::CachedPtr<DBusConnectionThread> dbus_thread;
     mir::CachedPtr<DBusEventLoop> dbus_loop;
     mir::CachedPtr<UnityDisplayService> unity_display_service;
+    mir::CachedPtr<GestureEventSink> gesture_event_sink;
     mir::CachedPtr<PowerButtonEventSink> power_button_event_sink;
     mir::CachedPtr<UserActivityEventSink> user_activity_event_sink;
     mir::CachedPtr<UnityInputService> unity_input_service;

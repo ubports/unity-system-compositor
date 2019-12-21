@@ -30,6 +30,7 @@
 #include "screen_event_handler.h"
 #include "unity_display_service.h"
 #include "unity_input_service.h"
+#include "unity_gesture_event_sink.h"
 #include "unity_power_button_event_sink.h"
 #include "unity_user_activity_event_sink.h"
 #include "dbus_connection_thread.h"
@@ -314,6 +315,7 @@ std::shared_ptr<mi::EventFilter> usc::Server::the_screen_event_handler()
         [this]
         {
             return std::make_shared<ScreenEventHandler>(
+                the_gesture_event_sink(),
                 the_power_button_event_sink(),
                 the_user_activity_event_sink(),
                 the_clock());
@@ -357,6 +359,15 @@ std::shared_ptr<usc::UnityDisplayService> usc::Server::the_unity_display_service
                     the_dbus_event_loop(),
                     dbus_bus_address(),
                     the_screen());
+        });
+}
+
+std::shared_ptr<usc::GestureEventSink> usc::Server::the_gesture_event_sink()
+{
+    return gesture_event_sink(
+        [this]
+        {
+            return std::make_shared<UnityGestureEventSink>(dbus_bus_address());
         });
 }
 

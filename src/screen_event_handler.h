@@ -26,6 +26,7 @@
 
 namespace usc
 {
+class GestureEventSink;
 class PowerButtonEventSink;
 class UserActivityEventSink;
 class Clock;
@@ -34,6 +35,7 @@ class ScreenEventHandler : public mir::input::EventFilter
 {
 public:
     ScreenEventHandler(
+        std::shared_ptr<GestureEventSink> const& gesture_event_sink,
         std::shared_ptr<PowerButtonEventSink> const& power_button_event_sink,
         std::shared_ptr<UserActivityEventSink> const& user_activity_event_sink,
         std::shared_ptr<Clock> const& clock);
@@ -44,6 +46,7 @@ private:
     void notify_activity_changing_power_state();
     void notify_activity_extending_power_state();
 
+    std::shared_ptr<GestureEventSink> const gesture_event_sink;
     std::shared_ptr<PowerButtonEventSink> const power_button_event_sink;
     std::shared_ptr<UserActivityEventSink> const user_activity_event_sink;
     std::shared_ptr<Clock> const clock;
