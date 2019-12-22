@@ -107,6 +107,7 @@ install(FILES
 )
 install(FILES
     com.canonical.Unity.Display.xml
+    com.canonical.Unity.Gestures.xml
     com.canonical.Unity.Input.xml
     com.canonical.Unity.PowerButton.xml
     com.canonical.Unity.UserActivity.xml

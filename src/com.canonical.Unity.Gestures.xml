@@ -1,6 +1,16 @@
 <!DOCTYPE node PUBLIC '-//freedesktop//DTD D-BUS Object Introspection 1.0//EN' 'http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd'>
 <node>
   <interface name='com.canonical.Unity.Gestures'>
+    <!--
+      Gesture:
+      @name: the name of the gesture. Currently the list of generated gestures is:
+        play-pause
+        next-song
+        previous-song
+        toggle-flash
+
+      Emitted when the compositor receives a key event it reconizes as being a gesture.
+    -->
     <signal name='Gesture'>
       <arg type="s" name="name"/>
     </signal>
