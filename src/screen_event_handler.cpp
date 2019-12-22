@@ -51,10 +51,10 @@ bool usc::ScreenEventHandler::handle(MirEvent const& event)
     {
         auto const kev = mir_input_event_get_keyboard_event(input_event);
 	int key_code = mir_keyboard_event_scan_code(kev);
+        auto const action = mir_keyboard_event_action(kev);
 printf("  kev code: %d\n", key_code);
         if (key_code == KEY_POWER)
         {
-            auto const action = mir_keyboard_event_action(kev);
             if (action == mir_keyboard_action_down)
                 power_button_event_sink->notify_press();
             else if (action == mir_keyboard_action_up)
@@ -71,14 +71,17 @@ printf("  kev code: %d\n", key_code);
                  || key_code == KEY_ATTENDANT_TOGGLE)
         {
             // do not keep display on when interacting with media player
-            switch(key_code) {
-            case KEY_NEXTSONG: gesture_event_sink->notify_gesture("next-song"); break;
-            case KEY_PREVIOUSSONG: gesture_event_sink->notify_gesture("previous-song"); break;
-            case KEY_PLAYPAUSE: gesture_event_sink->notify_gesture("play-pause"); break;
-            case KEY_ATTENDANT_TOGGLE: gesture_event_sink->notify_gesture("toggle-flash"); break;
+            // notify gestures on 'up'
+            if (action == mir_keyboard_action_up) { 
+                switch(key_code) {
+                case KEY_NEXTSONG: gesture_event_sink->notify_gesture("next-song"); break;
+                case KEY_PREVIOUSSONG: gesture_event_sink->notify_gesture("previous-song"); break;
+                case KEY_PLAYPAUSE: gesture_event_sink->notify_gesture("play-pause"); break;
+                case KEY_ATTENDANT_TOGGLE: gesture_event_sink->notify_gesture("toggle-flash"); break;
+                }
             }
         }
-        else if (mir_keyboard_event_action(kev) == mir_keyboard_action_down)
+        else if (action == mir_keyboard_action_down)
         {
             notify_activity_changing_power_state();
         }
