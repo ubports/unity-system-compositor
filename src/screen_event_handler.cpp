@@ -30,7 +30,8 @@ usc::ScreenEventHandler::ScreenEventHandler(
     std::shared_ptr<PowerButtonEventSink> const& power_button_event_sink,
     std::shared_ptr<UserActivityEventSink> const& user_activity_event_sink,
     std::shared_ptr<Clock> const& clock)
-    : power_button_event_sink{power_button_event_sink},
+    : gesture_event_sink{gesture_event_sink},
+      power_button_event_sink{power_button_event_sink},
       user_activity_event_sink{user_activity_event_sink},
       clock{clock},
       last_activity_changing_power_state_event_time{-event_period},
