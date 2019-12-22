@@ -29,7 +29,7 @@ void usc::UnityGestureEventSink::notify_gesture(std::string const& name)
             unity_gesture_path,
             unity_gesture_iface,
             "Gesture"),
-        DBUS_TYPE_STRING, gesture,
+        DBUS_TYPE_STRING, &gesture,
         DBUS_TYPE_INVALID};
 
     dbus_connection_send(dbus_connection, signal, nullptr);
