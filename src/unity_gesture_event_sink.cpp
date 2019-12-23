@@ -8,9 +8,9 @@
 
 namespace
 {
-char const* const unity_gesture_name = "com.canonical.Unity.Gestures";
-char const* const unity_gesture_path = "/com/canonical/Unity/Gestures";
-char const* const unity_gesture_iface = "com.canonical.Unity.Gestures";
+char const* const unity_gesture_name = "com.ubports.Unity.Gestures";
+char const* const unity_gesture_path = "/com/ubports/Unity/Gestures";
+char const* const unity_gesture_iface = "com.ubports.Unity.Gestures";
 }
 
 usc::UnityGestureEventSink::UnityGestureEventSink(

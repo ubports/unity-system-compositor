@@ -103,14 +103,15 @@ install(TARGETS unity-system-compositor
 # Install data files
 install(FILES 
     com.canonical.Unity.conf
+    com.ubports.Unity.conf
   DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/dbus-1/system.d
 )
 install(FILES
     com.canonical.Unity.Display.xml
-    com.canonical.Unity.Gestures.xml
     com.canonical.Unity.Input.xml
     com.canonical.Unity.PowerButton.xml
     com.canonical.Unity.UserActivity.xml
+    com.ubports.Unity.Gestures.xml
   DESTINATION ${CMAKE_INSTALL_DATADIR}/dbus-1/interfaces
 )
 
