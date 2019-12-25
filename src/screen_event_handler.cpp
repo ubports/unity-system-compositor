@@ -61,19 +61,27 @@ printf("  kev code: %d\n", key_code);
                 power_button_event_sink->notify_release();
         }
         // we might want to come up with a whole range of media player related keys
-        // KEY_NEXTSONG..KEY_ATTENDANT_TOGGLE can come from gestures of touchpanel
-        else if (   key_code == KEY_VOLUMEDOWN
+        else if (
+                 // can come from headset button
+                    key_code == KEY_VOLUMEDOWN
                  || key_code == KEY_VOLUMEUP
+                 || key_code == KEY_MEDIA
+
+                 // can come from gestures of touchpanel
                  || key_code == KEY_NEXTSONG
                  || key_code == KEY_PREVIOUSSONG
                  || key_code == KEY_PLAYPAUSE
                  || key_code == KEY_CAMERA
                  || key_code == KEY_ATTENDANT_TOGGLE)
+
         {
-            // do not keep display on when interacting with media player
+            // do not keep display on for these gestures
             // notify gestures on 'up'
             if (action == mir_keyboard_action_up) { 
                 switch(key_code) {
+                // volume up/down are already taken care of it seems
+                case KEY_MEDIA: gesture_event_sink->notify_gesture("media"); break;
+
                 case KEY_NEXTSONG: gesture_event_sink->notify_gesture("next-song"); break;
                 case KEY_PREVIOUSSONG: gesture_event_sink->notify_gesture("previous-song"); break;
                 case KEY_PLAYPAUSE: gesture_event_sink->notify_gesture("play-pause"); break;
