@@ -57,10 +57,13 @@ void usc::SessionSwitcher::add(std::shared_ptr<Session> const& session, pid_t pi
 {
     std::lock_guard<std::mutex> lock{mutex};
 
-    if (pid == spinner_process->pid())
-        spinner_name = session->name();
 
-    sessions[session->name()] = SessionInfo(session);
+    if (pid == spinner_process->pid()) {
+        sessions[session->name()] = SessionInfo(session, true);
+    } else {
+        sessions[session->name()] = SessionInfo(session);
+    }
+
     update_displayed_sessions();
 }
 
@@ -68,25 +71,18 @@ void usc::SessionSwitcher::remove(std::shared_ptr<mir::scene::Session> const& se
 {
     std::lock_guard<std::mutex> lock{mutex};
 
-    auto const& name = session->name();
+    for (auto spair : sessions) {
+        if (spair.second.session == nullptr)
+            continue;
 
-    auto const iter = sessions.find(name);
-    if (iter == sessions.end())
-        return;
+        if (spair.second.session->corresponds_to(session.get())) {
+            spair.second.session->hide();
 
-    if (iter->second.session == nullptr)
-        return;
-
-    if (!iter->second.session->corresponds_to(session.get()))
-        return;
-
-    if (name == spinner_name)
-        spinner_name = "";
-
-    iter->second.session->hide();
-
-    sessions.erase(iter);
-    update_displayed_sessions();
+            sessions.erase(sessions.find(spair.first));
+            update_displayed_sessions();
+            return;
+        }
+    }
 }
 
 void usc::SessionSwitcher::set_active_session(std::string const& name)
@@ -224,17 +220,16 @@ void usc::SessionSwitcher::hide_session(std::string const& name)
 
 void usc::SessionSwitcher::ensure_spinner_will_be_shown(ShowMode show_mode)
 {
-    auto const iter = sessions.find(spinner_name);
-    if (iter == sessions.end())
-    {
-        spinner_process->ensure_running();
+    for (auto spair : sessions) {
+        if (spair.second.is_spinner) {
+            if (show_mode == ShowMode::as_active)
+                spair.second.session->raise_and_focus();
+            spair.second.session->show();
+            return;
+        }
     }
-    else
-    {
-        if (show_mode == ShowMode::as_active)
-            iter->second.session->raise_and_focus();
-        iter->second.session->show();
-    }
+
+    spinner_process->ensure_running();
 }
 
 void usc::SessionSwitcher::ensure_spinner_is_not_running()
