@@ -66,12 +66,14 @@ private:
     struct SessionInfo
     {
         SessionInfo() = default;
-        explicit SessionInfo(std::shared_ptr<Session> session)
-            : session{session}
+        explicit SessionInfo(std::shared_ptr<Session> session, bool spinner = false)
+            : session{session},
+              is_spinner{spinner}
         {
         }
         std::shared_ptr<Session> session;
         bool ready = false;
+        bool is_spinner = false;
     };
 
     std::mutex mutex;
@@ -79,7 +81,6 @@ private:
     std::map<std::string, SessionInfo> sessions;
     std::string active_name;
     std::string next_name;
-    std::string spinner_name;
     bool booting;
     std::weak_ptr<Screen> screen_weak;
     bool has_active_outputs;
@@ -88,4 +89,3 @@ private:
 }
 
 #endif
-
