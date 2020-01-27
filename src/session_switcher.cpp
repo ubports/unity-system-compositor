@@ -27,8 +27,10 @@
 usc::SessionSwitcher::SessionSwitcher(std::shared_ptr<Spinner> const& spinner)
     : spinner_process{spinner},
       booting{true},
-      has_active_outputs{true}
+      has_active_outputs{true},
+      wayland{!!getenv("WAYLAND_DISPLAY")}
 {
+    if (wayland) printf("Using wayland workaround!\n");
 }
 
 usc::SessionSwitcher::~SessionSwitcher()
@@ -57,11 +59,12 @@ void usc::SessionSwitcher::add(std::shared_ptr<Session> const& session, pid_t pi
 {
     std::lock_guard<std::mutex> lock{mutex};
 
-
+    // WAYLAND HACK
+    // Wayland currently does not give us any session name
     if (pid == spinner_process->pid()) {
-        sessions[session->name()] = SessionInfo(session, true);
+        sessions[wayland ? "spinner" : session->name()] = SessionInfo(session, true);
     } else {
-        sessions[session->name()] = SessionInfo(session);
+        sessions[wayland ? "session-0" : session->name()] = SessionInfo(session);
     }
 
     update_displayed_sessions();
