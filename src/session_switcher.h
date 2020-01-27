@@ -84,6 +84,7 @@ private:
     bool booting;
     std::weak_ptr<Screen> screen_weak;
     bool has_active_outputs;
+    const bool wayland;
 };
 
 }
