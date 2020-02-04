@@ -50,9 +50,10 @@ bool usc::ScreenEventHandler::handle(MirEvent const& event)
     if (input_event_type == mir_input_event_type_key)
     {
         auto const kev = mir_input_event_get_keyboard_event(input_event);
-	int key_code = mir_keyboard_event_scan_code(kev);
+        int key_code = mir_keyboard_event_scan_code(kev);
         auto const action = mir_keyboard_event_action(kev);
-printf("  kev code: %d\n", key_code);
+
+        printf("  kev code: %d\n", key_code);
         if (key_code == KEY_POWER)
         {
             if (action == mir_keyboard_action_down)
@@ -77,7 +78,7 @@ printf("  kev code: %d\n", key_code);
         {
             // do not keep display on for these gestures
             // notify gestures on 'up'
-            if (action == mir_keyboard_action_up) { 
+            if (action == mir_keyboard_action_up) {
                 switch(key_code) {
                 // volume up/down are already taken care of it seems
                 case KEY_MEDIA: gesture_event_sink->notify_gesture("media"); break;
