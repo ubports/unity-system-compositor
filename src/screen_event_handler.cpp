@@ -81,12 +81,22 @@ bool usc::ScreenEventHandler::handle(MirEvent const& event)
             if (action == mir_keyboard_action_up) {
                 switch(key_code) {
                 // volume up/down are already taken care of it seems
-                case KEY_MEDIA: gesture_event_sink->notify_gesture("media"); break;
+                case KEY_MEDIA:
+                    gesture_event_sink->notify_gesture("media");
+                    break;
 
-                case KEY_NEXTSONG: gesture_event_sink->notify_gesture("next-song"); break;
-                case KEY_PREVIOUSSONG: gesture_event_sink->notify_gesture("previous-song"); break;
-                case KEY_PLAYPAUSE: gesture_event_sink->notify_gesture("play-pause"); break;
-                case KEY_ATTENDANT_TOGGLE: gesture_event_sink->notify_gesture("toggle-flash"); break;
+                case KEY_NEXTSONG:
+                    gesture_event_sink->notify_gesture("next-song");
+                    break;
+                case KEY_PREVIOUSSONG:
+                    gesture_event_sink->notify_gesture("previous-song");
+                    break;
+                case KEY_PLAYPAUSE:
+                    gesture_event_sink->notify_gesture("play-pause");
+                    break;
+                case KEY_ATTENDANT_TOGGLE:
+                    gesture_event_sink->notify_gesture("toggle-flash");
+                    break;
                 }
             }
         }
