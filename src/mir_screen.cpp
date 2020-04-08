@@ -246,6 +246,9 @@ try
 
     if (has_active_outputs(*displayConfig))
         compositor->start();
+
+    // Setting power mode is considered a configuration change.
+    configuration_applied(displayConfig);
 }
 catch (std::exception const&)
 {
