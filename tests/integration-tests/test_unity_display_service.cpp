@@ -1,5 +1,7 @@
 /*
  * Copyright © 2015 Canonical Ltd.
+ * Copyright (C) 2020 UBports foundation.
+ * Author(s): Ratchanan Srirattanamet <ratchanan@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -42,10 +44,16 @@ namespace
 
 struct FakeScreen : ut::MockScreen
 {
-    void register_active_outputs_handler(usc::ActiveOutputsHandler const& handler)
+    void register_active_outputs_handler(void * /*ownerKey*/, usc::ActiveOutputsHandler const& handler)
     {
         std::lock_guard<std::mutex> lock{active_outputs_mutex};
         active_outputs_handler = handler;
+    }
+
+    void unregister_active_outputs_handler(void * /*ownerKey*/)
+    {
+        std::lock_guard<std::mutex> lock{active_outputs_mutex};
+        active_outputs_handler = [](usc::ActiveOutputs const&){};
     }
 
     void notify_active_outputs(usc::ActiveOutputs const& active_outputs)
