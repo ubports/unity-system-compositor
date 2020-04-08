@@ -176,6 +176,24 @@ TEST_F(AMirScreen, configuration_applied_calls_handler)
     EXPECT_THAT(active_outputs, Eq(config_active_outputs));
 }
 
+TEST_F(AMirScreen, turning_on_calls_handler)
+{
+    mir_screen->register_active_outputs_handler(this, active_outputs_handler);
+
+    turn_all_displays_on();
+
+    EXPECT_THAT(active_outputs, Eq(usc::ActiveOutputs{1, 0}));
+}
+
+TEST_F(AMirScreen, turning_off_calls_handler)
+{
+    mir_screen->register_active_outputs_handler(this, active_outputs_handler);
+
+    turn_all_displays_off();
+
+    EXPECT_THAT(active_outputs, Eq(usc::ActiveOutputs{0, 0}));
+}
+
 TEST_F(AMirScreen, support_multiple_handlers)
 {
     bool another_handler_called = false;
