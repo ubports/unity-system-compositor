@@ -1,5 +1,7 @@
 /*
  * Copyright © 2014-2015 Canonical Ltd.
+ * Copyright (C) 2020 UBports foundation.
+ * Author(s): Ratchanan Srirattanamet <ratchanan@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -18,6 +20,7 @@
 
 #include "src/session_switcher.h"
 #include "src/spinner.h"
+#include "usc/test/mock_screen.h"
 
 #include "mir/frontend/session.h"
 #include <mir/version.h>
@@ -742,4 +745,29 @@ TEST_F(ASessionSwitcher, ignores_removal_of_untracked_session)
     auto const other = create_stub_session(active_name);
     switcher.remove(other->corresponding_session());
     EXPECT_THAT(fake_scene.displayed_sessions(), ElementsAre(active_name));
+}
+
+TEST_F(ASessionSwitcher, hides_all_sessions_on_inactive_display)
+{
+    using namespace testing;
+    namespace ust = usc::test;
+
+    usc::ActiveOutputsHandler active_outputs_handler;
+
+    auto mock_screen = std::make_shared<ust::MockScreen>();
+    ON_CALL(*mock_screen, register_active_outputs_handler(_, _))
+        .WillByDefault(Invoke(
+            [&active_outputs_handler] (void * /* ownerKey */, usc::ActiveOutputsHandler const& handler)
+                { active_outputs_handler = handler; }));
+    switcher.set_screen(mock_screen);
+
+    boot();
+
+    auto original_displayed_sessions = fake_scene.displayed_sessions();
+
+    active_outputs_handler(usc::ActiveOutputs{0, 0});
+    EXPECT_THAT(fake_scene.displayed_sessions(), IsEmpty());
+
+    active_outputs_handler(usc::ActiveOutputs{1, 0});
+    EXPECT_EQ(fake_scene.displayed_sessions(), original_displayed_sessions);
 }
