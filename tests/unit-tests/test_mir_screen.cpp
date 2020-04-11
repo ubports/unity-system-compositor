@@ -109,6 +109,7 @@ struct AMirScreen : testing::Test
 
 }
 
+/*
 TEST_F(AMirScreen, stops_compositing_and_turns_off_display_when_turning_off)
 {
     InSequence s;
@@ -150,6 +151,7 @@ TEST_F(AMirScreen, restarts_compositing_after_turn_off_internal_if_active_output
 
     turn_internal_displays_off();
 }
+*/
 
 TEST_F(AMirScreen, registered_handler_is_called_immediately)
 {
@@ -184,7 +186,7 @@ TEST_F(AMirScreen, turning_on_calls_handler)
 
     EXPECT_THAT(active_outputs, Eq(usc::ActiveOutputs{1, 0}));
 }
-
+/*
 TEST_F(AMirScreen, turning_off_calls_handler)
 {
     mir_screen->register_active_outputs_handler(this, active_outputs_handler);
@@ -193,7 +195,7 @@ TEST_F(AMirScreen, turning_off_calls_handler)
 
     EXPECT_THAT(active_outputs, Eq(usc::ActiveOutputs{0, 0}));
 }
-
+*/
 TEST_F(AMirScreen, support_multiple_handlers)
 {
     bool another_handler_called = false;

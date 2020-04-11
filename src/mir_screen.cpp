@@ -247,6 +247,14 @@ void usc::MirScreen::configuration_updated_for_session(
 void usc::MirScreen::set_power_mode(MirPowerMode mode, SetPowerModeFilter const& filter)
 try
 {
+    // SUPER HACK!
+    // We cant stop the rendering with a nested wayland session
+    // as we will not be able to replay this infomation to the
+    // nested compositor causing it to keep rendering
+    // even tough the main compositor do not consume
+    // buffers causing deadlook in nested rendering thread.
+    return;
+
     std::shared_ptr<mg::DisplayConfiguration> displayConfig = display->configuration();
 
     displayConfig->for_each_output(
