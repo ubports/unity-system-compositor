@@ -142,6 +142,20 @@ usc::MirScreen::MirScreen(
         log_exception_in(__func__);
         throw;
     }
+
+    try
+    {
+        // We can be constructed after the initial_configuration() event.
+        // Count active outputs based on current configuration so that we have
+        // the correct info from the begining.
+        active_outputs = count_active_outputs(*display->configuration());
+    }
+    catch(...)
+    {
+        // Probably the configuration is not ready. Ignore. Hopefully
+        // initial_configuration() will be called later.
+        log_exception_in(__func__);
+    }
 }
 
 usc::MirScreen::~MirScreen() = default;
