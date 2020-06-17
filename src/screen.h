@@ -1,5 +1,7 @@
 /*
  * Copyright © 2014-2015 Canonical Ltd.
+ * Copyright (C) 2020 UBports foundation.
+ * Author(s): Ratchanan Srirattanamet <ratchanan@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -50,7 +52,9 @@ public:
     virtual void turn_on(OutputFilter filter) = 0;
     virtual void turn_off(OutputFilter filter) = 0;
     virtual void register_active_outputs_handler(
-        ActiveOutputsHandler const& handler) = 0;
+        void * ownerKey, ActiveOutputsHandler const& handler) = 0;
+    virtual void unregister_active_outputs_handler(
+        void * ownerKey) = 0;
 
 protected:
     Screen() = default;
