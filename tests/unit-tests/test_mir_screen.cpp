@@ -1,7 +1,5 @@
 /*
  * Copyright © 2015 Canonical Ltd.
- * Copyright (C) 2020 UBports foundation.
- * Author(s): Ratchanan Srirattanamet <ratchanan@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -153,14 +151,14 @@ TEST_F(AMirScreen, restarts_compositing_after_turn_off_internal_if_active_output
 
 TEST_F(AMirScreen, registered_handler_is_called_immediately)
 {
-    mir_screen->register_active_outputs_handler(this, active_outputs_handler);
+    mir_screen->register_active_outputs_handler(active_outputs_handler);
 
-    EXPECT_THAT(active_outputs, Eq(usc::ActiveOutputs{1, 0}));
+    EXPECT_THAT(active_outputs, Eq(usc::ActiveOutputs{}));
 }
 
 TEST_F(AMirScreen, initial_configuration_calls_handler)
 {
-    mir_screen->register_active_outputs_handler(this, active_outputs_handler);
+    mir_screen->register_active_outputs_handler(active_outputs_handler);
 
     mir_screen->initial_configuration(ut::fake_shared(stub_display_configuration));
 
@@ -169,46 +167,9 @@ TEST_F(AMirScreen, initial_configuration_calls_handler)
 
 TEST_F(AMirScreen, configuration_applied_calls_handler)
 {
-    mir_screen->register_active_outputs_handler(this, active_outputs_handler);
+    mir_screen->register_active_outputs_handler(active_outputs_handler);
 
     mir_screen->configuration_applied(ut::fake_shared(stub_display_configuration));
 
     EXPECT_THAT(active_outputs, Eq(config_active_outputs));
-}
-
-TEST_F(AMirScreen, turning_on_calls_handler)
-{
-    mir_screen->register_active_outputs_handler(this, active_outputs_handler);
-
-    turn_all_displays_on();
-
-    EXPECT_THAT(active_outputs, Eq(usc::ActiveOutputs{1, 0}));
-}
-
-TEST_F(AMirScreen, turning_off_calls_handler)
-{
-    mir_screen->register_active_outputs_handler(this, active_outputs_handler);
-
-    turn_all_displays_off();
-
-    EXPECT_THAT(active_outputs, Eq(usc::ActiveOutputs{0, 0}));
-}
-
-TEST_F(AMirScreen, support_multiple_handlers)
-{
-    bool another_handler_called = false;
-
-    mir_screen->register_active_outputs_handler(this, active_outputs_handler);
-    // Use a different object as an owner for additional handler
-    mir_screen->register_active_outputs_handler(&display,
-        [&another_handler_called](usc::ActiveOutputs const&)
-            { another_handler_called = true; });
-
-    EXPECT_TRUE(another_handler_called);
-
-    another_handler_called = false;
-    mir_screen->configuration_applied(ut::fake_shared(stub_display_configuration));
-    EXPECT_TRUE(another_handler_called);
-
-    mir_screen->unregister_active_outputs_handler(&display);
 }
