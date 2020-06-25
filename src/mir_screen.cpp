@@ -1,7 +1,5 @@
 /*
  * Copyright © 2014-2015 Canonical Ltd.
- * Copyright (C) 2020 UBports foundation.
- * Author(s): Ratchanan Srirattanamet <ratchanan@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -126,7 +124,8 @@ usc::MirScreen::MirScreen(
     std::shared_ptr<mir::compositor::Compositor> const& compositor,
     std::shared_ptr<mir::graphics::Display> const& display)
     : compositor{compositor},
-      display{display}
+      display{display},
+      active_outputs_handler{[](ActiveOutputs const&){}}
 {
     try
     {
@@ -159,23 +158,15 @@ void usc::MirScreen::turn_off(OutputFilter output_filter)
 }
 
 void usc::MirScreen::register_active_outputs_handler(
-    void * ownerKey, ActiveOutputsHandler const& handler)
+    ActiveOutputsHandler const& handler)
 {
     // It's not ideal to call the handler under lock, but we need this to
     // guarantee that after this function returns no invocation of the old
     // handler will be in progress. Alternatively, we would need to implement
     // an event loop.
     std::lock_guard<std::mutex> lock{active_outputs_mutex};
-    active_outputs_handlers[ownerKey] = handler;
-    // Call only the new handler immediately.
-    handler(active_outputs);
-}
-
-void usc::MirScreen::unregister_active_outputs_handler(
-    void * ownerKey)
-{
-    std::lock_guard<std::mutex> lock{active_outputs_mutex};
-    active_outputs_handlers.erase(ownerKey);
+    active_outputs_handler = handler;
+    active_outputs_handler(active_outputs);
 }
 
 void usc::MirScreen::initial_configuration(
@@ -183,8 +174,7 @@ void usc::MirScreen::initial_configuration(
 {
     std::lock_guard<std::mutex> lock{active_outputs_mutex};
     active_outputs = count_active_outputs(*display_configuration);
-    for (auto const& pair: active_outputs_handlers)
-        pair.second(active_outputs);
+    active_outputs_handler(active_outputs);
 }
 
 void usc::MirScreen::configuration_applied(
@@ -192,8 +182,7 @@ void usc::MirScreen::configuration_applied(
 {
     std::lock_guard<std::mutex> lock{active_outputs_mutex};
     active_outputs = count_active_outputs(*display_configuration);
-    for (auto const& pair: active_outputs_handlers)
-        pair.second(active_outputs);
+    active_outputs_handler(active_outputs);
 }
 
 void usc::MirScreen::base_configuration_updated(

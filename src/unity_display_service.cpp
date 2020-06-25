@@ -1,7 +1,5 @@
 /*
  * Copyright © 2015 Canonical Ltd.
- * Copyright (C) 2020 UBports foundation.
- * Author(s): Ratchanan Srirattanamet <ratchanan@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -90,7 +88,7 @@ usc::UnityDisplayService::UnityDisplayService(
     connection->request_name(dbus_display_service_name);
     connection->add_filter(handle_dbus_message_thunk, this);
 
-    screen->register_active_outputs_handler(this,
+    screen->register_active_outputs_handler(
         [this] (ActiveOutputs const& active_outputs_arg)
         {
             this->loop->enqueue(
@@ -104,7 +102,7 @@ usc::UnityDisplayService::UnityDisplayService(
 
 usc::UnityDisplayService::~UnityDisplayService()
 {
-    screen->unregister_active_outputs_handler(this);
+    screen->register_active_outputs_handler([](ActiveOutputs const&){});
 }
 
 ::DBusHandlerResult usc::UnityDisplayService::handle_dbus_message_thunk(

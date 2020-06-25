@@ -1,7 +1,5 @@
 /*
  * Copyright © 2014-2015 Canonical Ltd.
- * Copyright (C) 2020 UBports foundation.
- * Author(s): Ratchanan Srirattanamet <ratchanan@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -25,7 +23,6 @@
 #include <chrono>
 #include <memory>
 #include <mutex>
-#include <map>
 
 namespace mir
 {
@@ -46,8 +43,7 @@ public:
     // From Screen
     void turn_on(OutputFilter output_filter) override;
     void turn_off(OutputFilter output_filter) override;
-    void register_active_outputs_handler(void * ownerKey, ActiveOutputsHandler const& handler) override;
-    void unregister_active_outputs_handler(void * ownerKey) override;
+    void register_active_outputs_handler(ActiveOutputsHandler const& handler) override;
 
     // From DisplayConfigurationObserver
     void initial_configuration(
@@ -77,7 +73,7 @@ private:
     std::shared_ptr<mir::graphics::Display> const display;
 
     std::mutex active_outputs_mutex;
-    std::map<void *, ActiveOutputsHandler> active_outputs_handlers;
+    ActiveOutputsHandler active_outputs_handler;
     ActiveOutputs active_outputs;
 };
 
