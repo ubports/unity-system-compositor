@@ -1,7 +1,5 @@
 /*
  * Copyright © 2014-2015 Canonical Ltd.
- * Copyright (C) 2020 UBports foundation.
- * Author(s): Ratchanan Srirattanamet <ratchanan@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -300,9 +298,6 @@ std::shared_ptr<usc::Screen> usc::Server::the_screen()
                 the_display());
 
             the_display_configuration_observer_registrar()->register_interest(mir_screen);
-            // the_session_switcher() can't call the_screen() as that will create a
-            // dependency loop. Set it here instead.
-            the_session_switcher()->set_screen(mir_screen);
 
             return mir_screen;
         });
