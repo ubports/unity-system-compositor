@@ -30,7 +30,7 @@ set(USC_SRCS
   system_compositor.cpp
   thread_name.cpp
   dbus_connection_thread.cpp
-  unity_gesture_event_sink.cpp
+  lomiri_gesture_event_sink.cpp
   unity_input_service.cpp
   unity_input_service_introspection.h
   unity_display_service.cpp
@@ -103,7 +103,7 @@ install(TARGETS unity-system-compositor
 # Install data files
 install(FILES 
     com.canonical.Unity.conf
-    com.ubports.Unity.conf
+    com.ubports.Lomiri.conf
   DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/dbus-1/system.d
 )
 install(FILES
@@ -111,7 +111,7 @@ install(FILES
     com.canonical.Unity.Input.xml
     com.canonical.Unity.PowerButton.xml
     com.canonical.Unity.UserActivity.xml
-    com.ubports.Unity.Gestures.xml
+    com.ubports.Lomiri.Gestures.xml
   DESTINATION ${CMAKE_INSTALL_DATADIR}/dbus-1/interfaces
 )
 

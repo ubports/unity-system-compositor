@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef USC_UNITY_GESTURE_EVENT_SINK_H_
-#define USC_UNITY_GESTURE_EVENT_SINK_H_
+#ifndef USC_LOMIRI_GESTURE_EVENT_SINK_H_
+#define USC_LOMIRI_GESTURE_EVENT_SINK_H_
 
 #include "gesture_event_sink.h"
 #include "dbus_connection_handle.h"
@@ -23,10 +23,10 @@
 namespace usc
 {
 
-class UnityGestureEventSink : public GestureEventSink
+class LomiriGestureEventSink : public GestureEventSink
 {
 public:
-   UnityGestureEventSink(std::string const& dbus_address);
+   LomiriGestureEventSink(std::string const& dbus_address);
 
    void notify_gesture(std::string const& name) override;
 

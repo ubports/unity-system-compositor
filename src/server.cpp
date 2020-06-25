@@ -30,7 +30,7 @@
 #include "screen_event_handler.h"
 #include "unity_display_service.h"
 #include "unity_input_service.h"
-#include "unity_gesture_event_sink.h"
+#include "lomiri_gesture_event_sink.h"
 #include "unity_power_button_event_sink.h"
 #include "unity_user_activity_event_sink.h"
 #include "dbus_connection_thread.h"
@@ -367,7 +367,7 @@ std::shared_ptr<usc::GestureEventSink> usc::Server::the_gesture_event_sink()
     return gesture_event_sink(
         [this]
         {
-            return std::make_shared<UnityGestureEventSink>(dbus_bus_address());
+            return std::make_shared<LomiriGestureEventSink>(dbus_bus_address());
         });
 }
 
