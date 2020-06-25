@@ -1,7 +1,5 @@
 /*
  * Copyright © 2014 Canonical Ltd.
- * Copyright (C) 2020 UBports foundation.
- * Author(s): Ratchanan Srirattanamet <ratchanan@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -30,14 +28,11 @@
 namespace usc
 {
 class Spinner;
-class Screen;
 
 class SessionSwitcher : public DMMessageHandler, public SessionMonitor
 {
 public:
     explicit SessionSwitcher(std::shared_ptr<Spinner> const& spinner);
-
-    ~SessionSwitcher();
 
     /* From SessionMonitor */
     void add(std::shared_ptr<Session> const& session, pid_t pid) override;
@@ -48,14 +43,11 @@ public:
     void set_active_session(std::string const& name) override;
     void set_next_session(std::string const& name) override;
 
-    void set_screen(std::shared_ptr<Screen> const& screen);
-
 private:
     enum class ShowMode { as_active, as_next };
 
     void update_displayed_sessions();
     void hide_uninteresting_sessions();
-    void hide_all_sessions();
     bool is_session_ready_for_display(std::string const& name);
     bool is_session_expected_to_become_ready(std::string const& name);
     void show_session(std::string const& name, ShowMode show_mode);
@@ -81,8 +73,6 @@ private:
     std::string next_name;
     std::string spinner_name;
     bool booting;
-    std::weak_ptr<Screen> screen_weak;
-    bool has_active_outputs;
 };
 
 }

@@ -1,7 +1,5 @@
 /*
  * Copyright © 2014 Canonical Ltd.
- * Copyright (C) 2020 UBports foundation.
- * Author(s): Ratchanan Srirattanamet <ratchanan@ubports.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -20,37 +18,13 @@
 
 #include "session_switcher.h"
 #include "spinner.h"
-#include "screen.h"
 
 #include <mir/frontend/session.h>
 
 usc::SessionSwitcher::SessionSwitcher(std::shared_ptr<Spinner> const& spinner)
     : spinner_process{spinner},
-      booting{true},
-      has_active_outputs{true}
+      booting{true}
 {
-}
-
-usc::SessionSwitcher::~SessionSwitcher()
-{
-    if (auto screen = screen_weak.lock())
-        screen->unregister_active_outputs_handler(this);
-}
-
-void usc::SessionSwitcher::set_screen(std::shared_ptr<Screen> const& screen)
-{
-    if (auto old_screen = screen_weak.lock()) // Just in case
-        old_screen->unregister_active_outputs_handler(this);
-
-    screen_weak = screen;
-
-    screen->register_active_outputs_handler(this,
-        [this](ActiveOutputs const& active_outputs) {
-            has_active_outputs =
-                (active_outputs.internal + active_outputs.external != 0);
-            update_displayed_sessions();
-        }
-    );
 }
 
 void usc::SessionSwitcher::add(std::shared_ptr<Session> const& session, pid_t pid)
@@ -120,9 +94,6 @@ void usc::SessionSwitcher::mark_ready(mir::frontend::Session const* session)
 
 void usc::SessionSwitcher::update_displayed_sessions()
 {
-    if (!has_active_outputs)
-        return hide_all_sessions();
-
     hide_uninteresting_sessions();
 
     bool show_spinner = false;
@@ -179,14 +150,6 @@ void usc::SessionSwitcher::hide_uninteresting_sessions()
         {
             pair.second.session->hide();
         }
-    }
-}
-
-void usc::SessionSwitcher::hide_all_sessions()
-{
-    for (auto const& pair : sessions)
-    {
-        pair.second.session->hide();
     }
 }
 
