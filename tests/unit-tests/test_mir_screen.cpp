@@ -155,7 +155,7 @@ TEST_F(AMirScreen, registered_handler_is_called_immediately)
 {
     mir_screen->register_active_outputs_handler(this, active_outputs_handler);
 
-    EXPECT_THAT(active_outputs, Eq(usc::ActiveOutputs{1, 0}));
+    EXPECT_THAT(active_outputs, Eq(usc::ActiveOutputs{}));
 }
 
 TEST_F(AMirScreen, initial_configuration_calls_handler)
