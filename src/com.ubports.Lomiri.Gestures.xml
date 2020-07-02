@@ -4,10 +4,11 @@
     <!--
       Gesture:
       @name: the name of the gesture. Currently the list of generated gestures is:
-        play-pause
-        next-song
-        previous-song
-        toggle-flash
+        media        (KEY_MEDIA)
+        play-pause   (KEY_PLAYPAUSE)
+        next-song    (KEY_NEXTSONG)
+        previous-s   (KEY_PREVIOUSSONGg
+        toggle-flash (KEY_ATTENDANT_TOGGLE)
 
       Emitted when the compositor receives a key event it reconizes as being a gesture.
     -->
