@@ -373,8 +373,8 @@ try
             surface->paint([&](unsigned int width, unsigned int height)
             {
                 bool const needs_rotation =
-                    (width < height && native_orientation == "landscape") ||
-                    (width > height && native_orientation == "portrait");
+                    (width < height && native_orientation == "Landscape") ||
+                    (width > height && native_orientation == "Portrait");
 
                 GLfloat robotWidth = gu2px (14.5f);
                 GLfloat robotHeight = gu2px (5.0f);
