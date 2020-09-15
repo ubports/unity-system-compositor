@@ -16,6 +16,8 @@
 
 #include "eglapp.h"
 
+#include <stdexcept>
+
 #include "miregl.h"
 
 
