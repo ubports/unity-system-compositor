@@ -19,6 +19,7 @@
 #include <wayland-client.h>
 
 #include <cstring>
+#include <stdexcept>
 
 #include <GLES2/gl2.h>
 
