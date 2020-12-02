@@ -404,9 +404,30 @@ try
         for (auto const& surface : surfaces)
             surface->paint([&](unsigned int width, unsigned int height)
             {
-                bool const needs_rotation =
-                    (width < height && native_orientation == "landscape") ||
-                    (width > height && native_orientation == "portrait");
+                float rotation = 0;
+                if (width < height)
+                {
+                    if (native_orientation == "landscape")
+                    {
+                        rotation = 90;
+                    }
+                    else if (native_orientation == "inverted_landscape")
+                    {
+                        rotation = 270;
+                    }
+                }
+                else if (width > height)
+                {
+                    if (native_orientation == "portrait")
+                    {
+                        rotation = 90;
+                    }
+                    else if (native_orientation == "inverted_portrait")
+                    {
+                        rotation = 270;
+                    }
+
+                }
 
                 GLfloat robotWidth = gu2px (14.5f);
                 GLfloat robotHeight = gu2px (5.0f);
@@ -417,7 +438,7 @@ try
 
                 auto render_width = width;
                 auto render_height = height;
-                if (needs_rotation)
+                if (rotation == 90 || rotation == 270)
                     std::swap(render_width, render_height);
 
                 const GLfloat fullscreen[] = {
@@ -442,8 +463,8 @@ try
                 };
 
                 auto mvpMatrix = glm::mat4(1.0f);
-                if (needs_rotation)
-                    mvpMatrix = glm::rotate(mvpMatrix, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+                if (rotation > 0)
+                    mvpMatrix = glm::rotate(mvpMatrix, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
                 mvpMatrix = glm::translate(mvpMatrix, glm::vec3(-1.0, -1.0, 0.0f));
                 mvpMatrix = glm::scale(mvpMatrix,
                                        glm::vec3(2.0f / render_width, 2.0f / render_height, 1.0f));
