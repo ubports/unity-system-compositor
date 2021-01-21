@@ -19,6 +19,7 @@
 #ifndef USC_MIR_SCREEN_H_
 #define USC_MIR_SCREEN_H_
 
+#include <mir/version.h>
 #include <mir/graphics/display_configuration_observer.h>
 #include "screen.h"
 
@@ -58,19 +59,30 @@ public:
     void base_configuration_updated(
         std::shared_ptr<mir::graphics::DisplayConfiguration const> const&) override;
     void session_configuration_applied(
+#if MIR_SERVER_VERSION >= MIR_VERSION_NUMBER(1, 6, 0)
         std::shared_ptr<mir::scene::Session> const&,
+#else
+        std::shared_ptr<mir::frontend::Session> const&,
+#endif
         std::shared_ptr<mir::graphics::DisplayConfiguration> const&) override;
     void session_configuration_removed(
-        std::shared_ptr<mir::scene::Session> const&) override;
+#if MIR_SERVER_VERSION >= MIR_VERSION_NUMBER(1, 6, 0)
+        std::shared_ptr<mir::scene::Session> const&
+#else
+        std::shared_ptr<mir::frontend::Session> const&
+#endif
+        ) override;
     void configuration_failed(
         std::shared_ptr<mir::graphics::DisplayConfiguration const> const&,
         std::exception const&) override;
     void catastrophic_configuration_error(
         std::shared_ptr<mir::graphics::DisplayConfiguration const> const&,
         std::exception const&) override;
+#if MIR_SERVER_VERSION >= MIR_VERSION_NUMBER(1, 6, 0)
     void configuration_updated_for_session(
         std::shared_ptr<mir::scene::Session> const&,
         std::shared_ptr<mir::graphics::DisplayConfiguration const> const&) override;
+#endif
 
 private:
     using SetPowerModeFilter = bool(*)(mir::graphics::UserDisplayConfigurationOutput const&);

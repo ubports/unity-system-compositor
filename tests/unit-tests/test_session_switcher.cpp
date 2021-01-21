@@ -100,11 +100,20 @@ public:
         : name_{name}
     {}
 
+#if MIR_SERVER_VERSION >= MIR_VERSION_NUMBER(1, 6, 0)
     std::shared_ptr<mir::compositor::BufferStream> create_buffer_stream(mir::graphics::BufferProperties const& /*props*/) override { return {}; }
     void destroy_buffer_stream(std::shared_ptr<mir::frontend::BufferStream> const& /*stream*/) override {}
+#else
+    mir::frontend::BufferStreamId create_buffer_stream(mir::graphics::BufferProperties const& /*props*/) override { return {}; }
+    std::shared_ptr<mir::frontend::BufferStream> get_buffer_stream(mir::frontend::BufferStreamId /*stream*/) const override { return nullptr; }
+    void destroy_buffer_stream(mir::frontend::BufferStreamId /*stream*/) override {}
+#endif
 
     void send_error(mir::ClientVisibleError const&) override {}
     std::string name() const override { return name_; }
+#if MIR_SERVER_VERSION < MIR_VERSION_NUMBER(1, 6, 0)
+    void send_display_config(mir::graphics::DisplayConfiguration const&) override {}
+#endif
     void send_input_config(MirInputConfig const&) override {}
 
     pid_t process_id() const override { return -1; };
@@ -127,12 +136,23 @@ public:
 
     void resume_prompt_session() override {};
 
+#if MIR_SERVER_VERSION >= MIR_VERSION_NUMBER(1, 6, 0)
     std::shared_ptr<mir::scene::Surface> create_surface(
         std::shared_ptr<Session> const&,
         mir::scene::SurfaceCreationParameters const&,
         std::shared_ptr<mir::scene::SurfaceObserver> const&) override { return nullptr; };
-
     void destroy_surface(std::shared_ptr<mir::scene::Surface> const&) override { };
+#else
+    mir::frontend::SurfaceId create_surface(
+        mir::scene::SurfaceCreationParameters const& params,
+        std::shared_ptr<mir::frontend::EventSink> const& sink) override { return {}; };
+    std::shared_ptr<mir::frontend::Surface> get_surface(
+        mir::frontend::SurfaceId) const override { return nullptr; };
+    std::shared_ptr<mir::scene::Surface> surface(
+        mir::frontend::SurfaceId) const override { return nullptr; };        
+    void destroy_surface(mir::frontend::SurfaceId) override { };
+    void destroy_surface(std::weak_ptr<mir::scene::Surface> const&) override { };
+#endif
 
     std::shared_ptr<mir::scene::Surface> surface_after(
         std::shared_ptr<mir::scene::Surface> const&) const override { return nullptr; };

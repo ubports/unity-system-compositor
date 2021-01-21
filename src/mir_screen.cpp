@@ -18,6 +18,7 @@
 
 #include "mir_screen.h"
 
+#include <mir/version.h>
 #include <mir/compositor/compositor.h>
 #include <mir/graphics/display.h>
 #include <mir/graphics/display_configuration.h>
@@ -216,13 +217,21 @@ void usc::MirScreen::base_configuration_updated(
 }
 
 void usc::MirScreen::session_configuration_applied(
+#if MIR_SERVER_VERSION >= MIR_VERSION_NUMBER(1, 6, 0)
     std::shared_ptr<mir::scene::Session> const&,
+#else
+    std::shared_ptr<mir::frontend::Session> const&,
+#endif
     std::shared_ptr<mir::graphics::DisplayConfiguration> const&)
 {
 }
 
 void usc::MirScreen::session_configuration_removed(
+#if MIR_SERVER_VERSION >= MIR_VERSION_NUMBER(1, 6, 0)
     std::shared_ptr<mir::scene::Session> const&)
+#else
+    std::shared_ptr<mir::frontend::Session> const&)
+#endif
 {
 }
 
@@ -238,11 +247,13 @@ void usc::MirScreen::catastrophic_configuration_error(
 {
 }
 
+#if MIR_SERVER_VERSION >= MIR_VERSION_NUMBER(1, 6, 0)
 void usc::MirScreen::configuration_updated_for_session(
     std::shared_ptr<mir::scene::Session> const&,
     std::shared_ptr<mir::graphics::DisplayConfiguration const> const&)
 {
 }
+#endif
 
 void usc::MirScreen::set_power_mode(MirPowerMode mode, SetPowerModeFilter const& filter)
 try
