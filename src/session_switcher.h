@@ -41,8 +41,8 @@ public:
 
     /* From SessionMonitor */
     void add(std::shared_ptr<Session> const& session, pid_t pid) override;
-    void remove(std::shared_ptr<mir::frontend::Session> const& session) override;
-    void mark_ready(mir::frontend::Session const* session) override;
+    void remove(std::shared_ptr<mir::scene::Session> const& session) override;
+    void mark_ready(mir::scene::Session const* session) override;
 
     /* From DMMessageHandler */
     void set_active_session(std::string const& name) override;
